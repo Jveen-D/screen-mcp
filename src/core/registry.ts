@@ -1,0 +1,32 @@
+import { pieChartDefinition } from "../components/pie-chart/index.js";
+import type { ComponentDefinition } from "../types/component.js";
+
+const definitions = [pieChartDefinition] satisfies ComponentDefinition[];
+
+export function listComponents() {
+  return definitions.map((definition) => ({
+    componentName: definition.componentName,
+    displayName: definition.displayName,
+    businessType: definition.businessType,
+    description:
+      typeof definition.capability.description === "string"
+        ? definition.capability.description
+        : "",
+  }));
+}
+
+export function getComponentDefinition(componentName: string): ComponentDefinition {
+  const definition = definitions.find(
+    (item) => item.componentName === componentName,
+  );
+
+  if (!definition) {
+    throw new Error(`unknown componentName: ${componentName}`);
+  }
+
+  return definition;
+}
+
+export function getComponentCapability(componentName: string) {
+  return getComponentDefinition(componentName).capability;
+}
