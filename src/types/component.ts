@@ -13,6 +13,7 @@ export interface ComponentDefinition {
   businessType: "DASHBOARD";
   defaultProps: JsonObject;
   capability: JsonObject;
+  normalizeProps?: (props: JsonObject) => JsonObject;
 }
 
 export interface AiComponentProps extends JsonObject {

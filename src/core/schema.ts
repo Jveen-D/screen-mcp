@@ -30,7 +30,7 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
 
   mergedProps.chartData = cloneJson(definition.defaultProps.chartData);
 
-  return mergedProps;
+  return definition.normalizeProps?.(mergedProps) ?? mergedProps;
 }
 
 export function generateComponentsSchema(aiProps: JsonObject): ComponentSchema {

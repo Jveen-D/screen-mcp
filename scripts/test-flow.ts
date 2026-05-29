@@ -45,6 +45,7 @@ const aiProps = firstExample.props as JsonObject;
 const schema = generateComponentsSchema(aiProps);
 const props = schema.props;
 const option = props.option as JsonObject;
+const legend = option.legend as JsonObject;
 const series = option.series as JsonObject[];
 const firstSeries = series[0] as JsonObject;
 const inputOption = aiProps.option as JsonObject;
@@ -55,6 +56,8 @@ const chartData = props.chartData as JsonObject;
 assert.equal(schema.componentName, "PieChart");
 assert.equal(chartData.sourceType, "constant");
 assert.equal("title" in option, false);
+assert.equal(legend.left, "center");
+assert.equal(legend.top, "bottom");
 assert.equal(firstSeries.type, "pie");
 assert.deepEqual(firstSeries.radius, inputFirstSeries.radius);
 assert.equal(schema.businessElementId, aiProps.logicalId);
@@ -88,6 +91,20 @@ assert.equal("title" in forbiddenOverrideOption, false);
 assert.equal("data" in forbiddenOverrideFirstSeries, false);
 assert.deepEqual(forbiddenOverrideFirstSeries.radius, ["50%", "72%"]);
 assert.deepEqual(forbiddenOverrideSchema.props.eventConfigures, []);
+
+const invalidLegendSchema = generateComponentsSchema({
+  ...aiProps,
+  option: {
+    legend: {
+      left: "center",
+      top: "center",
+    },
+  },
+});
+const invalidLegendOption = invalidLegendSchema.props.option as JsonObject;
+const normalizedLegend = invalidLegendOption.legend as JsonObject;
+assert.equal(normalizedLegend.left, "center");
+assert.equal(normalizedLegend.top, "top");
 
 const nodePath = process.execPath;
 const client = new Client({
@@ -150,6 +167,15 @@ try {
     "MCP capability has aiForbiddenProps",
   );
   assert.ok(Array.isArray(mcpCapability.examples), "MCP capability has examples");
+  const writableProps = mcpCapability.aiWritableProps as JsonObject[];
+  const legendCapability = writableProps.find(
+    (item) => item.path === "option.legend",
+  ) as JsonObject | undefined;
+  assert.ok(legendCapability, "MCP capability should describe option.legend");
+  assert.ok(
+    legendCapability.positionRules,
+    "MCP capability should describe legend position rules",
+  );
 
   const toolResult = await client.callTool({
     name: "generate_components_schema",

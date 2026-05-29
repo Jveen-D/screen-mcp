@@ -86,7 +86,39 @@ export const pieChartCapability: JsonObject = {
     {
       path: "option.legend",
       type: "object",
-      description: "图例配置。",
+      description:
+        "图例配置。legend.left 与 legend.top 必须成对选择合法位置，分别保存为字符串。",
+      positionRules: {
+        fields: ["left", "top"],
+        description:
+          "每一项的第一个值写入 legend.left，第二个值写入 legend.top，表示图例在容器的八个方位。",
+        options: [
+          ["left", "top"],
+          ["center", "top"],
+          ["right", "top"],
+          ["left", "center"],
+          ["right", "center"],
+          ["left", "bottom"],
+          ["center", "bottom"],
+          ["right", "bottom"],
+        ],
+      },
+      children: [
+        {
+          path: "option.legend.left",
+          type: "enum",
+          values: ["left", "center", "right"],
+          description:
+            "图例水平位置，必须与 option.legend.top 组合成 positionRules.options 中的一项。",
+        },
+        {
+          path: "option.legend.top",
+          type: "enum",
+          values: ["top", "center", "bottom"],
+          description:
+            "图例垂直位置，必须与 option.legend.left 组合成 positionRules.options 中的一项。",
+        },
+      ],
     },
     {
       path: "option.series[0]",
