@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import {
+  generateModuleSchema,
+  getModuleCapability,
+  listModules,
+} from "../src/core/modules.js";
 import { getComponentCapability, listComponents } from "../src/core/registry.js";
 import {
   generateComponentsSchema,
@@ -51,6 +56,46 @@ assert.ok(
   "capability has aiForbiddenProps",
 );
 assert.ok(Array.isArray(capability.examples), "capability has examples");
+assert.equal(capability.componentType, "chart");
+assert.ok(capability.baseConfig, "chart capability has baseConfig");
+const pieWritableProps = capability.aiWritableProps as JsonObject[];
+assert.ok(
+  pieWritableProps.some((item) => item.path === "option.backgroundColor"),
+  "chart background color should use option.backgroundColor",
+);
+assert.equal(
+  pieWritableProps.some((item) => item.path === "style.backgroundColor"),
+  false,
+  "chart capability should not expose style.backgroundColor as base background",
+);
+assert.ok(
+  pieWritableProps.some((item) => item.path === "style"),
+  "capability should expose base style config",
+);
+assert.ok(
+  pieWritableProps.some((item) => item.path === "rotate"),
+  "capability should expose base rotate config",
+);
+assert.ok(
+  pieWritableProps.some((item) => item.path === "opacity"),
+  "capability should expose base opacity config",
+);
+assert.ok(
+  pieWritableProps.some((item) => item.path === "style.zIndex"),
+  "capability should expose base zIndex config",
+);
+const pieRequiredProps = capability.requiredProps as JsonObject[];
+const pieStyleRequiredProp = pieRequiredProps.find(
+  (item) => item.path === "style",
+) as JsonObject | undefined;
+assert.ok(pieStyleRequiredProp, "capability should require style");
+assert.ok(
+  Array.isArray(pieStyleRequiredProp.children) &&
+    pieStyleRequiredProp.children.some(
+      (item) => (item as JsonObject).path === "style.zIndex",
+    ),
+  "style required prop should describe zIndex",
+);
 
 const examples = capability.examples as JsonObject[];
 const firstExample = examples[0];
@@ -123,6 +168,18 @@ assert.equal(normalizedLegend.top, "top");
 
 const imageCapability = getComponentCapability("SingleImage");
 assert.ok(Array.isArray(imageCapability.aiWritableProps));
+assert.equal(imageCapability.componentType, "base");
+assert.ok(imageCapability.baseConfig, "base component capability has baseConfig");
+const imageWritableProps = imageCapability.aiWritableProps as JsonObject[];
+assert.ok(
+  imageWritableProps.some((item) => item.path === "style.backgroundColor"),
+  "base component background color should use style.backgroundColor",
+);
+assert.equal(
+  imageWritableProps.some((item) => item.path === "option.backgroundColor"),
+  false,
+  "base component capability should not expose option.backgroundColor as base background",
+);
 const imageSchema = generateComponentsSchema({
   componentName: "SingleImage",
   logicalId: "panel_bg_image",
@@ -239,6 +296,117 @@ assert.deepEqual(
   [1, 2, 3, 4],
 );
 
+const modules = listModules();
+assert.ok(
+  modules.some((moduleItem) => moduleItem.moduleName === "ChartPanel"),
+  "list_modules should include ChartPanel",
+);
+
+const moduleCapability = getModuleCapability("ChartPanel");
+assert.ok(moduleCapability.slots, "ChartPanel capability should include slots");
+
+const chartPanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "sales_channel_panel",
+  parentLogicalId: "root",
+  title: "销售渠道占比",
+  style: {
+    left: 48,
+    top: 96,
+    width: 520,
+    height: 360,
+    position: "absolute",
+    zIndex: 10,
+  },
+  theme: {
+    primaryColor: "#00E5FF",
+    secondaryColor: "#7C4DFF",
+    accentColor: "#FFB300",
+    textColor: "#DFF8FF",
+  },
+  slots: {
+    background: {
+      componentName: "SingleImage",
+      props: {
+        imageBase64: "data:image/png;base64,BBBB",
+        opacity: 0.95,
+      },
+    },
+    title: {
+      componentName: "SingleText",
+      props: {
+        textContent: "销售渠道占比",
+      },
+    },
+    mainChart: {
+      componentName: "PieChart",
+      props: {
+        option: {
+          legend: {
+            left: "center",
+            top: "bottom",
+          },
+          series: [
+            {
+              radius: ["42%", "68%"],
+            },
+          ],
+        },
+      },
+    },
+    decorations: [
+      {
+        componentName: "SvgDecoration",
+        props: {
+          svgPreset: "icon-Frame3",
+          primaryColor: "#00E5FF",
+        },
+      },
+    ],
+  },
+} satisfies JsonObject;
+
+const moduleSchemas = generateModuleSchema(chartPanelInput);
+assert.equal(moduleSchemas.length, 4);
+assert.deepEqual(
+  moduleSchemas.map((item) => item.componentName),
+  ["SingleImage", "SingleText", "PieChart", "SvgDecoration"],
+);
+assert.deepEqual(
+  moduleSchemas.map((item) => item.indexNum),
+  [1, 2, 3, 4],
+);
+assert.equal(moduleSchemas[0]?.businessElementId, "sales_channel_panel_background");
+assert.equal(moduleSchemas[1]?.businessElementId, "sales_channel_panel_title");
+assert.equal(moduleSchemas[2]?.businessElementId, "sales_channel_panel_main_chart");
+assert.equal(moduleSchemas[3]?.businessElementId, "sales_channel_panel_decoration_1");
+const moduleTextDatasource = moduleSchemas[1]?.props.datasource as JsonObject;
+const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
+assert.equal(moduleTextConstantData[0]?.text, "销售渠道占比");
+assert.equal(moduleSchemas[0]?.props.imageBase64, "data:image/png;base64,BBBB");
+const moduleChartOption = moduleSchemas[2]?.props.option as JsonObject;
+const moduleChartSeries = moduleChartOption.series as JsonObject[];
+assert.equal(moduleChartOption.backgroundColor, "transparent");
+assert.deepEqual(moduleChartSeries[0]?.radius, ["42%", "68%"]);
+assert.equal(moduleSchemas[3]?.props.svgSource, "custom");
+assert.equal(typeof moduleSchemas[3]?.props.svgContent, "string");
+
+const noResourcePanelInput = {
+  ...chartPanelInput,
+  logicalId: "no_resource_panel",
+  slots: {
+    ...chartPanelInput.slots,
+    background: {
+      componentName: "SingleImage",
+      props: {},
+    },
+  },
+} satisfies JsonObject;
+const noResourceSchemas = generateModuleSchema(noResourcePanelInput);
+assert.equal(noResourceSchemas[0]?.props.imageSrc, "");
+assert.equal(noResourceSchemas[0]?.props.imageBase64, "");
+assert.equal(noResourceSchemas[0]?.props.opacity, 0);
+
 const nodePath = process.execPath;
 const client = new Client({
   name: "screen-component-mcp-test-client",
@@ -268,6 +436,18 @@ try {
   assert.ok(
     tools.tools.some((tool) => tool.name === "generate_components_schemas"),
     "MCP server should expose generate_components_schemas",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "list_modules"),
+    "MCP server should expose list_modules",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "get_module_capability"),
+    "MCP server should expose get_module_capability",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "generate_module_schema"),
+    "MCP server should expose generate_module_schema",
   );
 
   const listResult = await client.callTool({
@@ -352,6 +532,37 @@ try {
   assert.equal(toolSchemas[1].componentName, "SingleText");
   assert.equal(toolSchemas[2].componentName, "PieChart");
   assert.equal(toolSchemas[3].componentName, "SvgDecoration");
+
+  const moduleListResult = await client.callTool({
+    name: "list_modules",
+    arguments: {},
+  });
+  const listedModules = readToolJson(moduleListResult);
+  assert.ok(
+    listedModules.some(
+      (moduleItem: JsonObject) => moduleItem.moduleName === "ChartPanel",
+    ),
+    "MCP list_modules should include ChartPanel",
+  );
+
+  const moduleCapabilityResult = await client.callTool({
+    name: "get_module_capability",
+    arguments: { moduleName: "ChartPanel" },
+  });
+  const mcpModuleCapability = readToolJson(moduleCapabilityResult);
+  assert.ok(mcpModuleCapability.slots, "MCP module capability should include slots");
+
+  const moduleSchemaResult = await client.callTool({
+    name: "generate_module_schema",
+    arguments: chartPanelInput,
+  });
+  assert.equal(moduleSchemaResult.isError, undefined);
+  const toolModuleSchemas = readToolJson(moduleSchemaResult);
+  assert.equal(toolModuleSchemas.length, 4);
+  assert.equal(toolModuleSchemas[0].componentName, "SingleImage");
+  assert.equal(toolModuleSchemas[1].componentName, "SingleText");
+  assert.equal(toolModuleSchemas[2].componentName, "PieChart");
+  assert.equal(toolModuleSchemas[3].componentName, "SvgDecoration");
 } finally {
   await client.close();
 }

@@ -6,6 +6,7 @@ import type { ComponentDefinition } from "../../types/component.js";
 export const singleTextDefinition = {
   componentName: "SingleText",
   displayName: "单行文本",
+  componentType: "base",
   businessType: "DASHBOARD",
   defaultProps: singleTextDefaultProps,
   capability: singleTextCapability,

@@ -10,6 +10,7 @@ export type JsonObject = { [key: string]: JsonValue };
 export interface ComponentDefinition {
   componentName: string;
   displayName: string;
+  componentType: "chart" | "base";
   businessType: "DASHBOARD";
   defaultProps: JsonObject;
   capability: JsonObject;

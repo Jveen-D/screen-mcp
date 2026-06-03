@@ -6,6 +6,7 @@ import type { ComponentDefinition } from "../../types/component.js";
 export const pieChartDefinition = {
   componentName: "PieChart",
   displayName: "饼图",
+  componentType: "chart",
   businessType: "DASHBOARD",
   defaultProps: pieChartDefaultProps,
   capability: pieChartCapability,

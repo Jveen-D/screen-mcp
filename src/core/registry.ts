@@ -2,6 +2,7 @@ import { pieChartDefinition } from "../components/pie-chart/index.js";
 import { singleImageDefinition } from "../components/single-image/index.js";
 import { singleTextDefinition } from "../components/single-text/index.js";
 import { svgDecorationDefinition } from "../components/svg-decoration/index.js";
+import { withBaseCapability } from "./baseCapability.js";
 import type { ComponentDefinition } from "../types/component.js";
 
 const definitions = [
@@ -15,6 +16,7 @@ export function listComponents() {
   return definitions.map((definition) => ({
     componentName: definition.componentName,
     displayName: definition.displayName,
+    componentType: definition.componentType,
     businessType: definition.businessType,
     description:
       typeof definition.capability.description === "string"
@@ -36,5 +38,5 @@ export function getComponentDefinition(componentName: string): ComponentDefiniti
 }
 
 export function getComponentCapability(componentName: string) {
-  return getComponentDefinition(componentName).capability;
+  return withBaseCapability(getComponentDefinition(componentName));
 }

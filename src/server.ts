@@ -9,6 +9,11 @@ import {
   getComponentCapability,
   listComponents,
 } from "./core/registry.js";
+import {
+  generateModuleSchema,
+  getModuleCapability,
+  listModules,
+} from "./core/modules.js";
 import type { JsonObject } from "./types/component.js";
 
 const server = new McpServer({
@@ -47,6 +52,23 @@ const aiComponentPropsInput = z
     logicalId: z.string().min(1),
     parentLogicalId: z.string().min(1),
     style: z.record(z.unknown()),
+  })
+  .passthrough();
+
+const moduleInput = z
+  .object({
+    moduleName: z.string().min(1),
+    logicalId: z.string().min(1),
+    parentLogicalId: z.string().min(1),
+    style: z.object({
+      left: z.number(),
+      top: z.number(),
+      width: z.number(),
+      height: z.number(),
+      position: z.literal("absolute").optional(),
+      zIndex: z.number(),
+    }).passthrough(),
+    slots: z.record(z.unknown()),
   })
   .passthrough();
 
@@ -109,6 +131,50 @@ server.registerTool(
       return asToolContent(
         generateComponentsSchemas(componentsProps as JsonObject[]),
       );
+    } catch (error) {
+      return handleToolError(error);
+    }
+  },
+);
+
+server.registerTool(
+  "list_modules",
+  {
+    title: "List Modules",
+    description: "Return summaries of supported component composition modules.",
+  },
+  async () => asToolContent(listModules()),
+);
+
+server.registerTool(
+  "get_module_capability",
+  {
+    title: "Get Module Capability",
+    description: "Return the AI-readable capability map for a composition module.",
+    inputSchema: {
+      moduleName: z.string().min(1),
+    },
+  },
+  async ({ moduleName }) => {
+    try {
+      return asToolContent(getModuleCapability(moduleName));
+    } catch (error) {
+      return handleToolError(error);
+    }
+  },
+);
+
+server.registerTool(
+  "generate_module_schema",
+  {
+    title: "Generate Module Schema",
+    description:
+      "Generate complete editor component schemas from one module composition input.",
+    inputSchema: moduleInput,
+  },
+  async (input) => {
+    try {
+      return asToolContent(generateModuleSchema(input as JsonObject));
     } catch (error) {
       return handleToolError(error);
     }

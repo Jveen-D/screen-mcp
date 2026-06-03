@@ -9,6 +9,10 @@
 - `SingleText`
 - `SvgDecoration`
 
+当前内置模块：
+
+- `ChartPanel`
+
 ## 安装依赖
 
 要求 Node.js `>=18`。
@@ -48,6 +52,14 @@ npx @modelcontextprotocol/inspector npm run dev
 
 AI 应该按 `list_components -> get_component_capability -> generate_components_schema` 的顺序使用。先发现组件，再读取组件能力与约束，最后只提交 AI 可写的最小 props 给 MCP 生成完整 schema。
 
+如果要生成一个完整面板模块，AI 应该按以下顺序使用：
+
+1. `list_modules`
+2. `get_module_capability`，输入 `{ "moduleName": "ChartPanel" }`
+3. `generate_module_schema`，输入模块级 props
+
+`ChartPanel` 会按 slot 编排 `SingleImage` 背景、`SingleText` 标题、主图表和 `SvgDecoration` 装饰，最终返回完整组件 schema 数组。
+
 ## 验证流程
 
 ```bash
@@ -57,8 +69,11 @@ npm run test:flow
 测试会验证：
 
 - `list_components` 能返回 `PieChart`
+- `list_modules` 能返回 `ChartPanel`
 - `get_component_capability("PieChart")` 能返回 `requiredProps`、`aiWritableProps`、`aiForbiddenProps`、`examples`
+- `get_module_capability("ChartPanel")` 能返回模块 slots 和布局规则
 - 使用 capability 示例 props 生成完整 schema
+- 使用 `generate_module_schema` 生成完整图表面板 schema 数组
 - `chartData.sourceType` 仍然是 `constant`
 - `option.series[0].type` 仍然是 `pie`
 - `option.series[0].radius` 使用 AI 输入
