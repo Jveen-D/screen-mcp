@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { getComponentCapability, listComponents } from "../src/core/registry.js";
-import { generateComponentsSchema } from "../src/core/schema.js";
+import {
+  generateComponentsSchema,
+  generateComponentsSchemas,
+} from "../src/core/schema.js";
 import type { JsonObject } from "../src/types/component.js";
 
 function readToolJson(result: Awaited<ReturnType<Client["callTool"]>>) {
@@ -23,6 +26,18 @@ const components = listComponents();
 assert.ok(
   components.some((component) => component.componentName === "PieChart"),
   "list_components should include PieChart",
+);
+assert.ok(
+  components.some((component) => component.componentName === "SingleImage"),
+  "list_components should include SingleImage",
+);
+assert.ok(
+  components.some((component) => component.componentName === "SingleText"),
+  "list_components should include SingleText",
+);
+assert.ok(
+  components.some((component) => component.componentName === "SvgDecoration"),
+  "list_components should include SvgDecoration",
 );
 
 const capability = getComponentCapability("PieChart");
@@ -106,6 +121,124 @@ const normalizedLegend = invalidLegendOption.legend as JsonObject;
 assert.equal(normalizedLegend.left, "center");
 assert.equal(normalizedLegend.top, "top");
 
+const imageCapability = getComponentCapability("SingleImage");
+assert.ok(Array.isArray(imageCapability.aiWritableProps));
+const imageSchema = generateComponentsSchema({
+  componentName: "SingleImage",
+  logicalId: "panel_bg_image",
+  parentLogicalId: "sales_group",
+  name: "销售面板背景",
+  style: {
+    position: "absolute",
+    left: 48,
+    top: 96,
+    width: 520,
+    height: 360,
+    backgroundColor: "rgba(0,0,0,0)",
+    borderRadius: 0,
+    zIndex: 1,
+  },
+  imageBase64: "data:image/png;base64,AAAA",
+  targetUrl: "https://example.com",
+  openBrowser: true,
+});
+assert.equal(imageSchema.componentName, "SingleImage");
+assert.equal(imageSchema.props.imageBase64, "data:image/png;base64,AAAA");
+assert.equal(imageSchema.props.targetUrl, "");
+assert.equal(imageSchema.props.openBrowser, false);
+
+const textCapability = getComponentCapability("SingleText");
+assert.ok(Array.isArray(textCapability.aiForbiddenProps));
+const textSchema = generateComponentsSchema({
+  componentName: "SingleText",
+  logicalId: "sales_panel_title",
+  parentLogicalId: "sales_group",
+  name: "销售面板标题",
+  textContent: "销售渠道占比",
+  datasource: {
+    sourceType: "api",
+  },
+  style: {
+    position: "absolute",
+    left: 80,
+    top: 112,
+    width: 260,
+    height: 36,
+    fontSize: 22,
+    color: "#DFF8FF",
+    textAlign: "left",
+    backgroundColor: "rgba(0,0,0,0)",
+    fontWeight: "bold",
+    zIndex: 20,
+  },
+});
+const textDatasource = textSchema.props.datasource as JsonObject;
+const textConstantData = textDatasource.constantData as JsonObject[];
+assert.equal(textSchema.componentName, "SingleText");
+assert.equal(textSchema.props.textContent, "销售渠道占比");
+assert.equal(textDatasource.sourceType, "externalConstant");
+assert.equal(textConstantData[0]?.text, "销售渠道占比");
+
+const svgCapability = getComponentCapability("SvgDecoration");
+assert.ok(Array.isArray(svgCapability.aiWritableProps));
+const safeSvg =
+  '<svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 L100 0" stroke="#00E5FF" fill="none"/></svg>';
+const svgSchema = generateComponentsSchema({
+  componentName: "SvgDecoration",
+  logicalId: "panel_corner_svg",
+  parentLogicalId: "sales_group",
+  name: "右上角科技装饰",
+  style: {
+    width: 120,
+    height: 64,
+    position: "absolute",
+    left: 448,
+    top: 96,
+    backgroundColor: "rgba(0,0,0,0)",
+    zIndex: 30,
+  },
+  svgSource: "custom",
+  svgContent: safeSvg,
+  primaryColor: "#00E5FF",
+  glow: {
+    isActive: true,
+    color: "rgba(0,229,255,0.55)",
+    blur: 8,
+  },
+});
+assert.equal(svgSchema.componentName, "SvgDecoration");
+assert.equal(svgSchema.props.svgSource, "custom");
+assert.equal(svgSchema.props.svgContent, safeSvg);
+
+const unsafeSvgSchema = generateComponentsSchema({
+  componentName: "SvgDecoration",
+  logicalId: "unsafe_svg",
+  parentLogicalId: "sales_group",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 100,
+    height: 100,
+    zIndex: 10,
+  },
+  svgSource: "custom",
+  svgContent: "<svg><script>alert(1)</script></svg>",
+});
+assert.equal(unsafeSvgSchema.props.svgSource, "preset");
+
+const panelSchemas = generateComponentsSchemas([
+  imageSchema.props,
+  textSchema.props,
+  aiProps,
+  svgSchema.props,
+]);
+assert.equal(panelSchemas.length, 4);
+assert.deepEqual(
+  panelSchemas.map((item) => item.indexNum),
+  [1, 2, 3, 4],
+);
+
 const nodePath = process.execPath;
 const client = new Client({
   name: "screen-component-mcp-test-client",
@@ -148,6 +281,24 @@ try {
     ),
     "MCP list_components should include PieChart",
   );
+  assert.ok(
+    listedComponents.some(
+      (component: JsonObject) => component.componentName === "SingleImage",
+    ),
+    "MCP list_components should include SingleImage",
+  );
+  assert.ok(
+    listedComponents.some(
+      (component: JsonObject) => component.componentName === "SingleText",
+    ),
+    "MCP list_components should include SingleText",
+  );
+  assert.ok(
+    listedComponents.some(
+      (component: JsonObject) => component.componentName === "SvgDecoration",
+    ),
+    "MCP list_components should include SvgDecoration",
+  );
 
   const capabilityResult = await client.callTool({
     name: "get_component_capability",
@@ -187,6 +338,20 @@ try {
   assert.equal("title" in toolSchema.props.option, false);
   assert.equal(toolSchema.props.option.series[0].type, "pie");
   assert.deepEqual(toolSchema.props.option.series[0].radius, inputFirstSeries.radius);
+
+  const schemasResult = await client.callTool({
+    name: "generate_components_schemas",
+    arguments: {
+      componentsProps: [imageSchema.props, textSchema.props, aiProps, svgSchema.props],
+    },
+  });
+  assert.equal(schemasResult.isError, undefined);
+  const toolSchemas = readToolJson(schemasResult);
+  assert.equal(toolSchemas.length, 4);
+  assert.equal(toolSchemas[0].componentName, "SingleImage");
+  assert.equal(toolSchemas[1].componentName, "SingleText");
+  assert.equal(toolSchemas[2].componentName, "PieChart");
+  assert.equal(toolSchemas[3].componentName, "SvgDecoration");
 } finally {
   await client.close();
 }

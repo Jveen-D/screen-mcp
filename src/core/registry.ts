@@ -1,7 +1,15 @@
 import { pieChartDefinition } from "../components/pie-chart/index.js";
+import { singleImageDefinition } from "../components/single-image/index.js";
+import { singleTextDefinition } from "../components/single-text/index.js";
+import { svgDecorationDefinition } from "../components/svg-decoration/index.js";
 import type { ComponentDefinition } from "../types/component.js";
 
-const definitions = [pieChartDefinition] satisfies ComponentDefinition[];
+const definitions = [
+  pieChartDefinition,
+  singleImageDefinition,
+  singleTextDefinition,
+  svgDecorationDefinition,
+] satisfies ComponentDefinition[];
 
 export function listComponents() {
   return definitions.map((definition) => ({

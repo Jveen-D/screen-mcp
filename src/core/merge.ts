@@ -2,9 +2,12 @@ import type { JsonObject, JsonValue } from "../types/component.js";
 
 const FORBIDDEN_PATHS = [
   ["chartData"],
+  ["datasource"],
   ["option", "title"],
   ["option", "series", "0", "data"],
   ["eventConfigures"],
+  ["targetUrl"],
+  ["openBrowser"],
 ];
 
 function isPlainObject(value: JsonValue | undefined): value is JsonObject {

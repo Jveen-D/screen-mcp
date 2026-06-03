@@ -5,6 +5,9 @@
 当前内置组件：
 
 - `PieChart`
+- `SingleImage`
+- `SingleText`
+- `SvgDecoration`
 
 ## 安装依赖
 
