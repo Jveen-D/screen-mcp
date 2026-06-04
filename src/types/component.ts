@@ -40,3 +40,29 @@ export interface ComponentSchema {
   lockedFlag: false;
   groupFlag: false;
 }
+
+export interface EditorComponentNode {
+  id: string;
+  componentName: string;
+  structVersion: "0.0.2";
+  props: JsonObject;
+  title: string;
+  isHidden: boolean;
+  isLocked: boolean;
+  isGroup: false;
+  children?: EditorTreeNode[];
+}
+
+export interface EditorGroupNode {
+  id: string;
+  componentName: "__Group__";
+  structVersion: "0.0.0";
+  props: JsonObject;
+  title: string;
+  isHidden: boolean;
+  isLocked: boolean;
+  isGroup: true;
+  children: EditorTreeNode[];
+}
+
+export type EditorTreeNode = EditorComponentNode | EditorGroupNode;

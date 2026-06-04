@@ -1,4 +1,9 @@
-import type { ComponentSchema, JsonObject, JsonValue } from "./component.js";
+import type {
+  ComponentSchema,
+  EditorGroupNode,
+  JsonObject,
+  JsonValue,
+} from "./component.js";
 
 export interface ModuleSlotInput {
   componentName: string;
@@ -12,7 +17,7 @@ export interface ModuleStyle {
   width: number;
   height: number;
   position: "absolute";
-  zIndex?: number;
+  zIndex: number;
   [key: string]: JsonValue;
 }
 
@@ -33,6 +38,7 @@ export interface ModuleDefinition {
   description: string;
   capability: JsonObject;
   generateSchemas: (input: ModuleInput) => ComponentSchema[];
+  generateTreeSchema: (input: ModuleInput) => EditorGroupNode;
 }
 
 export type SlotValue = JsonValue | undefined;

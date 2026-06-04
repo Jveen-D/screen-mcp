@@ -4,7 +4,25 @@ export const chartPanelCapability: JsonObject = {
   moduleName: "ChartPanel",
   displayName: "图表面板",
   description:
-    "通用图表面板模块，用背景、标题、主图表和装饰元素组合出可插入画布的组件 schema 数组。",
+    "通用图表面板模块，用 __Group__ 分组承载背景、标题、主图表和装饰元素，生成可直接放入大屏编辑器的模块树 schema。",
+  groupSchema: {
+    componentName: "__Group__",
+    structVersion: "0.0.0",
+    props: {},
+    description:
+      "大屏由多个模块组成，每个模块必须是一个 __Group__ 分组；分组 id 使用模块 logicalId，title 使用模块标题，children 存放 PieChart、SingleText、SvgDecoration、SingleImage 等子组件或嵌套分组。",
+    fields: [
+      { path: "id", type: "string", description: "分组唯一标识。" },
+      { path: "componentName", type: "string", value: "__Group__" },
+      { path: "structVersion", type: "string", value: "0.0.0" },
+      { path: "props", type: "object", value: {} },
+      { path: "title", type: "string", description: "分组标题。" },
+      { path: "isHidden", type: "boolean", value: false },
+      { path: "isLocked", type: "boolean", value: false },
+      { path: "isGroup", type: "boolean", value: true },
+      { path: "children", type: "array", description: "分组内子组件或子分组。" },
+    ],
+  },
   requiredProps: [
     {
       path: "moduleName",
@@ -106,6 +124,7 @@ export const chartPanelCapability: JsonObject = {
     "饼图标签应形成标注系统：外部 label、labelLine、字号、字重和颜色要统一；强标注适合分析类稿件，轻标注适合数据密集模块。",
     "同一组数据在主图、中心摘要、侧边信息卡和底部说明中要分工展示：主图 label 负责定位，中心摘要负责总量或核心指标，侧边卡负责占比和解释，底部说明负责结论；不要让多处文本以同等强度重复完整信息。",
     "模块必须使用真实组件表达真实内容：主图表必须使用 slots.mainChart 的 PieChart；业务文本必须使用 title 或 auxiliaryTexts 的 SingleText；SvgDecoration 只允许做装饰。",
+    "当需要直接复制到编辑器时，优先调用 generate_module_tree_schema；它会返回 __Group__ 根节点，children 内放完整子组件节点。",
     "禁止用 SvgDecoration 的 svgContent 手绘饼图、环形图、信息卡正文、标题、数值、占比或结论说明。",
     "不要因为禁止 SVG 承载真实内容而省略 SvgDecoration；合格的 ChartPanel 至少应包含标题承托、面板边框、侧边信息卡外框、分割线或连接线中的一种装饰结构。",
     "侧边信息卡如果出现风险等级、占比或说明文字，文字必须用 SingleText，信息卡外框、左侧色条、底纹和短连接线应使用 SvgDecoration 或背景组件表达。",

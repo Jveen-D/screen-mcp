@@ -34,3 +34,12 @@ export function generateModuleSchema(input: JsonObject) {
 
   return getModuleDefinition(moduleName).generateSchemas(input as ModuleInput);
 }
+
+export function generateModuleTreeSchema(input: JsonObject) {
+  const moduleName = input.moduleName;
+  if (typeof moduleName !== "string" || moduleName.trim() === "") {
+    throw new Error("missing required module prop: moduleName");
+  }
+
+  return getModuleDefinition(moduleName).generateTreeSchema(input as ModuleInput);
+}

@@ -3,6 +3,7 @@ import { getComponentDefinition } from "./registry.js";
 import type {
   AiComponentProps,
   ComponentSchema,
+  EditorComponentNode,
   JsonObject,
 } from "../types/component.js";
 
@@ -63,4 +64,22 @@ export function generateComponentsSchemas(
     ...generateComponentsSchema(props),
     indexNum: index + 1,
   }));
+}
+
+export function componentSchemaToEditorNode(
+  schema: ComponentSchema,
+): EditorComponentNode {
+  return {
+    id: schema.businessElementId,
+    componentName: schema.componentName,
+    structVersion: schema.structVersion,
+    props: schema.props,
+    title:
+      typeof schema.props.name === "string" && schema.props.name.trim() !== ""
+        ? schema.props.name
+        : schema.displayName,
+    isHidden: schema.hiddenFlag.value,
+    isLocked: schema.lockedFlag,
+    isGroup: false,
+  };
 }

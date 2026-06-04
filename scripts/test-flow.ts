@@ -3,6 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import {
   generateModuleSchema,
+  generateModuleTreeSchema,
   getModuleCapability,
   listModules,
 } from "../src/core/modules.js";
@@ -284,6 +285,7 @@ const textSchema = generateComponentsSchema({
     width: 260,
     height: 36,
     fontSize: 22,
+    lineHeight: 24,
     color: "#DFF8FF",
     textAlign: "left",
     backgroundColor: "rgba(0,0,0,0)",
@@ -296,6 +298,8 @@ assert.equal(textSchema.componentName, "SingleText");
 assert.equal(textSchema.props.textContent, "销售渠道占比");
 assert.equal(textDatasource.sourceType, "externalConstant");
 assert.equal(textConstantData[0]?.text, "销售渠道占比");
+const textStyle = textSchema.props.style as JsonObject;
+assert.equal(textStyle.lineHeight, 1.09);
 
 const svgCapability = getComponentCapability("SvgDecoration");
 assert.ok(Array.isArray(svgCapability.aiWritableProps));
@@ -561,11 +565,13 @@ assert.equal(moduleTitleStyle.left, 72);
 assert.equal(moduleTitleStyle.top, 114);
 assert.equal(moduleTitleStyle.width, 472);
 assert.equal(moduleTitleStyle.fontSize, 22);
+assert.equal(moduleTitleStyle.lineHeight, 1.4);
 const moduleTitleBadgeStyle = moduleSchemas[1]?.props.style as JsonObject;
 assert.equal(moduleTitleBadgeStyle.left, 56);
 assert.equal(moduleTitleBadgeStyle.top, 100);
 assert.equal(moduleTitleBadgeStyle.width, 200);
 assert.equal(moduleTitleBadgeStyle.height, 50);
+assert.equal(moduleTitleBadgeStyle.zIndex, 16);
 const moduleAuxTextDatasource = moduleSchemas[3]?.props.datasource as JsonObject;
 const moduleAuxTextConstantData =
   moduleAuxTextDatasource.constantData as JsonObject[];
@@ -573,11 +579,14 @@ assert.equal(
   moduleAuxTextConstantData[0]?.text,
   "高等级风险占比 29.0%，处置优先级：红 / 橙",
 );
+const moduleAuxTextStyle = moduleSchemas[3]?.props.style as JsonObject;
+assert.equal(moduleAuxTextStyle.lineHeight, 1.4);
 assert.equal(moduleSchemas[5]?.props.imageBase64, "");
 assert.equal(moduleSchemas[5]?.props.imageUseMode, "upload");
 assert.equal(moduleSchemas[5]?.props.svgSource, "custom");
 const moduleBackgroundStyle = moduleSchemas[5]?.props.style as JsonObject;
 assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(4,16,32,0.96)");
+assert.equal(moduleBackgroundStyle.zIndex, 10);
 const moduleChartOption = moduleSchemas[4]?.props.option as JsonObject;
 const moduleChartSeries = moduleChartOption.series as JsonObject[];
 assert.equal(moduleChartOption.backgroundColor, "transparent");
@@ -590,6 +599,9 @@ assert.equal(moduleSchemas[2]?.props.svgSource, "custom");
 assert.equal(typeof moduleSchemas[2]?.props.svgContent, "string");
 const moduleDecorationStyle = moduleSchemas[2]?.props.style as JsonObject;
 const moduleChartStyle = moduleSchemas[4]?.props.style as JsonObject;
+assert.equal(moduleTitleStyle.zIndex, 18);
+assert.equal(moduleChartStyle.zIndex, 12);
+assert.equal(moduleDecorationStyle.zIndex, 14);
 assert.equal(moduleChartStyle.left, 68);
 assert.equal(moduleChartStyle.top, 188);
 assert.equal(moduleChartStyle.width, 480);
@@ -617,6 +629,35 @@ assert.equal(noResourceBackground?.props.imageBase64, "");
 assert.equal(noResourceBackground?.props.imageUseMode, "upload");
 assert.equal(noResourceBackground?.props.opacity, 1);
 assert.equal(noResourceBackground?.props.svgSource, "custom");
+
+const moduleTreeSchema = generateModuleTreeSchema(chartPanelInput);
+assert.equal(moduleTreeSchema.id, "sales_channel_panel");
+assert.equal(moduleTreeSchema.componentName, "__Group__");
+assert.equal(moduleTreeSchema.structVersion, "0.0.0");
+assert.deepEqual(moduleTreeSchema.props, {});
+assert.equal(moduleTreeSchema.title, "销售渠道占比");
+assert.equal(moduleTreeSchema.isHidden, false);
+assert.equal(moduleTreeSchema.isLocked, false);
+assert.equal(moduleTreeSchema.isGroup, true);
+assert.equal(moduleTreeSchema.children.length, 6);
+assert.deepEqual(
+  moduleTreeSchema.children.map((item) => item.componentName),
+  [
+    "SingleText",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SingleText",
+    "PieChart",
+    "SingleImage",
+  ],
+);
+assert.equal(moduleTreeSchema.children[0]?.id, "sales_channel_panel_title");
+assert.equal(moduleTreeSchema.children[0]?.isGroup, false);
+assert.equal(moduleTreeSchema.children[0]?.structVersion, "0.0.2");
+assert.equal(
+  (moduleTreeSchema.children[0]?.props as JsonObject).logicalId,
+  "sales_channel_panel_title",
+);
 
 const nodePath = process.execPath;
 const client = new Client({
@@ -659,6 +700,10 @@ try {
   assert.ok(
     tools.tools.some((tool) => tool.name === "generate_module_schema"),
     "MCP server should expose generate_module_schema",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "generate_module_tree_schema"),
+    "MCP server should expose generate_module_tree_schema",
   );
 
   const listResult = await client.callTool({
@@ -762,6 +807,10 @@ try {
   });
   const mcpModuleCapability = readToolJson(moduleCapabilityResult);
   assert.ok(mcpModuleCapability.slots, "MCP module capability should include slots");
+  assert.equal(
+    (mcpModuleCapability.groupSchema as JsonObject).componentName,
+    "__Group__",
+  );
 
   const moduleSchemaResult = await client.callTool({
     name: "generate_module_schema",
@@ -776,6 +825,18 @@ try {
   assert.equal(toolModuleSchemas[3].componentName, "SingleText");
   assert.equal(toolModuleSchemas[4].componentName, "PieChart");
   assert.equal(toolModuleSchemas[5].componentName, "SingleImage");
+
+  const moduleTreeSchemaResult = await client.callTool({
+    name: "generate_module_tree_schema",
+    arguments: chartPanelInput,
+  });
+  assert.equal(moduleTreeSchemaResult.isError, undefined);
+  const toolModuleTreeSchema = readToolJson(moduleTreeSchemaResult);
+  assert.equal(toolModuleTreeSchema.componentName, "__Group__");
+  assert.equal(toolModuleTreeSchema.structVersion, "0.0.0");
+  assert.deepEqual(toolModuleTreeSchema.props, {});
+  assert.equal(toolModuleTreeSchema.children.length, 6);
+  assert.equal(toolModuleTreeSchema.children[4].componentName, "PieChart");
 } finally {
   await client.close();
 }

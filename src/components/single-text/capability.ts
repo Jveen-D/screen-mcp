@@ -60,7 +60,13 @@ export const singleTextCapability: JsonObject = {
       description: "字体样式。",
     },
     { path: "style.letterSpacing", type: "number", description: "字距。" },
-    { path: "style.lineHeight", type: "number", description: "行高。" },
+    {
+      path: "style.lineHeight",
+      type: "number",
+      range: [1, 2],
+      description:
+        "行高是 React/CSS 无单位倍率，不是 px。日常大屏设计建议 1 到 2；不要填写 24、30 这类像素值，否则文字可能不可见。",
+    },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
     { path: "textShadow", type: "object", description: "文字阴影配置。" },
@@ -88,6 +94,7 @@ export const singleTextCapability: JsonObject = {
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "datasource 永远使用默认结构，MCP 会把 textContent 同步到 datasource.constantData[0].text。",
+    "style.lineHeight 使用无单位倍率；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
   ],
   examples: [
     {

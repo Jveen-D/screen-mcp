@@ -1,5 +1,8 @@
-import { generateComponentsSchema } from "../../core/schema.js";
-import type { JsonObject, JsonValue } from "../../types/component.js";
+import {
+  componentSchemaToEditorNode,
+  generateComponentsSchema,
+} from "../../core/schema.js";
+import type { EditorGroupNode, JsonObject, JsonValue } from "../../types/component.js";
 import type {
   ModuleDefinition,
   ModuleInput,
@@ -20,6 +23,11 @@ const MAIN_CHART_TOP_OFFSET = 92;
 const MAIN_CHART_SIDE_PADDING = 20;
 const MAIN_CHART_BOTTOM_PADDING = 68;
 const DEFAULT_MODULE_Z_INDEX = 10;
+const BACKGROUND_Z_OFFSET = 0;
+const MAIN_CHART_Z_OFFSET = 2;
+const DECORATION_Z_OFFSET = 4;
+const TITLE_BADGE_Z_OFFSET = 6;
+const TEXT_Z_OFFSET = 8;
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -107,6 +115,10 @@ function mergeStyle(base: JsonObject, override: JsonValue | undefined): JsonObje
   return isJsonObject(override) ? { ...base, ...override } : base;
 }
 
+function layerZIndex(input: ModuleInput, offset: number): number {
+  return input.style.zIndex + offset;
+}
+
 function isPlaceholderBase64(value: string): boolean {
   const trimmed = value.trim();
   return trimmed === "" || trimmed === "data:image/png;base64,..." || trimmed.endsWith(",AAAA") || trimmed.endsWith(",BBBB");
@@ -143,7 +155,7 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
         borderRadius: 0,
         borderWidth: 0,
         borderColor: "rgba(0,0,0,0)",
-        zIndex: input.style.zIndex,
+        zIndex: layerZIndex(input, BACKGROUND_Z_OFFSET),
       },
       props.style,
     ),
@@ -167,7 +179,7 @@ function createTitleBadgeProps(input: ModuleInput): JsonObject {
       width: Math.min(Math.max(input.style.width * 0.28, 200), 260),
       height: 50,
       backgroundColor: "rgba(0,0,0,0)",
-      zIndex: input.style.zIndex,
+      zIndex: layerZIndex(input, TITLE_BADGE_Z_OFFSET),
     },
     svgSource: "custom",
     svgContent: TITLE_BADGE_SVG,
@@ -209,7 +221,7 @@ function createTitleProps(input: ModuleInput, slot: ModuleSlotInput | undefined)
         fontStyle: "normal",
         letterSpacing: 2,
         lineHeight: 1.4,
-        zIndex: input.style.zIndex,
+        zIndex: layerZIndex(input, TEXT_Z_OFFSET),
       },
       props.style,
     ),
@@ -243,7 +255,7 @@ function createMainChartProps(input: ModuleInput, slot: ModuleSlotInput): JsonOb
         top: input.style.top + MAIN_CHART_TOP_OFFSET,
         width: Math.max(input.style.width - MAIN_CHART_SIDE_PADDING * 2, 80),
         height: Math.max(input.style.height - MAIN_CHART_TOP_OFFSET - MAIN_CHART_BOTTOM_PADDING, 80),
-        zIndex: input.style.zIndex,
+        zIndex: layerZIndex(input, MAIN_CHART_Z_OFFSET),
       },
       props.style,
     ),
@@ -302,7 +314,7 @@ function createDecorationProps(
         position: "absolute",
         ...position,
         backgroundColor: "rgba(0,0,0,0)",
-        zIndex: input.style.zIndex,
+        zIndex: layerZIndex(input, DECORATION_Z_OFFSET),
       },
       props.style,
     ),
@@ -349,7 +361,7 @@ function createAuxiliaryTextProps(
         fontStyle: "normal",
         letterSpacing: 0,
         lineHeight: 1.4,
-        zIndex: input.style.zIndex,
+        zIndex: layerZIndex(input, TEXT_Z_OFFSET),
       },
       props.style,
     ),
@@ -415,6 +427,26 @@ export function generateChartPanelSchemas(rawInput: ModuleInput) {
   }));
 }
 
+export function generateChartPanelTreeSchema(rawInput: ModuleInput): EditorGroupNode {
+  const input = normalizeModuleInput(rawInput);
+  const children = generateChartPanelSchemas(input).map(componentSchemaToEditorNode);
+
+  return {
+    id: input.logicalId,
+    componentName: "__Group__",
+    structVersion: "0.0.0",
+    props: {},
+    title:
+      typeof input.title === "string" && input.title.trim() !== ""
+        ? input.title
+        : "图表面板",
+    isHidden: false,
+    isLocked: false,
+    isGroup: true,
+    children,
+  };
+}
+
 export const chartPanelDefinition = {
   moduleName: "ChartPanel",
   displayName: "图表面板",
@@ -422,4 +454,5 @@ export const chartPanelDefinition = {
     "通用图表面板模块，用 slot 编排背景、标题、主图表和装饰组件。",
   capability: chartPanelCapability,
   generateSchemas: generateChartPanelSchemas,
+  generateTreeSchema: generateChartPanelTreeSchema,
 } satisfies ModuleDefinition;

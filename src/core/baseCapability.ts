@@ -70,7 +70,7 @@ function ensureStyleChildren(items: JsonValue | undefined) {
   return baseItems;
 }
 
-function baseStyleCapability() {
+function baseStyleCapability(): JsonObject {
   return {
     path: "style",
     type: "object",

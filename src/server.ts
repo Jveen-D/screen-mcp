@@ -11,6 +11,7 @@ import {
 } from "./core/registry.js";
 import {
   generateModuleSchema,
+  generateModuleTreeSchema,
   getModuleCapability,
   listModules,
 } from "./core/modules.js";
@@ -175,6 +176,23 @@ server.registerTool(
   async (input) => {
     try {
       return asToolContent(generateModuleSchema(input as JsonObject));
+    } catch (error) {
+      return handleToolError(error);
+    }
+  },
+);
+
+server.registerTool(
+  "generate_module_tree_schema",
+  {
+    title: "Generate Module Tree Schema",
+    description:
+      "Generate one editor-ready grouped module tree schema. The root node is __Group__ and children are full component nodes.",
+    inputSchema: moduleInput,
+  },
+  async (input) => {
+    try {
+      return asToolContent(generateModuleTreeSchema(input as JsonObject));
     } catch (error) {
       return handleToolError(error);
     }
