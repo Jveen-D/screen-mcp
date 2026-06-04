@@ -12,7 +12,7 @@ export interface ModuleStyle {
   width: number;
   height: number;
   position: "absolute";
-  zIndex: number;
+  zIndex?: number;
   [key: string]: JsonValue;
 }
 

@@ -66,7 +66,7 @@ const moduleInput = z
       width: z.number(),
       height: z.number(),
       position: z.literal("absolute").optional(),
-      zIndex: z.number(),
+      zIndex: z.number().optional(),
     }).passthrough(),
     slots: z.record(z.unknown()),
   })

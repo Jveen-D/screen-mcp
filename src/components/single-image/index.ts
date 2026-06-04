@@ -1,5 +1,6 @@
 import { singleImageCapability } from "./capability.js";
 import { singleImageDefaultProps } from "./defaultProps.js";
+import { normalizeSingleImageProps } from "./normalize.js";
 import type { ComponentDefinition } from "../../types/component.js";
 
 export const singleImageDefinition = {
@@ -9,4 +10,5 @@ export const singleImageDefinition = {
   businessType: "DASHBOARD",
   defaultProps: singleImageDefaultProps,
   capability: singleImageCapability,
+  normalizeProps: normalizeSingleImageProps,
 } satisfies ComponentDefinition;

@@ -4,9 +4,9 @@ export const svgDecorationCapability: JsonObject = {
   componentName: "SvgDecoration",
   displayName: "SVG装饰",
   description:
-    "用于大屏角标、线条、边框、科技纹理、图标和发光装饰的 SVG 组件。",
+    "只用于大屏角标、线条、边框、科技纹理、图标和发光装饰的 SVG 组件，不能承载真实图表或业务文本。",
   aiRole:
-    "AI 负责选择 preset 或填写安全的 svgContent，并设置位置、尺寸、颜色、翻转和发光。MCP 负责补齐默认 props。",
+    "AI 负责选择 preset 或填写安全的装饰性 svgContent，并设置位置、尺寸、颜色、翻转和发光。MCP 负责补齐默认 props，并会拒绝非装饰性 SVG。",
   requiredProps: [
     {
       path: "componentName",
@@ -32,7 +32,7 @@ export const svgDecorationCapability: JsonObject = {
   ],
   aiWritableProps: [
     { path: "name", type: "string", description: "图层名称。" },
-    { path: "style", type: "object", description: "位置、尺寸、背景和层级。" },
+    { path: "style", type: "object", description: "位置、尺寸和背景。" },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
     {
@@ -50,7 +50,7 @@ export const svgDecorationCapability: JsonObject = {
       path: "svgContent",
       type: "string",
       description:
-        "完整 <svg>...</svg> 字符串。必须是安全静态 SVG，不允许脚本、事件属性、foreignObject 或外链资源。",
+        "完整 <svg>...</svg> 字符串。只能用于装饰线条、边框、角标、纹理或图标；不允许绘制饼图、柱图、折线图、信息卡、业务文本、数值、占比、标题或结论说明。",
     },
     {
       path: "svgFit",
@@ -84,6 +84,16 @@ export const svgDecorationCapability: JsonObject = {
       reason: "SVG 不允许包含 http、https、javascript:、data:text/html 等外链或脚本资源。",
     },
     {
+      path: "svgContent.chart",
+      reason:
+        "真实图表必须使用 PieChart 等图表组件生成，不能用 SvgDecoration 手绘饼图、环形图、柱图或折线图。",
+    },
+    {
+      path: "svgContent.text",
+      reason:
+        "业务文本、标题、数值、占比、摘要和结论必须使用 SingleText 等文本组件生成，不能写进 SVG。",
+    },
+    {
       path: "eventConfigures",
       reason: "交互事件暂不由 AI 生成。",
     },
@@ -101,6 +111,8 @@ export const svgDecorationCapability: JsonObject = {
     "数组按下标深合并。",
     "svgSource 为 custom 时必须提供安全静态 svgContent。",
     "MCP 会拒绝包含脚本、事件属性、foreignObject 或外链资源的 svgContent。",
+    "MCP 会拒绝包含 <text> 或明显图表弧线的 custom svgContent；这类内容必须改用文本组件或图表组件。",
+    "SvgDecoration 只能作为装饰层，不得作为承载完整模块内容的画布。",
   ],
   examples: [
     {
@@ -117,7 +129,6 @@ export const svgDecorationCapability: JsonObject = {
           left: 448,
           top: 96,
           backgroundColor: "rgba(0,0,0,0)",
-          zIndex: 30,
         },
         rotate: 0,
         opacity: 0.9,

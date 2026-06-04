@@ -6,7 +6,7 @@ export const singleImageCapability: JsonObject = {
   description:
     "用于大屏面板背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。",
   aiRole:
-    "AI 负责图片组件的位置、尺寸、层级和图片来源。MCP 负责补齐默认 props。",
+    "AI 负责图片组件的位置、尺寸和图片来源。MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
   requiredProps: [
     {
       path: "componentName",
@@ -32,14 +32,17 @@ export const singleImageCapability: JsonObject = {
   ],
   aiWritableProps: [
     { path: "name", type: "string", description: "图层名称。" },
-    { path: "style", type: "object", description: "位置、尺寸、背景、边框、圆角和层级。" },
+    { path: "style", type: "object", description: "位置、尺寸、背景、边框和圆角。" },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
     {
       path: "imageUseMode",
       type: "enum",
-      values: ["upload"],
-      description: "图片使用模式，base64 或素材路径场景保持 upload。",
+      values: ["upload", "base64"],
+      setter: "SegmentedSetter",
+      defaultValue: "upload",
+      description:
+        "图片使用模式。使用 imageSrc 时为 upload；使用 imageBase64 时必须为 base64，MCP 会自动修正。",
     },
     {
       path: "imageSrc",
@@ -50,7 +53,7 @@ export const singleImageCapability: JsonObject = {
       path: "imageBase64",
       type: "string",
       description:
-        "base64 图片内容。只有用户明确提供图片内容时才填写；不要凭空生成大段 base64。",
+        "base64 图片内容。只有用户明确提供图片内容时才填写；填写后 imageUseMode 必须为 base64。",
     },
     {
       path: "imageShowType",
@@ -87,6 +90,7 @@ export const singleImageCapability: JsonObject = {
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "AI 不应凭空生成 base64，只能使用用户提供的 base64 或素材路径。",
+    "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
   ],
   examples: [
     {
@@ -107,7 +111,6 @@ export const singleImageCapability: JsonObject = {
           borderRadius: 0,
           borderWidth: 0,
           borderColor: "rgba(0,0,0,0)",
-          zIndex: 1,
         },
         imageUseMode: "upload",
         imageSrc: "group1/M00/panel-bg-tech.png",

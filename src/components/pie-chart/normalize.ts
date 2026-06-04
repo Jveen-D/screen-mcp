@@ -25,11 +25,26 @@ function isValidLegendPosition(left: JsonValue, top: JsonValue): boolean {
   );
 }
 
+function normalizePieSeries(option: JsonObject): void {
+  const series = option.series;
+  if (!Array.isArray(series)) {
+    return;
+  }
+
+  for (const item of series) {
+    if (isJsonObject(item)) {
+      item.type = "pie";
+    }
+  }
+}
+
 export function normalizePieChartProps(props: JsonObject): JsonObject {
   const option = props.option;
   if (!isJsonObject(option)) {
     return props;
   }
+
+  normalizePieSeries(option);
 
   const legend = option.legend;
   if (!isJsonObject(legend)) {

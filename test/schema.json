@@ -1,0 +1,259 @@
+[
+  {
+    "businessElementId": "sales_channel_share_panel_title",
+    "parentBusinessElementId": "sales_channel_share_panel",
+    "businessType": "DASHBOARD",
+    "componentName": "SingleText",
+    "indexNum": 1,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+      "componentName": "SingleText",
+      "style": {
+        "width": 210,
+        "height": 30,
+        "position": "absolute",
+        "left": 104,
+        "top": 105,
+        "fontFamily": "Microsoft YaHei",
+        "fontSize": 22,
+        "color": "#DFF8FF",
+        "textAlign": "left",
+        "backgroundColor": "rgba(0,0,0,0)",
+        "fontStyle": "normal",
+        "fontWeight": "bold",
+        "letterSpacing": 0,
+        "lineHeight": 1.35
+      },
+      "rotate": 0,
+      "opacity": 1,
+      "textContent": "销售渠道占比",
+      "name": "销售渠道占比标题",
+      "textShadow": {
+        "isActive": true,
+        "color": "rgba(0,229,255,0.42)",
+        "x": 0,
+        "y": 0,
+        "blur": 6
+      },
+      "logicalId": "sales_channel_share_panel_title",
+      "parentLogicalId": "sales_channel_share_panel"
+    },
+    "displayName": "单行文本",
+    "hiddenFlag": { "type": "literal", "value": false },
+    "lockedFlag": false,
+    "groupFlag": false
+  },
+  {
+    "businessElementId": "sales_channel_share_panel_title_badge",
+    "parentBusinessElementId": "sales_channel_share_panel",
+    "businessType": "DASHBOARD",
+    "componentName": "SvgDecoration",
+    "indexNum": 2,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+      "componentName": "SvgDecoration",
+      "style": {
+        "width": 200,
+        "height": 50,
+        "position": "absolute",
+        "left": 68,
+        "top": 84,
+        "backgroundColor": "rgba(0,0,0,0)"
+      },
+      "rotate": 0,
+      "opacity": 0.7,
+      "svgSource": "custom",
+      "svgContent": "<svg viewBox=\"0 0 220 46\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"g\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"currentColor\" stop-opacity=\".16\"/><stop offset=\".72\" stop-color=\"currentColor\" stop-opacity=\".035\"/><stop offset=\"1\" stop-color=\"currentColor\" stop-opacity=\"0\"/></linearGradient></defs><path d=\"M14 42V18C14 10.268 20.268 4 28 4h108l18 16h32\" fill=\"rgba(4,18,36,.28)\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\".82\"/><path d=\"M28 38h152\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\".26\"/><rect x=\"0\" y=\"0\" width=\"220\" height=\"46\" fill=\"url(#g)\"/><circle cx=\"7\" cy=\"7\" r=\"3.5\" fill=\"#FFB300\"/><circle cx=\"198\" cy=\"20\" r=\"3.5\" fill=\"currentColor\" opacity=\".8\"/></svg>",
+      "svgFit": "fill",
+      "primaryColor": "#00E5FF",
+      "strokeWidth": 2,
+      "flipX": false,
+      "flipY": false,
+      "glow": { "isActive": false, "color": "", "blur": 8 },
+      "name": "标题背景点缀",
+      "logicalId": "sales_channel_share_panel_title_badge",
+      "parentLogicalId": "sales_channel_share_panel"
+    },
+    "displayName": "SVG装饰",
+    "hiddenFlag": { "type": "literal", "value": false },
+    "lockedFlag": false,
+    "groupFlag": false
+  },
+  {
+    "businessElementId": "sales_channel_share_panel_decoration_1",
+    "parentBusinessElementId": "sales_channel_share_panel",
+    "businessType": "DASHBOARD",
+    "componentName": "SvgDecoration",
+    "indexNum": 3,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+      "componentName": "SvgDecoration",
+      "style": {
+        "width": 520,
+        "height": 18,
+        "position": "absolute",
+        "left": 80,
+        "top": 436,
+        "backgroundColor": "rgba(0,0,0,0)"
+      },
+      "rotate": 0,
+      "opacity": 0.82,
+      "svgSource": "custom",
+      "svgContent": "<svg viewBox=\"0 0 520 18\"><path d=\"M0 8H168L184 2H324L340 8H520\" fill=\"none\" stroke=\"rgba(0,229,255,0.68)\" stroke-width=\"1.4\" stroke-linecap=\"round\"/><path d=\"M24 14H128\" stroke=\"rgba(124,77,255,0.38)\" stroke-width=\"1\" stroke-linecap=\"round\"/><path d=\"M376 14H496\" stroke=\"rgba(0,229,255,0.32)\" stroke-width=\"1\" stroke-linecap=\"round\"/><circle cx=\"168\" cy=\"8\" r=\"2\" fill=\"#00E5FF\" opacity=\"0.9\"/><circle cx=\"340\" cy=\"8\" r=\"2\" fill=\"#FFB300\" opacity=\"0.85\"/><path d=\"M456 4H510\" stroke=\"rgba(255,255,255,0.18)\" stroke-width=\"1\"/></svg>",
+      "svgFit": "fill",
+      "primaryColor": "#00E5FF",
+      "secondaryColor": "#7C4DFF",
+      "accentColor": "#FFB300",
+      "strokeWidth": 1.4,
+      "flipX": false,
+      "flipY": false,
+      "glow": {
+        "isActive": true,
+        "color": "rgba(0,229,255,0.32)",
+        "blur": 6
+      },
+      "name": "底部连续结构线",
+      "logicalId": "sales_channel_share_panel_decoration_1",
+      "parentLogicalId": "sales_channel_share_panel"
+    },
+    "displayName": "SVG装饰",
+    "hiddenFlag": { "type": "literal", "value": false },
+    "lockedFlag": false,
+    "groupFlag": false
+  },
+  {
+    "businessElementId": "sales_channel_share_panel_main_chart",
+    "parentBusinessElementId": "sales_channel_share_panel",
+    "businessType": "DASHBOARD",
+    "componentName": "PieChart",
+    "indexNum": 4,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+      "componentName": "PieChart",
+      "rotate": 0,
+      "name": "销售渠道占比环形图",
+      "style": {
+        "top": 172,
+        "left": 80,
+        "width": 520,
+        "position": "absolute",
+        "height": 246
+      },
+      "opacity": 1,
+      "option": {
+        "backgroundColor": "transparent",
+        "color": ["#00E5FF", "#7C4DFF", "#FFB300", "#00C853", "#3BA272", "#FF7A45"],
+        "legend": {
+          "top": "bottom",
+          "orient": "horizontal",
+          "left": "center",
+          "itemHeight": 8,
+          "show": true,
+          "icon": "circle",
+          "itemWidth": 8,
+          "textStyle": {
+            "fontFamily": "Microsoft YaHei",
+            "color": "#BFEFFF",
+            "fontSize": 12,
+            "fontStyle": "normal",
+            "fontWeight": "normal"
+          },
+          "itemGap": 14
+        },
+        "series": [
+          {
+            "center": ["50%", "46%"],
+            "itemStyle": {
+              "borderType": "solid",
+              "borderColor": "#07182F",
+              "shadowBlur": 5,
+              "borderWidth": 1,
+              "shadowColor": "rgba(0,229,255,0.22)"
+            },
+            "label": {
+              "formatter": "{b}\\n{c}",
+              "fontFamily": "Microsoft YaHei",
+              "color": "#DFF8FF",
+              "show": true,
+              "fontSize": 12,
+              "position": "outside",
+              "fontStyle": "normal",
+              "fontWeight": "normal"
+            },
+            "labelLine": {
+              "length2": 18,
+              "show": true,
+              "length": 12,
+              "lineStyle": {
+                "width": 1,
+                "color": "rgba(191,239,255,0.46)"
+              }
+            },
+            "radius": ["42%", "68%"],
+            "type": "pie"
+          }
+        ],
+        "tooltip": {
+          "backgroundColor": "rgba(8,18,38,0.92)",
+          "show": true,
+          "textStyle": {
+            "fontFamily": "Microsoft YaHei",
+            "color": "#FFFFFF",
+            "fontSize": 13,
+            "fontStyle": "normal",
+            "fontWeight": "normal"
+          },
+          "trigger": "item",
+          "borderColor": "rgba(0,229,255,0.36)",
+          "borderWidth": 1
+        }
+      },
+      "logicalId": "sales_channel_share_panel_main_chart",
+      "parentLogicalId": "sales_channel_share_panel"
+    },
+    "displayName": "饼图",
+    "hiddenFlag": { "type": "literal", "value": false },
+    "lockedFlag": false,
+    "groupFlag": false
+  },
+  {
+    "businessElementId": "sales_channel_share_panel_background",
+    "parentBusinessElementId": "sales_channel_share_panel",
+    "businessType": "DASHBOARD",
+    "componentName": "SingleImage",
+    "indexNum": 5,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+      "componentName": "SingleImage",
+      "style": {
+        "position": "absolute",
+        "left": 60,
+        "top": 80,
+        "width": 560,
+        "height": 380,
+        "backgroundColor": "rgba(4,16,32,0.92)",
+        "borderStyle": "solid",
+        "borderRadius": 0,
+        "borderWidth": 1,
+        "borderColor": "rgba(0,229,255,0.18)"
+      },
+      "rotate": 0,
+      "opacity": 1,
+      "imageUseMode": "upload",
+      "imageSrc": "",
+      "imageShowType": "noRepeat",
+      "name": "销售渠道占比深色科技背景",
+      "logicalId": "sales_channel_share_panel_background",
+      "parentLogicalId": "sales_channel_share_panel"
+    },
+    "displayName": "图片",
+    "hiddenFlag": { "type": "literal", "value": false },
+    "lockedFlag": false,
+    "groupFlag": false
+  }
+]

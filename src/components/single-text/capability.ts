@@ -6,7 +6,7 @@ export const singleTextCapability: JsonObject = {
   description:
     "用于大屏标题、面板标题、指标名、单位、标签和短文本点缀的单行文本组件。",
   aiRole:
-    "AI 负责文本内容、位置、尺寸、字体和视觉样式。MCP 负责补齐默认 datasource 与其余 props。",
+    "AI 负责文本内容、位置、尺寸、字体和视觉样式。MCP 负责补齐默认 datasource 与其余 props。组件层级由最终 schema 数组顺序决定。",
   requiredProps: [
     {
       path: "componentName",
@@ -37,7 +37,7 @@ export const singleTextCapability: JsonObject = {
       type: "string",
       description: "单行文本内容。MCP 会同步写入 datasource.constantData[0].text。",
     },
-    { path: "style", type: "object", description: "位置、尺寸、字体、颜色、对齐、背景和层级。" },
+    { path: "style", type: "object", description: "位置、尺寸、字体、颜色、对齐和背景。" },
     { path: "style.fontFamily", type: "string", description: "字体族。" },
     { path: "style.fontSize", type: "number", description: "字号。" },
     { path: "style.color", type: "color", description: "字体颜色。" },
@@ -112,7 +112,6 @@ export const singleTextCapability: JsonObject = {
           fontStyle: "normal",
           letterSpacing: 2,
           lineHeight: 1.4,
-          zIndex: 20,
         },
         textShadow: {
           isActive: true,

@@ -14,6 +14,12 @@ function hasPath(items: JsonValue | undefined, path: string): boolean {
     : false;
 }
 
+function withoutPath(items: JsonValue | undefined, path: string) {
+  return Array.isArray(items)
+    ? items.filter((item) => !isJsonObject(item) || item.path !== path)
+    : [];
+}
+
 function appendUniqueByPath(items: JsonValue | undefined, additions: JsonObject[]) {
   const baseItems = Array.isArray(items) ? [...items] : [];
   const existingPaths = new Set(
@@ -53,9 +59,10 @@ function ensureStyleChildren(items: JsonValue | undefined) {
         description: "固定使用 absolute。",
       },
       {
-        path: "style.zIndex",
-        type: "number",
-        description: "组件层级。一个模块内有多个元素时必须用 zIndex 控制遮挡顺序。",
+        path: "style.position",
+        type: "string",
+        value: "absolute",
+        description: "固定使用 absolute。",
       },
     ]);
   }
@@ -68,7 +75,7 @@ function baseStyleCapability() {
     path: "style",
     type: "object",
     description:
-      "组件基础位置尺寸配置，对应 ChartPositionSetter。所有组件都必须包含 left、top、width、height、position、zIndex。",
+      "组件基础位置尺寸配置，对应 ChartPositionSetter。所有组件都必须包含 left、top、width、height、position。",
     children: [
       { path: "style.left", type: "number", description: "画布左侧距离。" },
       { path: "style.top", type: "number", description: "画布顶部距离。" },
@@ -79,11 +86,6 @@ function baseStyleCapability() {
         type: "string",
         value: "absolute",
         description: "固定使用 absolute。",
-      },
-      {
-        path: "style.zIndex",
-        type: "number",
-        description: "组件层级。一个模块内有多个元素时必须用 zIndex 控制遮挡顺序。",
       },
     ],
   };
@@ -105,7 +107,7 @@ function baseWritableProps(definition: ComponentDefinition): JsonObject[] {
       path: "style",
       type: "object",
       description:
-        "组件基础位置尺寸配置，对应 ChartPositionSetter；包含 left、top、width、height、position、zIndex。",
+        "组件基础位置尺寸配置，对应 ChartPositionSetter；包含 left、top、width、height、position。style.zIndex 可保留默认值，层级由 ComponentSchema[] 输出顺序控制。",
     },
     {
       path: "rotate",
@@ -124,11 +126,6 @@ function baseWritableProps(definition: ComponentDefinition): JsonObject[] {
       type: "color",
       description: backgroundDescription,
     },
-    {
-      path: "style.zIndex",
-      type: "number",
-      description: "组件层级。一个模块内有多个元素时必须用 zIndex 控制遮挡顺序。",
-    },
   ];
 }
 
@@ -136,16 +133,22 @@ export function withBaseCapability(
   definition: ComponentDefinition,
 ): JsonObject {
   const capability = cloneJsonObject(definition.capability);
+  capability.requiredProps = withoutPath(capability.requiredProps, "style.zIndex");
+  capability.aiWritableProps = withoutPath(capability.aiWritableProps, "style.zIndex");
   capability.componentType = definition.componentType;
+  capability.layerRules = {
+    description:
+      "渲染层级由 ComponentSchema[] 输出顺序控制：数组越靠前越在顶层，数组越靠后越在底层。AI 不需要通过 style.zIndex 控制层级。",
+  };
   capability.baseConfig = {
     description:
-      "所有组件共享基础配置：位置尺寸、旋转角度、不透明度、背景颜色和层级。",
+      "所有组件共享基础配置：位置尺寸、旋转角度、不透明度和背景颜色。渲染层级由 ComponentSchema[] 输出顺序控制。",
     setters: [
       {
         path: "style",
         setter: "ChartPositionSetter",
         description:
-          "位置尺寸配置。style 必须包含 left、top、width、height、position、zIndex。",
+          "位置尺寸配置。style 必须包含 left、top、width、height、position；zIndex 仅作为兼容字段保留默认值。",
       },
       {
         path: "rotate",
@@ -169,11 +172,6 @@ export function withBaseCapability(
           definition.componentType === "chart"
             ? "图表类背景色写入 option.backgroundColor。"
             : "非图表类背景色写入 style.backgroundColor。",
-      },
-      {
-        path: "style.zIndex",
-        setter: "ChartPositionSetter",
-        description: "模块内元素层级，数值越大越靠上。",
       },
     ],
   };

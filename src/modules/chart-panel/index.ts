@@ -10,7 +10,16 @@ import { chartPanelCapability } from "./capability.js";
 
 const SUPPORTED_MAIN_COMPONENTS = ["PieChart"];
 const DEFAULT_DECORATION_SVG =
-  '<svg viewBox="0 0 120 64" xmlns="http://www.w3.org/2000/svg"><path d="M4 60V18C4 10.268 10.268 4 18 4h42" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M76 4h40v16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M18 52h84" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/><circle cx="108" cy="52" r="4" fill="currentColor"/></svg>';
+  '<svg viewBox="0 0 180 72" xmlns="http://www.w3.org/2000/svg"><path d="M8 62H92l18-18h62" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 46h76" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><path d="M118 28h46" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".42"/><circle cx="94" cy="62" r="4" fill="currentColor"/><circle cx="172" cy="44" r="4" fill="currentColor"/></svg>';
+const TITLE_BADGE_SVG =
+  '<svg viewBox="0 0 220 46" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".16"/><stop offset=".72" stop-color="currentColor" stop-opacity=".035"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M14 42V18C14 10.268 20.268 4 28 4h108l18 16h32" fill="rgba(4,18,36,.28)" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".82"/><path d="M28 38h152" stroke="currentColor" stroke-width="1" opacity=".26"/><rect x="0" y="0" width="220" height="46" fill="url(#g)"/><circle cx="7" cy="7" r="3.5" fill="#FFB300"/><circle cx="198" cy="20" r="3.5" fill="currentColor" opacity=".8"/></svg>';
+const DEFAULT_BACKGROUND_SVG =
+  '<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#061A2E"/><stop offset=".58" stop-color="#03101F"/><stop offset="1" stop-color="#020813"/></linearGradient><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0v48" fill="none" stroke="#0B6B8F" stroke-width="1" opacity=".22"/></pattern><radialGradient id="glow" cx=".5" cy=".42" r=".58"><stop offset="0" stop-color="#00E5FF" stop-opacity=".16"/><stop offset=".45" stop-color="#00E5FF" stop-opacity=".05"/><stop offset="1" stop-color="#00E5FF" stop-opacity="0"/></radialGradient></defs><rect width="800" height="480" fill="url(#bg)"/><rect width="800" height="480" fill="url(#grid)"/><rect width="800" height="480" fill="url(#glow)"/><path d="M1 1H799V479H1Z" fill="none" stroke="#00E5FF" stroke-width="1.5" opacity=".55"/></svg>';
+const TITLE_SAFE_HEIGHT = 72;
+const MAIN_CHART_TOP_OFFSET = 92;
+const MAIN_CHART_SIDE_PADDING = 20;
+const MAIN_CHART_BOTTOM_PADDING = 68;
+const DEFAULT_MODULE_Z_INDEX = 10;
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -29,7 +38,7 @@ function assertStyle(value: JsonValue | undefined): ModuleStyle {
     throw new Error("missing required module prop: style");
   }
 
-  const requiredNumbers = ["left", "top", "width", "height", "zIndex"];
+  const requiredNumbers = ["left", "top", "width", "height"];
   for (const key of requiredNumbers) {
     if (typeof value[key] !== "number") {
       throw new Error(`missing required module style number: ${key}`);
@@ -39,6 +48,8 @@ function assertStyle(value: JsonValue | undefined): ModuleStyle {
   return {
     ...value,
     position: "absolute",
+    zIndex:
+      typeof value.zIndex === "number" ? value.zIndex : DEFAULT_MODULE_Z_INDEX,
   } as ModuleStyle;
 }
 
@@ -96,11 +107,18 @@ function mergeStyle(base: JsonObject, override: JsonValue | undefined): JsonObje
   return isJsonObject(override) ? { ...base, ...override } : base;
 }
 
+function isPlaceholderBase64(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed === "" || trimmed === "data:image/png;base64,..." || trimmed.endsWith(",AAAA") || trimmed.endsWith(",BBBB");
+}
+
 function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonObject {
   const props = slotProps(slot);
-  const hasImageResource =
-    typeof props.imageBase64 === "string" && props.imageBase64.trim() !== "" ||
-    typeof props.imageSrc === "string" && props.imageSrc.trim() !== "";
+  const imageBase64 = typeof props.imageBase64 === "string" ? props.imageBase64 : "";
+  const imageSrc = typeof props.imageSrc === "string" ? props.imageSrc : "";
+  const hasImageBase64 = imageBase64.trim() !== "" && !isPlaceholderBase64(imageBase64);
+  const hasImageSrc = imageSrc.trim() !== "";
+  const hasImageResource = hasImageBase64 || hasImageSrc;
 
   return {
     ...props,
@@ -108,11 +126,11 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
     logicalId: `${input.logicalId}_background`,
     parentLogicalId: input.logicalId,
     name: typeof props.name === "string" ? props.name : "模块背景",
-    imageUseMode: "upload",
-    imageSrc: typeof props.imageSrc === "string" ? props.imageSrc : "",
-    imageBase64: typeof props.imageBase64 === "string" ? props.imageBase64 : "",
+    imageUseMode: hasImageBase64 ? "base64" : "upload",
+    imageSrc,
+    imageBase64: hasImageBase64 ? imageBase64 : "",
     imageShowType: typeof props.imageShowType === "string" ? props.imageShowType : "noRepeat",
-    opacity: typeof props.opacity === "number" ? props.opacity : hasImageResource ? 0.95 : 0,
+    opacity: typeof props.opacity === "number" ? props.opacity : hasImageResource ? 0.95 : 1,
     style: mergeStyle(
       {
         position: "absolute",
@@ -120,7 +138,7 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
         top: input.style.top,
         width: input.style.width,
         height: input.style.height,
-        backgroundColor: "rgba(0,0,0,0)",
+        backgroundColor: "rgba(4,16,32,0.96)",
         borderStyle: "solid",
         borderRadius: 0,
         borderWidth: 0,
@@ -129,6 +147,33 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
       },
       props.style,
     ),
+    svgSource: hasImageResource ? props.svgSource : "custom",
+    svgContent: hasImageResource ? props.svgContent : DEFAULT_BACKGROUND_SVG,
+  };
+}
+
+function createTitleBadgeProps(input: ModuleInput): JsonObject {
+  const theme = isJsonObject(input.theme) ? input.theme : {};
+
+  return {
+    componentName: "SvgDecoration",
+    logicalId: `${input.logicalId}_title_badge`,
+    parentLogicalId: input.logicalId,
+    name: "标题背景点缀",
+    style: {
+      position: "absolute",
+      left: input.style.left + 8,
+      top: input.style.top + 4,
+      width: Math.min(Math.max(input.style.width * 0.28, 200), 260),
+      height: 50,
+      backgroundColor: "rgba(0,0,0,0)",
+      zIndex: input.style.zIndex,
+    },
+    svgSource: "custom",
+    svgContent: TITLE_BADGE_SVG,
+    svgFit: "fill",
+    primaryColor: primaryColor(theme),
+    opacity: 0.7,
   };
 }
 
@@ -164,7 +209,7 @@ function createTitleProps(input: ModuleInput, slot: ModuleSlotInput | undefined)
         fontStyle: "normal",
         letterSpacing: 2,
         lineHeight: 1.4,
-        zIndex: input.style.zIndex + 3,
+        zIndex: input.style.zIndex,
       },
       props.style,
     ),
@@ -194,11 +239,11 @@ function createMainChartProps(input: ModuleInput, slot: ModuleSlotInput): JsonOb
     style: mergeStyle(
       {
         position: "absolute",
-        left: input.style.left + 32,
-        top: input.style.top + 72,
-        width: Math.max(input.style.width - 64, 80),
-        height: Math.max(input.style.height - 96, 80),
-        zIndex: input.style.zIndex + 2,
+        left: input.style.left + MAIN_CHART_SIDE_PADDING,
+        top: input.style.top + MAIN_CHART_TOP_OFFSET,
+        width: Math.max(input.style.width - MAIN_CHART_SIDE_PADDING * 2, 80),
+        height: Math.max(input.style.height - MAIN_CHART_TOP_OFFSET - MAIN_CHART_BOTTOM_PADDING, 80),
+        zIndex: input.style.zIndex,
       },
       props.style,
     ),
@@ -220,28 +265,28 @@ function createDecorationProps(
   const offset = 16;
   const defaultPositions = [
     {
-      left: input.style.left + input.style.width - 136,
-      top: input.style.top + offset,
-      width: 120,
-      height: 64,
+      left: input.style.left + input.style.width - 196,
+      top: input.style.top + 20,
+      width: 180,
+      height: 72,
     },
     {
       left: input.style.left + offset,
-      top: input.style.top + offset,
-      width: 120,
-      height: 64,
+      top: input.style.top + input.style.height - 76,
+      width: Math.max(input.style.width - offset * 2, 160),
+      height: 56,
     },
     {
-      left: input.style.left + input.style.width - 136,
-      top: input.style.top + input.style.height - 80,
-      width: 120,
-      height: 64,
+      left: input.style.left + input.style.width - 196,
+      top: input.style.top + input.style.height - 76,
+      width: 180,
+      height: 56,
     },
     {
       left: input.style.left + offset,
-      top: input.style.top + input.style.height - 80,
-      width: 120,
-      height: 64,
+      top: input.style.top + TITLE_SAFE_HEIGHT,
+      width: 180,
+      height: 72,
     },
   ];
   const position = defaultPositions[index % defaultPositions.length];
@@ -257,7 +302,7 @@ function createDecorationProps(
         position: "absolute",
         ...position,
         backgroundColor: "rgba(0,0,0,0)",
-        zIndex: input.style.zIndex + 4,
+        zIndex: input.style.zIndex,
       },
       props.style,
     ),
@@ -270,6 +315,44 @@ function createDecorationProps(
     svgFit: typeof props.svgFit === "string" ? props.svgFit : "contain",
     primaryColor:
       typeof props.primaryColor === "string" ? props.primaryColor : primaryColor(theme),
+  };
+}
+
+function createAuxiliaryTextProps(
+  input: ModuleInput,
+  slot: ModuleSlotInput,
+  index: number,
+): JsonObject {
+  const props = slotProps(slot);
+  const theme = isJsonObject(input.theme) ? input.theme : {};
+
+  return {
+    ...props,
+    componentName: componentNameFor(slot, "SingleText"),
+    logicalId: `${input.logicalId}_aux_text_${index + 1}`,
+    parentLogicalId: input.logicalId,
+    name: typeof props.name === "string" ? props.name : `辅助文本${index + 1}`,
+    textContent:
+      typeof props.textContent === "string" ? props.textContent : "辅助信息",
+    style: mergeStyle(
+      {
+        position: "absolute",
+        left: input.style.left + 24,
+        top: input.style.top + input.style.height - 48 - index * 34,
+        width: Math.max(input.style.width - 48, 40),
+        height: 28,
+        fontSize: 14,
+        color: textColor(theme),
+        textAlign: "center",
+        backgroundColor: "rgba(0,0,0,0)",
+        fontWeight: "normal",
+        fontStyle: "normal",
+        letterSpacing: 0,
+        lineHeight: 1.4,
+        zIndex: input.style.zIndex,
+      },
+      props.style,
+    ),
   };
 }
 
@@ -299,6 +382,7 @@ export function generateChartPanelSchemas(rawInput: ModuleInput) {
   const titleSlot = asSlot(slots.title, "title");
   const mainChartSlot = asSlot(slots.mainChart, "mainChart");
   const decorationSlots = asSlotArray(slots.decorations, "decorations");
+  const auxiliaryTextSlots = asSlotArray(slots.auxiliaryTexts, "auxiliaryTexts");
 
   if (!mainChartSlot) {
     throw new Error("missing required module slot: mainChart");
@@ -306,18 +390,23 @@ export function generateChartPanelSchemas(rawInput: ModuleInput) {
 
   const componentProps: JsonObject[] = [];
 
-  if (backgroundSlot) {
-    componentProps.push(createBackgroundProps(input, backgroundSlot));
-  }
-
   if (titleSlot || typeof input.title === "string") {
     componentProps.push(createTitleProps(input, titleSlot));
+    componentProps.push(createTitleBadgeProps(input));
+  }
+
+  for (const [index, slot] of decorationSlots.entries()) {
+    componentProps.push(createDecorationProps(input, slot, index));
+  }
+
+  for (const [index, slot] of auxiliaryTextSlots.entries()) {
+    componentProps.push(createAuxiliaryTextProps(input, slot, index));
   }
 
   componentProps.push(createMainChartProps(input, mainChartSlot));
 
-  for (const [index, slot] of decorationSlots.entries()) {
-    componentProps.push(createDecorationProps(input, slot, index));
+  if (backgroundSlot) {
+    componentProps.push(createBackgroundProps(input, backgroundSlot));
   }
 
   return componentProps.map((props, index) => ({

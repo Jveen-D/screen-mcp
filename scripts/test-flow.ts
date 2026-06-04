@@ -80,21 +80,66 @@ assert.ok(
   pieWritableProps.some((item) => item.path === "opacity"),
   "capability should expose base opacity config",
 );
-assert.ok(
-  pieWritableProps.some((item) => item.path === "style.zIndex"),
-  "capability should expose base zIndex config",
-);
 const pieRequiredProps = capability.requiredProps as JsonObject[];
 const pieStyleRequiredProp = pieRequiredProps.find(
   (item) => item.path === "style",
 ) as JsonObject | undefined;
 assert.ok(pieStyleRequiredProp, "capability should require style");
+const pieSeriesCapability = pieWritableProps.find(
+  (item) => item.path === "option.series[0]",
+) as JsonObject | undefined;
+const pieSeriesChildren = pieSeriesCapability?.children as JsonObject[] | undefined;
+const pieLabelCapability = pieSeriesChildren?.find(
+  (item) => item.path === "option.series[0].label",
+) as JsonObject | undefined;
+const pieFormatterRules = pieLabelCapability?.formatterRules as JsonObject | undefined;
+const pieFormatterTokens = pieFormatterRules?.tokens as JsonObject[] | undefined;
+assert.ok(pieFormatterRules, "PieChart label should expose formatter rules");
 assert.ok(
-  Array.isArray(pieStyleRequiredProp.children) &&
-    pieStyleRequiredProp.children.some(
-      (item) => (item as JsonObject).path === "style.zIndex",
-    ),
-  "style required prop should describe zIndex",
+  pieFormatterTokens?.some((item) => item.token === "{a}"),
+  "formatter rules should include series name token",
+);
+assert.ok(
+  pieFormatterTokens?.some((item) => item.token === "{b}"),
+  "formatter rules should include data name token",
+);
+assert.ok(
+  pieFormatterTokens?.some((item) => item.token === "{c}"),
+  "formatter rules should include data value token",
+);
+assert.ok(
+  pieFormatterTokens?.some((item) => item.token === "{@xxx}"),
+  "formatter rules should include named dimension token",
+);
+assert.ok(
+  pieFormatterTokens?.some((item) => item.token === "{@[n]}"),
+  "formatter rules should include dimension index token",
+);
+assert.ok(
+  pieFormatterTokens?.some((item) => item.token === "\\n"),
+  "formatter rules should include newline token",
+);
+assert.ok(
+  Array.isArray(capability.visualRules),
+  "PieChart capability should expose visualRules",
+);
+const pieVisualRules = capability.visualRules as string[];
+assert.ok(
+  pieVisualRules.some((rule) => rule.includes("不要所有主题都套用同一种形态")),
+  "PieChart should guide design thinking without fixed shape defaults",
+);
+assert.ok(
+  pieVisualRules.some((rule) => rule.includes("色彩要服务主题")),
+  "PieChart should guide theme-aware color choices",
+);
+assert.ok(
+  pieVisualRules.some((rule) => rule.includes("侧边信息卡")),
+  "PieChart should guide label and side-card information roles",
+);
+const pieForbiddenProps = capability.aiForbiddenProps as JsonObject[];
+assert.ok(
+  pieForbiddenProps.some((item) => item.path === "option.dataset"),
+  "PieChart should forbid option.dataset",
 );
 
 const examples = capability.examples as JsonObject[];
@@ -133,10 +178,17 @@ const forbiddenOverrideSchema = generateComponentsSchema({
     title: {
       text: "AI should not write title",
     },
+    dataset: {
+      source: [
+        ["name", "value"],
+        ["AI should not write dataset", 999],
+      ],
+    },
     series: [
       {
         data: [{ name: "AI should not write data", value: 999 }],
         radius: ["50%", "72%"],
+        type: "bar",
       },
     ],
   },
@@ -148,7 +200,9 @@ const forbiddenOverrideChartData =
   forbiddenOverrideSchema.props.chartData as JsonObject;
 assert.equal(forbiddenOverrideChartData.sourceType, "constant");
 assert.equal("title" in forbiddenOverrideOption, false);
+assert.equal("dataset" in forbiddenOverrideOption, false);
 assert.equal("data" in forbiddenOverrideFirstSeries, false);
+assert.equal(forbiddenOverrideFirstSeries.type, "pie");
 assert.deepEqual(forbiddenOverrideFirstSeries.radius, ["50%", "72%"]);
 assert.deepEqual(forbiddenOverrideSchema.props.eventConfigures, []);
 
@@ -171,6 +225,14 @@ assert.ok(Array.isArray(imageCapability.aiWritableProps));
 assert.equal(imageCapability.componentType, "base");
 assert.ok(imageCapability.baseConfig, "base component capability has baseConfig");
 const imageWritableProps = imageCapability.aiWritableProps as JsonObject[];
+const imageUseModeCapability = imageWritableProps.find(
+  (item) => item.path === "imageUseMode",
+) as JsonObject | undefined;
+assert.deepEqual(
+  imageUseModeCapability?.values,
+  ["upload", "base64"],
+  "imageUseMode should support upload and base64",
+);
 assert.ok(
   imageWritableProps.some((item) => item.path === "style.backgroundColor"),
   "base component background color should use style.backgroundColor",
@@ -193,7 +255,6 @@ const imageSchema = generateComponentsSchema({
     height: 360,
     backgroundColor: "rgba(0,0,0,0)",
     borderRadius: 0,
-    zIndex: 1,
   },
   imageBase64: "data:image/png;base64,AAAA",
   targetUrl: "https://example.com",
@@ -201,6 +262,7 @@ const imageSchema = generateComponentsSchema({
 });
 assert.equal(imageSchema.componentName, "SingleImage");
 assert.equal(imageSchema.props.imageBase64, "data:image/png;base64,AAAA");
+assert.equal(imageSchema.props.imageUseMode, "base64");
 assert.equal(imageSchema.props.targetUrl, "");
 assert.equal(imageSchema.props.openBrowser, false);
 
@@ -226,7 +288,6 @@ const textSchema = generateComponentsSchema({
     textAlign: "left",
     backgroundColor: "rgba(0,0,0,0)",
     fontWeight: "bold",
-    zIndex: 20,
   },
 });
 const textDatasource = textSchema.props.datasource as JsonObject;
@@ -252,7 +313,6 @@ const svgSchema = generateComponentsSchema({
     left: 448,
     top: 96,
     backgroundColor: "rgba(0,0,0,0)",
-    zIndex: 30,
   },
   svgSource: "custom",
   svgContent: safeSvg,
@@ -277,12 +337,45 @@ const unsafeSvgSchema = generateComponentsSchema({
     top: 0,
     width: 100,
     height: 100,
-    zIndex: 10,
   },
   svgSource: "custom",
   svgContent: "<svg><script>alert(1)</script></svg>",
 });
 assert.equal(unsafeSvgSchema.props.svgSource, "preset");
+
+const svgChartSchema = generateComponentsSchema({
+  componentName: "SvgDecoration",
+  logicalId: "svg_chart_misuse",
+  parentLogicalId: "sales_group",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 320,
+    height: 240,
+  },
+  svgSource: "custom",
+  svgContent:
+    '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 10 A40 40 0 0 1 90 50" fill="none"/><path d="M90 50 A40 40 0 0 1 50 90" fill="none"/></svg>',
+});
+assert.equal(svgChartSchema.props.svgSource, "preset");
+
+const svgTextSchema = generateComponentsSchema({
+  componentName: "SvgDecoration",
+  logicalId: "svg_text_misuse",
+  parentLogicalId: "sales_group",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 320,
+    height: 120,
+  },
+  svgSource: "custom",
+  svgContent:
+    '<svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg"><text x="20" y="60">风险总量 386</text></svg>',
+});
+assert.equal(svgTextSchema.props.svgSource, "preset");
 
 const panelSchemas = generateComponentsSchemas([
   imageSchema.props,
@@ -304,6 +397,67 @@ assert.ok(
 
 const moduleCapability = getModuleCapability("ChartPanel");
 assert.ok(moduleCapability.slots, "ChartPanel capability should include slots");
+const moduleLayoutRules = moduleCapability.layoutRules as string[];
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("连续的主横线")),
+  "ChartPanel should guide bottom decorations as one continuous structure line",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("面板框架的一部分")),
+  "ChartPanel should guide decorations as panel frame elements",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不要所有模块都使用同一种标题栏")),
+  "ChartPanel should guide title structure without fixed title bar defaults",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("按语义选择实心饼图、环形图或细环")),
+  "ChartPanel should guide semantic pie shape choices",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不要固定套用某一张设计稿")),
+  "ChartPanel should avoid fixed design comp parameters",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("分工展示")),
+  "ChartPanel should guide information role separation",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("连接线应短、少、淡")),
+  "ChartPanel should reduce connector line noise",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("高等级风险")),
+  "ChartPanel should guide accurate risk wording",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("装饰透明度应主动降低")),
+  "ChartPanel should keep decorations below key information",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("业务文本必须使用")),
+  "ChartPanel should require real text components for business text",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("禁止用 SvgDecoration")),
+  "ChartPanel should forbid SVG-drawn charts and text",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不要因为禁止 SVG")),
+  "ChartPanel should require decoration structures without SVG misuse",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("信息卡外框")),
+  "ChartPanel should guide side-card shells as decoration",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("裸文字和裸图表")),
+  "ChartPanel should avoid bare text and bare chart outputs",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("禁止大面积高饱和纯色背景")),
+  "ChartPanel should reject bright solid panel backgrounds",
+);
 
 const chartPanelInput = {
   moduleName: "ChartPanel",
@@ -316,7 +470,6 @@ const chartPanelInput = {
     width: 520,
     height: 360,
     position: "absolute",
-    zIndex: 10,
   },
   theme: {
     primaryColor: "#00E5FF",
@@ -363,33 +516,88 @@ const chartPanelInput = {
         },
       },
     ],
+    auxiliaryTexts: [
+      {
+        componentName: "SingleText",
+        props: {
+          textContent: "高等级风险占比 29.0%，处置优先级：红 / 橙",
+        },
+      },
+    ],
   },
 } satisfies JsonObject;
 
 const moduleSchemas = generateModuleSchema(chartPanelInput);
-assert.equal(moduleSchemas.length, 4);
+assert.equal(moduleSchemas.length, 6);
 assert.deepEqual(
   moduleSchemas.map((item) => item.componentName),
-  ["SingleImage", "SingleText", "PieChart", "SvgDecoration"],
+  [
+    "SingleText",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SingleText",
+    "PieChart",
+    "SingleImage",
+  ],
 );
 assert.deepEqual(
   moduleSchemas.map((item) => item.indexNum),
-  [1, 2, 3, 4],
+  [1, 2, 3, 4, 5, 6],
 );
-assert.equal(moduleSchemas[0]?.businessElementId, "sales_channel_panel_background");
-assert.equal(moduleSchemas[1]?.businessElementId, "sales_channel_panel_title");
-assert.equal(moduleSchemas[2]?.businessElementId, "sales_channel_panel_main_chart");
-assert.equal(moduleSchemas[3]?.businessElementId, "sales_channel_panel_decoration_1");
-const moduleTextDatasource = moduleSchemas[1]?.props.datasource as JsonObject;
+assert.equal(moduleSchemas[0]?.businessElementId, "sales_channel_panel_title");
+assert.equal(moduleSchemas[1]?.businessElementId, "sales_channel_panel_title_badge");
+assert.equal(moduleSchemas[2]?.businessElementId, "sales_channel_panel_decoration_1");
+assert.equal(moduleSchemas[3]?.businessElementId, "sales_channel_panel_aux_text_1");
+assert.equal(moduleSchemas[4]?.businessElementId, "sales_channel_panel_main_chart");
+assert.equal(moduleSchemas[5]?.businessElementId, "sales_channel_panel_background");
+const moduleTextDatasource = moduleSchemas[0]?.props.datasource as JsonObject;
 const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
 assert.equal(moduleTextConstantData[0]?.text, "销售渠道占比");
-assert.equal(moduleSchemas[0]?.props.imageBase64, "data:image/png;base64,BBBB");
-const moduleChartOption = moduleSchemas[2]?.props.option as JsonObject;
+assert.equal(moduleSchemas[1]?.props.svgSource, "custom");
+assert.equal(moduleSchemas[1]?.props.name, "标题背景点缀");
+assert.equal(moduleSchemas[1]?.props.opacity, 0.7);
+const moduleTitleStyle = moduleSchemas[0]?.props.style as JsonObject;
+assert.equal(moduleTitleStyle.left, 72);
+assert.equal(moduleTitleStyle.top, 114);
+assert.equal(moduleTitleStyle.width, 472);
+assert.equal(moduleTitleStyle.fontSize, 22);
+const moduleTitleBadgeStyle = moduleSchemas[1]?.props.style as JsonObject;
+assert.equal(moduleTitleBadgeStyle.left, 56);
+assert.equal(moduleTitleBadgeStyle.top, 100);
+assert.equal(moduleTitleBadgeStyle.width, 200);
+assert.equal(moduleTitleBadgeStyle.height, 50);
+const moduleAuxTextDatasource = moduleSchemas[3]?.props.datasource as JsonObject;
+const moduleAuxTextConstantData =
+  moduleAuxTextDatasource.constantData as JsonObject[];
+assert.equal(
+  moduleAuxTextConstantData[0]?.text,
+  "高等级风险占比 29.0%，处置优先级：红 / 橙",
+);
+assert.equal(moduleSchemas[5]?.props.imageBase64, "");
+assert.equal(moduleSchemas[5]?.props.imageUseMode, "upload");
+assert.equal(moduleSchemas[5]?.props.svgSource, "custom");
+const moduleBackgroundStyle = moduleSchemas[5]?.props.style as JsonObject;
+assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(4,16,32,0.96)");
+const moduleChartOption = moduleSchemas[4]?.props.option as JsonObject;
 const moduleChartSeries = moduleChartOption.series as JsonObject[];
 assert.equal(moduleChartOption.backgroundColor, "transparent");
 assert.deepEqual(moduleChartSeries[0]?.radius, ["42%", "68%"]);
-assert.equal(moduleSchemas[3]?.props.svgSource, "custom");
-assert.equal(typeof moduleSchemas[3]?.props.svgContent, "string");
+assert.equal(moduleChartSeries[0]?.type, "pie");
+const moduleChartLegend = moduleChartOption.legend as JsonObject;
+assert.equal(moduleChartLegend.top, "bottom");
+assert.equal(moduleChartLegend.left, "center");
+assert.equal(moduleSchemas[2]?.props.svgSource, "custom");
+assert.equal(typeof moduleSchemas[2]?.props.svgContent, "string");
+const moduleDecorationStyle = moduleSchemas[2]?.props.style as JsonObject;
+const moduleChartStyle = moduleSchemas[4]?.props.style as JsonObject;
+assert.equal(moduleChartStyle.left, 68);
+assert.equal(moduleChartStyle.top, 188);
+assert.equal(moduleChartStyle.width, 480);
+assert.equal(moduleChartStyle.height, 200);
+assert.equal(moduleDecorationStyle.left, 372);
+assert.equal(moduleDecorationStyle.top, 116);
+assert.equal(moduleDecorationStyle.width, 180);
+assert.equal(moduleDecorationStyle.height, 72);
 
 const noResourcePanelInput = {
   ...chartPanelInput,
@@ -403,9 +611,12 @@ const noResourcePanelInput = {
   },
 } satisfies JsonObject;
 const noResourceSchemas = generateModuleSchema(noResourcePanelInput);
-assert.equal(noResourceSchemas[0]?.props.imageSrc, "");
-assert.equal(noResourceSchemas[0]?.props.imageBase64, "");
-assert.equal(noResourceSchemas[0]?.props.opacity, 0);
+const noResourceBackground = noResourceSchemas[5];
+assert.equal(noResourceBackground?.props.imageSrc, "");
+assert.equal(noResourceBackground?.props.imageBase64, "");
+assert.equal(noResourceBackground?.props.imageUseMode, "upload");
+assert.equal(noResourceBackground?.props.opacity, 1);
+assert.equal(noResourceBackground?.props.svgSource, "custom");
 
 const nodePath = process.execPath;
 const client = new Client({
@@ -558,11 +769,13 @@ try {
   });
   assert.equal(moduleSchemaResult.isError, undefined);
   const toolModuleSchemas = readToolJson(moduleSchemaResult);
-  assert.equal(toolModuleSchemas.length, 4);
-  assert.equal(toolModuleSchemas[0].componentName, "SingleImage");
-  assert.equal(toolModuleSchemas[1].componentName, "SingleText");
-  assert.equal(toolModuleSchemas[2].componentName, "PieChart");
-  assert.equal(toolModuleSchemas[3].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas.length, 6);
+  assert.equal(toolModuleSchemas[0].componentName, "SingleText");
+  assert.equal(toolModuleSchemas[1].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[2].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[3].componentName, "SingleText");
+  assert.equal(toolModuleSchemas[4].componentName, "PieChart");
+  assert.equal(toolModuleSchemas[5].componentName, "SingleImage");
 } finally {
   await client.close();
 }

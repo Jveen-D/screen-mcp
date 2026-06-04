@@ -4,6 +4,7 @@ const FORBIDDEN_PATHS = [
   ["chartData"],
   ["datasource"],
   ["option", "title"],
+  ["option", "dataset"],
   ["option", "series", "0", "data"],
   ["eventConfigures"],
   ["targetUrl"],
