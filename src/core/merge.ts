@@ -11,6 +11,10 @@ const FORBIDDEN_PATHS = [
   ["openBrowser"],
 ];
 
+type RemoveAiForbiddenOptions = {
+  componentName?: string;
+};
+
 function isPlainObject(value: JsonValue | undefined): value is JsonObject {
   return (
     typeof value === "object" &&
@@ -81,10 +85,24 @@ function deletePath(target: JsonValue, path: string[]): void {
   }
 }
 
-export function removeAiForbiddenProps<T extends JsonObject>(props: T): T {
+function shouldKeepForbiddenPath(
+  path: string[],
+  options: RemoveAiForbiddenOptions,
+): boolean {
+  return options.componentName === "PieChart" && path[0] === "chartData";
+}
+
+export function removeAiForbiddenProps<T extends JsonObject>(
+  props: T,
+  options: RemoveAiForbiddenOptions = {},
+): T {
   const sanitized = cloneJson(props);
 
   for (const path of FORBIDDEN_PATHS) {
+    if (shouldKeepForbiddenPath(path, options)) {
+      continue;
+    }
+
     deletePath(sanitized, path);
   }
 

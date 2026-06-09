@@ -1,259 +1,584 @@
-[
-  {
-    "businessElementId": "sales_channel_share_panel_title",
-    "parentBusinessElementId": "sales_channel_share_panel",
-    "businessType": "DASHBOARD",
-    "componentName": "SingleText",
-    "indexNum": 1,
-    "structVersion": "0.0.2",
-    "rootFlag": false,
-    "props": {
+{
+  "id": "risk_level_analysis_panel",
+  "componentName": "__Group__",
+  "structVersion": "0.0.0",
+  "props": {},
+  "title": "风险等级分析",
+  "isHidden": false,
+  "isLocked": false,
+  "isGroup": true,
+  "children": [
+    {
+      "id": "risk_level_analysis_panel_title",
       "componentName": "SingleText",
-      "style": {
-        "width": 210,
-        "height": 30,
-        "position": "absolute",
-        "left": 104,
-        "top": 105,
-        "fontFamily": "Microsoft YaHei",
-        "fontSize": 22,
-        "color": "#DFF8FF",
-        "textAlign": "left",
-        "backgroundColor": "rgba(0,0,0,0)",
-        "fontStyle": "normal",
-        "fontWeight": "bold",
-        "letterSpacing": 0,
-        "lineHeight": 1.35
-      },
-      "rotate": 0,
-      "opacity": 1,
-      "textContent": "销售渠道占比",
-      "name": "销售渠道占比标题",
-      "textShadow": {
-        "isActive": true,
-        "color": "rgba(0,229,255,0.42)",
-        "x": 0,
-        "y": 0,
-        "blur": 6
-      },
-      "logicalId": "sales_channel_share_panel_title",
-      "parentLogicalId": "sales_channel_share_panel"
-    },
-    "displayName": "单行文本",
-    "hiddenFlag": { "type": "literal", "value": false },
-    "lockedFlag": false,
-    "groupFlag": false
-  },
-  {
-    "businessElementId": "sales_channel_share_panel_title_badge",
-    "parentBusinessElementId": "sales_channel_share_panel",
-    "businessType": "DASHBOARD",
-    "componentName": "SvgDecoration",
-    "indexNum": 2,
-    "structVersion": "0.0.2",
-    "rootFlag": false,
-    "props": {
-      "componentName": "SvgDecoration",
-      "style": {
-        "width": 200,
-        "height": 50,
-        "position": "absolute",
-        "left": 68,
-        "top": 84,
-        "backgroundColor": "rgba(0,0,0,0)"
-      },
-      "rotate": 0,
-      "opacity": 0.7,
-      "svgSource": "custom",
-      "svgContent": "<svg viewBox=\"0 0 220 46\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"g\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"currentColor\" stop-opacity=\".16\"/><stop offset=\".72\" stop-color=\"currentColor\" stop-opacity=\".035\"/><stop offset=\"1\" stop-color=\"currentColor\" stop-opacity=\"0\"/></linearGradient></defs><path d=\"M14 42V18C14 10.268 20.268 4 28 4h108l18 16h32\" fill=\"rgba(4,18,36,.28)\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\".82\"/><path d=\"M28 38h152\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\".26\"/><rect x=\"0\" y=\"0\" width=\"220\" height=\"46\" fill=\"url(#g)\"/><circle cx=\"7\" cy=\"7\" r=\"3.5\" fill=\"#FFB300\"/><circle cx=\"198\" cy=\"20\" r=\"3.5\" fill=\"currentColor\" opacity=\".8\"/></svg>",
-      "svgFit": "fill",
-      "primaryColor": "#00E5FF",
-      "strokeWidth": 2,
-      "flipX": false,
-      "flipY": false,
-      "glow": { "isActive": false, "color": "", "blur": 8 },
-      "name": "标题背景点缀",
-      "logicalId": "sales_channel_share_panel_title_badge",
-      "parentLogicalId": "sales_channel_share_panel"
-    },
-    "displayName": "SVG装饰",
-    "hiddenFlag": { "type": "literal", "value": false },
-    "lockedFlag": false,
-    "groupFlag": false
-  },
-  {
-    "businessElementId": "sales_channel_share_panel_decoration_1",
-    "parentBusinessElementId": "sales_channel_share_panel",
-    "businessType": "DASHBOARD",
-    "componentName": "SvgDecoration",
-    "indexNum": 3,
-    "structVersion": "0.0.2",
-    "rootFlag": false,
-    "props": {
-      "componentName": "SvgDecoration",
-      "style": {
-        "width": 520,
-        "height": 18,
-        "position": "absolute",
-        "left": 80,
-        "top": 436,
-        "backgroundColor": "rgba(0,0,0,0)"
-      },
-      "rotate": 0,
-      "opacity": 0.82,
-      "svgSource": "custom",
-      "svgContent": "<svg viewBox=\"0 0 520 18\"><path d=\"M0 8H168L184 2H324L340 8H520\" fill=\"none\" stroke=\"rgba(0,229,255,0.68)\" stroke-width=\"1.4\" stroke-linecap=\"round\"/><path d=\"M24 14H128\" stroke=\"rgba(124,77,255,0.38)\" stroke-width=\"1\" stroke-linecap=\"round\"/><path d=\"M376 14H496\" stroke=\"rgba(0,229,255,0.32)\" stroke-width=\"1\" stroke-linecap=\"round\"/><circle cx=\"168\" cy=\"8\" r=\"2\" fill=\"#00E5FF\" opacity=\"0.9\"/><circle cx=\"340\" cy=\"8\" r=\"2\" fill=\"#FFB300\" opacity=\"0.85\"/><path d=\"M456 4H510\" stroke=\"rgba(255,255,255,0.18)\" stroke-width=\"1\"/></svg>",
-      "svgFit": "fill",
-      "primaryColor": "#00E5FF",
-      "secondaryColor": "#7C4DFF",
-      "accentColor": "#FFB300",
-      "strokeWidth": 1.4,
-      "flipX": false,
-      "flipY": false,
-      "glow": {
-        "isActive": true,
-        "color": "rgba(0,229,255,0.32)",
-        "blur": 6
-      },
-      "name": "底部连续结构线",
-      "logicalId": "sales_channel_share_panel_decoration_1",
-      "parentLogicalId": "sales_channel_share_panel"
-    },
-    "displayName": "SVG装饰",
-    "hiddenFlag": { "type": "literal", "value": false },
-    "lockedFlag": false,
-    "groupFlag": false
-  },
-  {
-    "businessElementId": "sales_channel_share_panel_main_chart",
-    "parentBusinessElementId": "sales_channel_share_panel",
-    "businessType": "DASHBOARD",
-    "componentName": "PieChart",
-    "indexNum": 4,
-    "structVersion": "0.0.2",
-    "rootFlag": false,
-    "props": {
-      "componentName": "PieChart",
-      "rotate": 0,
-      "name": "销售渠道占比环形图",
-      "style": {
-        "top": 172,
-        "left": 80,
-        "width": 520,
-        "position": "absolute",
-        "height": 246
-      },
-      "opacity": 1,
-      "option": {
-        "backgroundColor": "transparent",
-        "color": ["#00E5FF", "#7C4DFF", "#FFB300", "#00C853", "#3BA272", "#FF7A45"],
-        "legend": {
-          "top": "bottom",
-          "orient": "horizontal",
-          "left": "center",
-          "itemHeight": 8,
-          "show": true,
-          "icon": "circle",
-          "itemWidth": 8,
-          "textStyle": {
-            "fontFamily": "Microsoft YaHei",
-            "color": "#BFEFFF",
-            "fontSize": 12,
-            "fontStyle": "normal",
-            "fontWeight": "normal"
-          },
-          "itemGap": 14
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_title",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "风险等级分析标题",
+        "textContent": "风险等级分析",
+        "style": {
+          "position": "absolute",
+          "left": 164,
+          "top": 142,
+          "width": 260,
+          "height": 36,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 24,
+          "color": "#EAFBFF",
+          "textAlign": "left",
+          "fontWeight": "bold",
+          "fontStyle": "normal",
+          "letterSpacing": 0,
+          "lineHeight": 1.25,
+          "backgroundColor": "rgba(0,0,0,0)"
         },
-        "series": [
-          {
-            "center": ["50%", "46%"],
-            "itemStyle": {
-              "borderType": "solid",
-              "borderColor": "#07182F",
-              "shadowBlur": 5,
-              "borderWidth": 1,
-              "shadowColor": "rgba(0,229,255,0.22)"
-            },
-            "label": {
-              "formatter": "{b}\\n{c}",
-              "fontFamily": "Microsoft YaHei",
-              "color": "#DFF8FF",
-              "show": true,
-              "fontSize": 12,
-              "position": "outside",
-              "fontStyle": "normal",
-              "fontWeight": "normal"
-            },
-            "labelLine": {
-              "length2": 18,
-              "show": true,
-              "length": 12,
-              "lineStyle": {
-                "width": 1,
-                "color": "rgba(191,239,255,0.46)"
-              }
-            },
-            "radius": ["42%", "68%"],
-            "type": "pie"
-          }
-        ],
-        "tooltip": {
-          "backgroundColor": "rgba(8,18,38,0.92)",
-          "show": true,
-          "textStyle": {
-            "fontFamily": "Microsoft YaHei",
-            "color": "#FFFFFF",
-            "fontSize": 13,
-            "fontStyle": "normal",
-            "fontWeight": "normal"
-          },
-          "trigger": "item",
-          "borderColor": "rgba(0,229,255,0.36)",
-          "borderWidth": 1
+        "textShadow": {
+          "isActive": true,
+          "color": "rgba(0,229,255,0.75)",
+          "x": 0,
+          "y": 0,
+          "blur": 10
         }
       },
-      "logicalId": "sales_channel_share_panel_main_chart",
-      "parentLogicalId": "sales_channel_share_panel"
+      "title": "风险等级分析标题",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
     },
-    "displayName": "饼图",
-    "hiddenFlag": { "type": "literal", "value": false },
-    "lockedFlag": false,
-    "groupFlag": false
-  },
-  {
-    "businessElementId": "sales_channel_share_panel_background",
-    "parentBusinessElementId": "sales_channel_share_panel",
-    "businessType": "DASHBOARD",
-    "componentName": "SingleImage",
-    "indexNum": 5,
-    "structVersion": "0.0.2",
-    "rootFlag": false,
-    "props": {
-      "componentName": "SingleImage",
-      "style": {
-        "position": "absolute",
-        "left": 60,
-        "top": 80,
-        "width": 560,
-        "height": 380,
-        "backgroundColor": "rgba(4,16,32,0.92)",
-        "borderStyle": "solid",
-        "borderRadius": 0,
-        "borderWidth": 1,
-        "borderColor": "rgba(0,229,255,0.18)"
+    {
+      "id": "risk_level_analysis_panel_outer_frame",
+      "componentName": "SvgDecoration",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SvgDecoration",
+        "logicalId": "risk_level_analysis_panel_outer_frame",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "面板科技边框",
+        "style": {
+          "position": "absolute",
+          "left": 120,
+          "top": 120,
+          "width": 840,
+          "height": 520,
+          "backgroundColor": "rgba(0,0,0,0)"
+        },
+        "opacity": 0.95,
+        "svgSource": "custom",
+        "svgFit": "fill",
+        "svgContent": "<svg viewBox=\"0 0 840 520\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"1\" y=\"1\" width=\"838\" height=\"518\" rx=\"6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" opacity=\"0.55\"/><path d=\"M18 52V18H98 M742 18H822V92 M822 432V502H736 M104 502H18V436\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" opacity=\"0.82\"/><path d=\"M24 74H378 M446 74H814 M38 484H390 M462 484H802\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\"0.32\"/></svg>",
+        "primaryColor": "#00E5FF",
+        "glow": {
+          "isActive": true,
+          "color": "rgba(0,229,255,0.38)",
+          "blur": 8
+        }
       },
-      "rotate": 0,
-      "opacity": 1,
-      "imageUseMode": "upload",
-      "imageSrc": "",
-      "imageShowType": "noRepeat",
-      "name": "销售渠道占比深色科技背景",
-      "logicalId": "sales_channel_share_panel_background",
-      "parentLogicalId": "sales_channel_share_panel"
+      "title": "面板科技边框",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
     },
-    "displayName": "图片",
-    "hiddenFlag": { "type": "literal", "value": false },
-    "lockedFlag": false,
-    "groupFlag": false
-  }
-]
+    {
+      "id": "risk_level_analysis_panel_title_support",
+      "componentName": "SvgDecoration",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SvgDecoration",
+        "logicalId": "risk_level_analysis_panel_title_support",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "标题承托与光点",
+        "style": {
+          "position": "absolute",
+          "left": 142,
+          "top": 138,
+          "width": 318,
+          "height": 46,
+          "backgroundColor": "rgba(0,0,0,0)"
+        },
+        "opacity": 0.9,
+        "svgSource": "custom",
+        "svgFit": "fill",
+        "svgContent": "<svg viewBox=\"0 0 318 46\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M22 6H244L286 24H316\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" opacity=\"0.62\"/><path d=\"M0 38H126L148 28H242\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" opacity=\"0.72\"/><rect x=\"4\" y=\"15\" width=\"8\" height=\"8\" rx=\"1\" fill=\"currentColor\" opacity=\"0.9\"/><circle cx=\"24\" cy=\"19\" r=\"3\" fill=\"currentColor\" opacity=\"0.95\"/></svg>",
+        "primaryColor": "#00E5FF",
+        "glow": {
+          "isActive": true,
+          "color": "rgba(0,229,255,0.5)",
+          "blur": 7
+        }
+      },
+      "title": "标题承托与光点",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_side_card_frame",
+      "componentName": "SvgDecoration",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SvgDecoration",
+        "logicalId": "risk_level_analysis_panel_side_card_frame",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "右侧风险说明卡外框",
+        "style": {
+          "position": "absolute",
+          "left": 662,
+          "top": 192,
+          "width": 260,
+          "height": 260,
+          "backgroundColor": "rgba(0,0,0,0)"
+        },
+        "opacity": 0.88,
+        "svgSource": "custom",
+        "svgFit": "fill",
+        "svgContent": "<svg viewBox=\"0 0 260 260\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"1\" y=\"1\" width=\"258\" height=\"258\" rx=\"5\" fill=\"rgba(7,24,48,0.62)\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\"0.82\"/><path d=\"M16 52H244 M16 104H244 M16 156H244 M16 208H244\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\"0.18\"/><path d=\"M1 42L42 1 M218 259L259 218\" stroke=\"currentColor\" stroke-width=\"2\" opacity=\"0.65\"/></svg>",
+        "primaryColor": "#00E5FF",
+        "glow": {
+          "isActive": true,
+          "color": "rgba(0,229,255,0.28)",
+          "blur": 7
+        }
+      },
+      "title": "右侧风险说明卡外框",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_link_lines",
+      "componentName": "SvgDecoration",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SvgDecoration",
+        "logicalId": "risk_level_analysis_panel_link_lines",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "主图到侧卡短连接线",
+        "style": {
+          "position": "absolute",
+          "left": 594,
+          "top": 258,
+          "width": 72,
+          "height": 130,
+          "backgroundColor": "rgba(0,0,0,0)"
+        },
+        "opacity": 0.62,
+        "svgSource": "custom",
+        "svgFit": "fill",
+        "svgContent": "<svg viewBox=\"0 0 72 130\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M4 22H42L68 44 M4 64H72 M4 106H42L68 86\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" opacity=\"0.55\"/><circle cx=\"4\" cy=\"22\" r=\"2.5\" fill=\"currentColor\"/><circle cx=\"4\" cy=\"64\" r=\"2.5\" fill=\"currentColor\"/><circle cx=\"4\" cy=\"106\" r=\"2.5\" fill=\"currentColor\"/></svg>",
+        "primaryColor": "#00E5FF"
+      },
+      "title": "主图到侧卡短连接线",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_bottom_rule",
+      "componentName": "SvgDecoration",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SvgDecoration",
+        "logicalId": "risk_level_analysis_panel_bottom_rule",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "底部结论分割线",
+        "style": {
+          "position": "absolute",
+          "left": 150,
+          "top": 580,
+          "width": 780,
+          "height": 34,
+          "backgroundColor": "rgba(0,0,0,0)"
+        },
+        "opacity": 0.7,
+        "svgSource": "custom",
+        "svgFit": "fill",
+        "svgContent": "<svg viewBox=\"0 0 780 34\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 9H260L284 1H496L520 9H780\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" opacity=\"0.58\"/><path d=\"M54 24H318 M462 24H726\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\"0.26\"/><circle cx=\"390\" cy=\"9\" r=\"3\" fill=\"currentColor\" opacity=\"0.9\"/></svg>",
+        "primaryColor": "#00E5FF"
+      },
+      "title": "底部结论分割线",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_total_value",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_total_value",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "中心风险总量",
+        "textContent": "128",
+        "style": {
+          "position": "absolute",
+          "left": 331,
+          "top": 331,
+          "width": 126,
+          "height": 44,
+          "fontFamily": "DIN Alternate, Microsoft YaHei",
+          "fontSize": 34,
+          "color": "#FFFFFF",
+          "textAlign": "center",
+          "fontWeight": "bold",
+          "lineHeight": 1.1,
+          "backgroundColor": "rgba(0,0,0,0)"
+        },
+        "textShadow": {
+          "isActive": true,
+          "color": "rgba(0,229,255,0.88)",
+          "x": 0,
+          "y": 0,
+          "blur": 12
+        }
+      },
+      "title": "中心风险总量",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_total_label",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_total_label",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "中心风险总量标签",
+        "textContent": "风险总量",
+        "style": {
+          "position": "absolute",
+          "left": 331,
+          "top": 373,
+          "width": 126,
+          "height": 24,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 14,
+          "color": "#9FD8EA",
+          "textAlign": "center",
+          "lineHeight": 1.2,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "中心风险总量标签",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_side_title",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_side_title",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "右侧说明标题",
+        "textContent": "等级说明",
+        "style": {
+          "position": "absolute",
+          "left": 684,
+          "top": 210,
+          "width": 210,
+          "height": 28,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 18,
+          "color": "#EAFBFF",
+          "textAlign": "left",
+          "fontWeight": "bold",
+          "lineHeight": 1.2,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "右侧说明标题",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_side_major",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_side_major",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "重大风险说明",
+        "textContent": "重大风险：立即处置",
+        "style": {
+          "position": "absolute",
+          "left": 684,
+          "top": 258,
+          "width": 220,
+          "height": 28,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 15,
+          "color": "#FF7779",
+          "textAlign": "left",
+          "fontWeight": "bold",
+          "lineHeight": 1.2,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "重大风险说明",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_side_large",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_side_large",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "较大风险说明",
+        "textContent": "较大风险：限时闭环",
+        "style": {
+          "position": "absolute",
+          "left": 684,
+          "top": 310,
+          "width": 220,
+          "height": 28,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 15,
+          "color": "#FFC45C",
+          "textAlign": "left",
+          "fontWeight": "bold",
+          "lineHeight": 1.2,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "较大风险说明",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_side_general",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_side_general",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "一般风险说明",
+        "textContent": "一般风险：持续跟踪",
+        "style": {
+          "position": "absolute",
+          "left": 684,
+          "top": 362,
+          "width": 220,
+          "height": 28,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 15,
+          "color": "#54E5FF",
+          "textAlign": "left",
+          "fontWeight": "bold",
+          "lineHeight": 1.2,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "一般风险说明",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_side_low",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_side_low",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "低风险说明",
+        "textContent": "低风险：常态巡检",
+        "style": {
+          "position": "absolute",
+          "left": 684,
+          "top": 414,
+          "width": 220,
+          "height": 28,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 15,
+          "color": "#6DEBA7",
+          "textAlign": "left",
+          "fontWeight": "bold",
+          "lineHeight": 1.2,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "低风险说明",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_bottom_conclusion",
+      "componentName": "SingleText",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleText",
+        "logicalId": "risk_level_analysis_panel_bottom_conclusion",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "底部处置优先级结论",
+        "textContent": "处置优先级：重大风险优先清零，较大风险限期闭环，一般与低风险纳入日常巡检。",
+        "style": {
+          "position": "absolute",
+          "left": 178,
+          "top": 608,
+          "width": 724,
+          "height": 28,
+          "fontFamily": "Microsoft YaHei",
+          "fontSize": 15,
+          "color": "#DDF7FF",
+          "textAlign": "center",
+          "lineHeight": 1.25,
+          "backgroundColor": "rgba(0,0,0,0)"
+        }
+      },
+      "title": "底部处置优先级结论",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_main_chart",
+      "componentName": "PieChart",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "PieChart",
+        "logicalId": "risk_level_analysis_panel_main_chart",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "风险等级占比饼图",
+        "style": {
+          "position": "absolute",
+          "left": 146,
+          "top": 196,
+          "width": 510,
+          "height": 346
+        },
+        "option": {
+          "backgroundColor": "transparent",
+          "color": [
+            "#FF4D4F",
+            "#FFB020",
+            "#00E5FF",
+            "#35D07F"
+          ],
+          "legend": {
+            "show": true,
+            "left": "center",
+            "top": "bottom",
+            "orient": "horizontal",
+            "icon": "circle",
+            "itemWidth": 10,
+            "itemHeight": 10,
+            "itemGap": 18,
+            "textStyle": {
+              "color": "#BFEFFF",
+              "fontSize": 12,
+              "fontWeight": "normal",
+              "fontStyle": "normal",
+              "fontFamily": "Microsoft YaHei"
+            }
+          },
+          "tooltip": {
+            "show": true,
+            "trigger": "item",
+            "backgroundColor": "rgba(5,18,40,0.92)",
+            "borderColor": "rgba(0,229,255,0.45)",
+            "borderWidth": 1,
+            "textStyle": {
+              "color": "#FFFFFF",
+              "fontSize": 13,
+              "fontWeight": "normal",
+              "fontStyle": "normal",
+              "fontFamily": "Microsoft YaHei"
+            }
+          },
+          "series": [
+            {
+              "type": "pie",
+              "radius": [
+                "42%",
+                "68%"
+              ],
+              "center": [
+                "47%",
+                "46%"
+              ],
+              "label": {
+                "show": true,
+                "formatter": "{b}\\n{c}",
+                "position": "outside",
+                "color": "#E8FBFF",
+                "fontSize": 13,
+                "fontWeight": "bold",
+                "fontStyle": "normal",
+                "fontFamily": "Microsoft YaHei"
+              },
+              "labelLine": {
+                "show": true,
+                "length": 16,
+                "length2": 24,
+                "lineStyle": {
+                  "color": "rgba(160,230,255,0.72)",
+                  "width": 1
+                }
+              },
+              "itemStyle": {
+                "borderWidth": 3,
+                "borderColor": "#06172E",
+                "borderType": "solid",
+                "shadowBlur": 12,
+                "shadowColor": "rgba(0,229,255,0.24)"
+              }
+            }
+          ]
+        }
+      },
+      "title": "风险等级占比饼图",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    },
+    {
+      "id": "risk_level_analysis_panel_background",
+      "componentName": "SingleImage",
+      "structVersion": "0.0.2",
+      "props": {
+        "componentName": "SingleImage",
+        "logicalId": "risk_level_analysis_panel_background",
+        "parentLogicalId": "risk_level_analysis_panel",
+        "name": "风险等级分析面板背景",
+        "style": {
+          "position": "absolute",
+          "left": 120,
+          "top": 120,
+          "width": 840,
+          "height": 520,
+          "backgroundColor": "rgba(3,12,28,0.94)",
+          "borderStyle": "solid",
+          "borderRadius": 6,
+          "borderWidth": 0,
+          "borderColor": "rgba(0,0,0,0)"
+        },
+        "imageUseMode": "upload",
+        "imageSrc": "",
+        "imageBase64": "",
+        "imageShowType": "noRepeat",
+        "opacity": 1
+      },
+      "title": "风险等级分析面板背景",
+      "isHidden": false,
+      "isLocked": false,
+      "isGroup": false
+    }
+  ]
+}

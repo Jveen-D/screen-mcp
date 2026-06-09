@@ -15,6 +15,23 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function asString(value: JsonValue | undefined, fallback: string): string {
+  return typeof value === "string" && value.trim() !== "" ? value : fallback;
+}
+
+function asNumber(value: JsonValue | undefined, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+}
+
 function isValidLegendPosition(left: JsonValue, top: JsonValue): boolean {
   if (typeof left !== "string" || typeof top !== "string") {
     return false;
@@ -38,7 +55,59 @@ function normalizePieSeries(option: JsonObject): void {
   }
 }
 
+function normalizePieChartData(props: JsonObject): void {
+  const chartData = props.chartData;
+  if (!isJsonObject(chartData)) {
+    return;
+  }
+
+  const constant = chartData.constant;
+  if (!isJsonObject(constant) || !Array.isArray(constant.data)) {
+    chartData.sourceType = "constant";
+    return;
+  }
+
+  const normalizedData = constant.data
+    .filter(isJsonObject)
+    .map((item, index) => ({
+      name: asString(item.name, `类目${index + 1}`),
+      type: asString(item.type, "系列"),
+      value: asNumber(item.value, 0),
+    }));
+
+  if (normalizedData.length === 0) {
+    chartData.sourceType = "constant";
+    return;
+  }
+
+  chartData.sourceType = "constant";
+  chartData.constant = {
+    ...constant,
+    data: normalizedData,
+    originalData: normalizedData.map((item) => ({ ...item })),
+    fieldList: [
+      {
+        fieldName: "name",
+        fieldDisplayName: "name",
+        fieldType: "LONGTEXT",
+      },
+      {
+        fieldName: "type",
+        fieldDisplayName: "type",
+        fieldType: "LONGTEXT",
+      },
+      {
+        fieldName: "value",
+        fieldDisplayName: "value",
+        fieldType: "DECIMAL",
+      },
+    ],
+  };
+}
+
 export function normalizePieChartProps(props: JsonObject): JsonObject {
+  normalizePieChartData(props);
+
   const option = props.option;
   if (!isJsonObject(option)) {
     return props;

@@ -70,7 +70,6 @@ export const singleTextCapability: JsonObject = {
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
     { path: "textShadow", type: "object", description: "文字阴影配置。" },
-    { path: "entryAnimiation", type: "object", description: "入场动画配置。" },
   ],
   aiForbiddenProps: [
     {

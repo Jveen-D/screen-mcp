@@ -13,6 +13,10 @@ export const svgDecorationDefaultProps: JsonObject = {
   },
   rotate: 0,
   opacity: 1,
+  entryAnimiation: {
+    isShow: false,
+    type: "",
+  },
   targetUrl: "",
   openBrowser: false,
   svgSource: "preset",

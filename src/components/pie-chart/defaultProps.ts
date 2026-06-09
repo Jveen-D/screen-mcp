@@ -27,20 +27,20 @@ export const pieChartDefaultProps: JsonObject = {
     ],
     constant: {
       data: [
-        { name: "Category 1", type: "Series", value: 101 },
-        { name: "Category 2", type: "Series", value: 71 },
-        { name: "Category 3", type: "Series", value: 121 },
-        { name: "Category 4", type: "Series", value: 95 },
-        { name: "Category 5", type: "Series", value: 141 },
-        { name: "Category 6", type: "Series", value: 96 },
+        { name: "类目1", type: "系列", value: 101 },
+        { name: "类目2", type: "系列", value: 71 },
+        { name: "类目3", type: "系列", value: 121 },
+        { name: "类目4", type: "系列", value: 95 },
+        { name: "类目5", type: "系列", value: 141 },
+        { name: "类目6", type: "系列", value: 96 },
       ],
       originalData: [
-        { name: "Category 1", type: "Series", value: 101 },
-        { name: "Category 2", type: "Series", value: 71 },
-        { name: "Category 3", type: "Series", value: 121 },
-        { name: "Category 4", type: "Series", value: 95 },
-        { name: "Category 5", type: "Series", value: 141 },
-        { name: "Category 6", type: "Series", value: 96 },
+        { name: "类目1", type: "系列", value: 101 },
+        { name: "类目2", type: "系列", value: 71 },
+        { name: "类目3", type: "系列", value: 121 },
+        { name: "类目4", type: "系列", value: 95 },
+        { name: "类目5", type: "系列", value: 141 },
+        { name: "类目6", type: "系列", value: 96 },
       ],
       fieldList: [
         {

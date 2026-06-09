@@ -6,7 +6,7 @@ export const pieChartCapability: JsonObject = {
   description:
     "用于展示分类占比、构成比例和环形占比关系的 ECharts 饼图组件。",
   aiRole:
-    "AI 负责生成组件布局和视觉表达；MCP 会补齐默认 props，并固定使用默认 chartData。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责生成组件布局、视觉表达和可选的 chartData.constant.data 语义数据；MCP 会补齐完整 props 与有效 chartData。组件层级由最终 schema 数组顺序决定。",
   requiredProps: [
     {
       path: "componentName",
@@ -63,11 +63,6 @@ export const pieChartCapability: JsonObject = {
       description: "组件不透明度。",
     },
     {
-      path: "entryAnimiation",
-      type: "object",
-      description: "入场动画配置，无明确要求时保持默认关闭。",
-    },
-    {
       path: "option.backgroundColor",
       type: "color",
       description: "图表背景色，通常使用 transparent 或 rgba 透明底。",
@@ -76,6 +71,23 @@ export const pieChartCapability: JsonObject = {
       path: "option.color",
       type: "array<string>",
       description: "饼图扇区颜色数组，MCP 按下标与默认色板合并。",
+    },
+    {
+      path: "chartData.constant.data",
+      type: "array<{name:string,type?:string,value:number}>",
+      description:
+        "饼图常量数据行。AI 只允许填写 data 数组，每行使用 name、value，可选 type；MCP 会补齐 originalData、fieldList、dimension、indicator、sourceType 等完整 chartData 结构。",
+      itemShape: {
+        name: "分类名称，对应饼图扇区名称。",
+        type: "系列名称，可省略，默认使用“系列”。",
+        value: "分类数值，对应饼图扇区大小。",
+      },
+      example: [
+        { name: "重大风险", type: "系列", value: 34 },
+        { name: "较大风险", type: "系列", value: 78 },
+        { name: "一般风险", type: "系列", value: 156 },
+        { name: "低风险", type: "系列", value: 118 },
+      ],
     },
     {
       path: "option.tooltip",
@@ -192,8 +204,24 @@ export const pieChartCapability: JsonObject = {
   ],
   aiForbiddenProps: [
     {
-      path: "chartData",
-      reason: "MCP 永远使用默认 chartData，AI 不应生成或覆盖。",
+      path: "chartData.sourceType",
+      reason: "PieChart 当前只由 MCP 生成 constant 数据源，AI 不应切换 sourceType。",
+    },
+    {
+      path: "chartData.constant.originalData",
+      reason: "MCP 会根据 chartData.constant.data 自动同步 originalData。",
+    },
+    {
+      path: "chartData.constant.fieldList",
+      reason: "MCP 会补齐 name/type/value 字段列表。",
+    },
+    {
+      path: "chartData.dimension",
+      reason: "MCP 固定使用 name 作为饼图维度。",
+    },
+    {
+      path: "chartData.indicator",
+      reason: "MCP 固定使用 value 作为饼图指标。",
     },
     {
       path: "option.series[0].type",
@@ -221,10 +249,10 @@ export const pieChartCapability: JsonObject = {
   mergeRules: [
     "option.series[0].type 固定为 'pie'，即使 AI 输入其他值也会被 MCP 归一化为 'pie'。",
     "option.dataset 会被 MCP 移除；饼图数据由默认 chartData 或外部数据源替换链路提供。",
+    "AI 可填写 chartData.constant.data；MCP 会归一化为完整有效的 constant chartData，并同步 originalData。",
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "option.series[0] 只写 radius 时，会保留默认 type、label、itemStyle。",
-    "chartData 永远使用默认值。",
   ],
   visualRules: [
     "根据语义选择饼图形态：风险等级、状态分布这类强调分类块面的主题可用实心饼图；销售占比、渠道构成这类适合中心摘要的主题可用环形图；不要所有主题都套用同一种形态。",

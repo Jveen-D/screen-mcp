@@ -122,6 +122,51 @@ function baseWritableProps(definition: ComponentDefinition): JsonObject[] {
       description: "组件不透明度，对应 SliderSetter。",
     },
     {
+      path: "entryAnimiation",
+      type: "object",
+      setter: "CollapsePanel",
+      description:
+        "组件入场动画配置，对应入场动画折叠面板。无明确动画要求时保持 isShow=false、type=''。",
+      children: [
+        {
+          path: "entryAnimiation.isShow",
+          type: "boolean",
+          setter: "SwitchSetter",
+          description: "是否启用入场动画。",
+        },
+        {
+          path: "entryAnimiation.type",
+          type: "enum",
+          setter: "SelectSetter",
+          values: [
+            "animate__lightSpeedInRight",
+            "animate__fadeInLeft",
+            "animate__zoomIn",
+            "animate__rollIn",
+            "animate__jackInTheBox",
+            "animate__heartBeat",
+            "animate__bounceInDown",
+            "animate__rubberBand",
+            "animate__bounce",
+          ],
+          defaultValue: "",
+          description:
+            "动画样式。只有 entryAnimiation.isShow=true 时才选择具体动画。",
+          options: [
+            { label: "右光速", value: "animate__lightSpeedInRight" },
+            { label: "向左淡入", value: "animate__fadeInLeft" },
+            { label: "放大", value: "animate__zoomIn" },
+            { label: "滚入", value: "animate__rollIn" },
+            { label: "杰克盒子", value: "animate__jackInTheBox" },
+            { label: "心跳", value: "animate__heartBeat" },
+            { label: "向下弹跳", value: "animate__bounceInDown" },
+            { label: "橡皮筋", value: "animate__rubberBand" },
+            { label: "弹跳", value: "animate__bounce" },
+          ],
+        },
+      ],
+    },
+    {
       path: backgroundPath,
       type: "color",
       description: backgroundDescription,
@@ -172,6 +217,27 @@ export function withBaseCapability(
           definition.componentType === "chart"
             ? "图表类背景色写入 option.backgroundColor。"
             : "非图表类背景色写入 style.backgroundColor。",
+      },
+      {
+        path: "entryAnimiation",
+        setter: "CollapsePanel",
+        description:
+          "入场动画配置。entryAnimiation.isShow 使用 SwitchSetter，entryAnimiation.type 使用 SelectSetter；无明确要求时保持关闭。",
+        defaultValue: {
+          isShow: false,
+          type: "",
+        },
+        options: [
+          { label: "右光速", value: "animate__lightSpeedInRight" },
+          { label: "向左淡入", value: "animate__fadeInLeft" },
+          { label: "放大", value: "animate__zoomIn" },
+          { label: "滚入", value: "animate__rollIn" },
+          { label: "杰克盒子", value: "animate__jackInTheBox" },
+          { label: "心跳", value: "animate__heartBeat" },
+          { label: "向下弹跳", value: "animate__bounceInDown" },
+          { label: "橡皮筋", value: "animate__rubberBand" },
+          { label: "弹跳", value: "animate__bounce" },
+        ],
       },
     ],
   };

@@ -17,6 +17,10 @@ export const singleImageDefaultProps: JsonObject = {
   },
   rotate: 0,
   opacity: 1,
+  entryAnimiation: {
+    isShow: false,
+    type: "",
+  },
   targetUrl: "",
   openBrowser: false,
   imageUseMode: "upload",

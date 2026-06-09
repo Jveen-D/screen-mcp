@@ -81,6 +81,27 @@ assert.ok(
   pieWritableProps.some((item) => item.path === "opacity"),
   "capability should expose base opacity config",
 );
+assert.ok(
+  pieWritableProps.some((item) => item.path === "chartData.constant.data"),
+  "PieChart should expose writable constant data rows",
+);
+const pieEntryAnimationCapability = pieWritableProps.find(
+  (item) => item.path === "entryAnimiation",
+) as JsonObject | undefined;
+assert.ok(
+  pieEntryAnimationCapability,
+  "capability should expose base entry animation config",
+);
+const pieEntryAnimationChildren =
+  pieEntryAnimationCapability.children as JsonObject[] | undefined;
+assert.ok(
+  pieEntryAnimationChildren?.some((item) => item.path === "entryAnimiation.isShow"),
+  "entry animation should expose isShow switch",
+);
+assert.ok(
+  pieEntryAnimationChildren?.some((item) => item.path === "entryAnimiation.type"),
+  "entry animation should expose type select",
+);
 const pieRequiredProps = capability.requiredProps as JsonObject[];
 const pieStyleRequiredProp = pieRequiredProps.find(
   (item) => item.path === "style",
@@ -139,6 +160,10 @@ assert.ok(
 );
 const pieForbiddenProps = capability.aiForbiddenProps as JsonObject[];
 assert.ok(
+  pieForbiddenProps.some((item) => item.path === "chartData.sourceType"),
+  "PieChart should forbid chartData sourceType overrides",
+);
+assert.ok(
   pieForbiddenProps.some((item) => item.path === "option.dataset"),
   "PieChart should forbid option.dataset",
 );
@@ -158,9 +183,16 @@ const inputOption = aiProps.option as JsonObject;
 const inputSeries = inputOption.series as JsonObject[];
 const inputFirstSeries = inputSeries[0] as JsonObject;
 const chartData = props.chartData as JsonObject;
+const chartDataConstant = chartData.constant as JsonObject;
+const chartDataRows = chartDataConstant.data as JsonObject[];
+const chartDataOriginalRows = chartDataConstant.originalData as JsonObject[];
 
 assert.equal(schema.componentName, "PieChart");
 assert.equal(chartData.sourceType, "constant");
+assert.equal(chartDataRows[0]?.name, "类目1");
+assert.equal(chartDataRows[0]?.type, "系列");
+assert.equal(chartDataRows[0]?.value, 101);
+assert.deepEqual(chartDataOriginalRows, chartDataRows);
 assert.equal("title" in option, false);
 assert.equal(legend.left, "center");
 assert.equal(legend.top, "bottom");
@@ -168,11 +200,24 @@ assert.equal(firstSeries.type, "pie");
 assert.deepEqual(firstSeries.radius, inputFirstSeries.radius);
 assert.equal(schema.businessElementId, aiProps.logicalId);
 assert.equal(schema.parentBusinessElementId, aiProps.parentLogicalId);
+assert.deepEqual(props.entryAnimiation, { type: "", isShow: false });
 
 const forbiddenOverrideSchema = generateComponentsSchema({
   ...aiProps,
   chartData: {
     sourceType: "api",
+    constant: {
+      originalData: [{ name: "Original should be regenerated", value: 1 }],
+      fieldList: [{ fieldName: "bad", fieldDisplayName: "bad", fieldType: "LONGTEXT" }],
+      data: [
+        { name: "重大风险", value: 34 },
+        { name: "较大风险", type: "风险", value: "78" },
+        { name: "一般风险", type: "风险", value: 156 },
+        { name: "低风险", type: "风险", value: 118 },
+      ],
+    },
+    dimension: [{ fieldName: "bad_dimension" }],
+    indicator: [{ fieldName: "bad_indicator" }],
   },
   eventConfigures: [{ eventName: "click" }],
   option: {
@@ -199,7 +244,31 @@ const forbiddenOverrideSeries = forbiddenOverrideOption.series as JsonObject[];
 const forbiddenOverrideFirstSeries = forbiddenOverrideSeries[0] as JsonObject;
 const forbiddenOverrideChartData =
   forbiddenOverrideSchema.props.chartData as JsonObject;
+const forbiddenOverrideConstant =
+  forbiddenOverrideChartData.constant as JsonObject;
+const forbiddenOverrideRows = forbiddenOverrideConstant.data as JsonObject[];
+const forbiddenOverrideOriginalRows =
+  forbiddenOverrideConstant.originalData as JsonObject[];
+const forbiddenOverrideFieldList =
+  forbiddenOverrideConstant.fieldList as JsonObject[];
+const forbiddenOverrideDimension =
+  forbiddenOverrideChartData.dimension as JsonObject[];
+const forbiddenOverrideIndicator =
+  forbiddenOverrideChartData.indicator as JsonObject[];
 assert.equal(forbiddenOverrideChartData.sourceType, "constant");
+assert.deepEqual(forbiddenOverrideRows, [
+  { name: "重大风险", type: "系列", value: 34 },
+  { name: "较大风险", type: "风险", value: 78 },
+  { name: "一般风险", type: "风险", value: 156 },
+  { name: "低风险", type: "风险", value: 118 },
+]);
+assert.deepEqual(forbiddenOverrideOriginalRows, forbiddenOverrideRows);
+assert.deepEqual(
+  forbiddenOverrideFieldList.map((item) => item.fieldName),
+  ["name", "type", "value"],
+);
+assert.equal(forbiddenOverrideDimension[0]?.fieldName, "name");
+assert.equal(forbiddenOverrideIndicator[0]?.fieldName, "value");
 assert.equal("title" in forbiddenOverrideOption, false);
 assert.equal("dataset" in forbiddenOverrideOption, false);
 assert.equal("data" in forbiddenOverrideFirstSeries, false);
@@ -264,6 +333,7 @@ const imageSchema = generateComponentsSchema({
 assert.equal(imageSchema.componentName, "SingleImage");
 assert.equal(imageSchema.props.imageBase64, "data:image/png;base64,AAAA");
 assert.equal(imageSchema.props.imageUseMode, "base64");
+assert.deepEqual(imageSchema.props.entryAnimiation, { isShow: false, type: "" });
 assert.equal(imageSchema.props.targetUrl, "");
 assert.equal(imageSchema.props.openBrowser, false);
 
@@ -296,6 +366,7 @@ const textDatasource = textSchema.props.datasource as JsonObject;
 const textConstantData = textDatasource.constantData as JsonObject[];
 assert.equal(textSchema.componentName, "SingleText");
 assert.equal(textSchema.props.textContent, "销售渠道占比");
+assert.deepEqual(textSchema.props.entryAnimiation, { isShow: false, type: "" });
 assert.equal(textDatasource.sourceType, "externalConstant");
 assert.equal(textConstantData[0]?.text, "销售渠道占比");
 const textStyle = textSchema.props.style as JsonObject;
@@ -330,6 +401,7 @@ const svgSchema = generateComponentsSchema({
 assert.equal(svgSchema.componentName, "SvgDecoration");
 assert.equal(svgSchema.props.svgSource, "custom");
 assert.equal(svgSchema.props.svgContent, safeSvg);
+assert.deepEqual(svgSchema.props.entryAnimiation, { isShow: false, type: "" });
 
 const unsafeSvgSchema = generateComponentsSchema({
   componentName: "SvgDecoration",
@@ -498,6 +570,15 @@ const chartPanelInput = {
     mainChart: {
       componentName: "PieChart",
       props: {
+        chartData: {
+          constant: {
+            data: [
+              { name: "直销", type: "渠道", value: 128 },
+              { name: "代理", type: "渠道", value: 96 },
+              { name: "线上", type: "渠道", value: 76 },
+            ],
+          },
+        },
         option: {
           legend: {
             left: "center",
@@ -588,8 +669,17 @@ const moduleBackgroundStyle = moduleSchemas[5]?.props.style as JsonObject;
 assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(4,16,32,0.96)");
 assert.equal(moduleBackgroundStyle.zIndex, 10);
 const moduleChartOption = moduleSchemas[4]?.props.option as JsonObject;
+const moduleChartData = moduleSchemas[4]?.props.chartData as JsonObject;
+const moduleChartDataConstant = moduleChartData.constant as JsonObject;
+const moduleChartRows = moduleChartDataConstant.data as JsonObject[];
 const moduleChartSeries = moduleChartOption.series as JsonObject[];
 assert.equal(moduleChartOption.backgroundColor, "transparent");
+assert.equal(moduleChartData.sourceType, "constant");
+assert.deepEqual(moduleChartRows, [
+  { name: "直销", type: "渠道", value: 128 },
+  { name: "代理", type: "渠道", value: 96 },
+  { name: "线上", type: "渠道", value: 76 },
+]);
 assert.deepEqual(moduleChartSeries[0]?.radius, ["42%", "68%"]);
 assert.equal(moduleChartSeries[0]?.type, "pie");
 const moduleChartLegend = moduleChartOption.legend as JsonObject;
