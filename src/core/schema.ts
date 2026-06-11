@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { cloneJson, deepMerge, removeAiForbiddenProps } from "./merge.js";
 import { getComponentDefinition } from "./registry.js";
 import type {
@@ -7,6 +8,9 @@ import type {
   JsonObject,
   JsonValue,
 } from "../types/component.js";
+
+export const MAX_SCHEMA_ID_LENGTH = 50;
+const DEFAULT_RANDOM_ID_LENGTH = 8;
 
 function assertRequiredString(
   props: JsonObject,
@@ -19,6 +23,43 @@ function assertRequiredString(
   }
 
   return value;
+}
+
+export function toSchemaId(value: string, suffix = ""): string {
+  const normalized = value
+    .trim()
+    .replace(/[^A-Za-z0-9_-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const fallback = normalized === "" ? "component" : normalized;
+
+  if (suffix === "") {
+    return fallback.slice(0, MAX_SCHEMA_ID_LENGTH);
+  }
+
+  const suffixWithSeparator = suffix.startsWith("_") ? suffix : `_${suffix}`;
+  const maxBaseLength = MAX_SCHEMA_ID_LENGTH - suffixWithSeparator.length;
+  if (maxBaseLength <= 0) {
+    return suffixWithSeparator.slice(0, MAX_SCHEMA_ID_LENGTH);
+  }
+
+  return `${fallback.slice(0, maxBaseLength)}${suffixWithSeparator}`;
+}
+
+function randomIdSegment(length = DEFAULT_RANDOM_ID_LENGTH): string {
+  return randomBytes(Math.ceil(length / 2)).toString("hex").slice(0, length);
+}
+
+export function uniqueSchemaId(value: string, suffix = ""): string {
+  const uniqueSuffix = suffix === ""
+    ? randomIdSegment()
+    : `${suffix}_${randomIdSegment()}`;
+
+  return toSchemaId(value, uniqueSuffix);
+}
+
+function hasRandomIdSegment(value: string): boolean {
+  return /_[0-9a-f]{8}$/u.test(value);
 }
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
@@ -87,12 +128,21 @@ function applyPieChartDataRows(props: JsonObject, rows: JsonValue[] | undefined)
 
 export function generateComponentProps(aiProps: JsonObject): JsonObject {
   const componentName = assertRequiredString(aiProps, "componentName");
-  assertRequiredString(aiProps, "logicalId");
-  assertRequiredString(aiProps, "parentLogicalId");
+  const logicalId = assertRequiredString(aiProps, "logicalId");
+  const parentLogicalId = assertRequiredString(aiProps, "parentLogicalId");
 
   const definition = getComponentDefinition(componentName);
   const sanitizedAiProps = applySingleTextLineBoxDefaults(
-    removeAiForbiddenProps(aiProps, { componentName }),
+    removeAiForbiddenProps(
+      {
+        ...aiProps,
+        logicalId: hasRandomIdSegment(logicalId)
+          ? toSchemaId(logicalId)
+          : uniqueSchemaId(logicalId),
+        parentLogicalId: toSchemaId(parentLogicalId),
+      },
+      { componentName },
+    ),
   );
   const pieChartDataRows =
     componentName === "PieChart" ? getPieChartDataRows(sanitizedAiProps) : undefined;

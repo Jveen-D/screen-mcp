@@ -20,7 +20,7 @@ import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-11.1-bottom-conclusion-linebox-chart-height";
+const RULES_VERSION = "2026-06-11.3-component-id-randomized";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -94,6 +94,7 @@ function serverDiagnostics(): JsonObject {
       "larger-main-chart-safe-area",
       "multi-panel-decoration-diversity",
       "center-summary-text-spacing",
+      "component-id-max-50-randomized",
       "complete-schema-response-contract",
       "single-image-bottom-layer",
       "visible-svg-structure-decorations",

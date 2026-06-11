@@ -17,7 +17,7 @@ export const singleTextCapability: JsonObject = {
     {
       path: "logicalId",
       type: "string",
-      description: "组件唯一 ID，由 AI 生成。",
+      description: "组件唯一 ID，由 AI 生成；后端限制最长 50 个字符，必须包含短随机段以保证大屏内全局唯一。",
     },
     {
       path: "parentLogicalId",

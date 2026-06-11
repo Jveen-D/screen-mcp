@@ -18,7 +18,7 @@ export const pieChartCapability: JsonObject = {
       path: "logicalId",
       type: "string",
       description:
-        "组件唯一 ID，由 AI 生成，用于编辑器大纲树和 schema businessElementId。",
+        "组件唯一 ID，由 AI 生成，用于编辑器大纲树和 schema businessElementId；后端限制最长 50 个字符，必须包含短随机段以保证大屏内全局唯一。",
     },
     {
       path: "parentLogicalId",

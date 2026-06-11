@@ -34,6 +34,20 @@ function hasPropName(item: JsonObject, name: string): boolean {
   return typeof props === "object" && props !== null && !Array.isArray(props) && props.name === name;
 }
 
+function assertUniqueIds(ids: string[], message: string): void {
+  assert.equal(new Set(ids).size, ids.length, message);
+}
+
+function assertRandomizedId(
+  id: string,
+  semanticPart: string,
+  message: string,
+): void {
+  assert.ok(id.includes(semanticPart), message);
+  assert.match(id, /_[0-9a-f]{8}$/u, `${message}: should end with random segment`);
+  assert.ok(id.length <= 50, `${message}: should not exceed backend id length limit`);
+}
+
 const components = listComponents();
 assert.ok(
   components.some((component) => component.componentName === "PieChart"),
@@ -109,6 +123,14 @@ assert.ok(
   "entry animation should expose type select",
 );
 const pieRequiredProps = capability.requiredProps as JsonObject[];
+const pieLogicalIdRequiredProp = pieRequiredProps.find(
+  (item) => item.path === "logicalId",
+) as JsonObject | undefined;
+assert.ok(
+  typeof pieLogicalIdRequiredProp?.description === "string" &&
+    pieLogicalIdRequiredProp.description.includes("短随机段"),
+  "component capability should document randomized id requirement",
+);
 const pieStyleRequiredProp = pieRequiredProps.find(
   (item) => item.path === "style",
 ) as JsonObject | undefined;
@@ -239,9 +261,42 @@ assert.equal(legend.offsetY, -6);
 assert.equal(firstSeries.type, "pie");
 assert.deepEqual(firstSeries.center, inputFirstSeries.center);
 assert.deepEqual(firstSeries.radius, inputFirstSeries.radius);
-assert.equal(schema.businessElementId, aiProps.logicalId);
+assertRandomizedId(
+  schema.businessElementId,
+  aiProps.logicalId as string,
+  "component businessElementId should preserve semantic id and include random segment",
+);
+assert.equal(schema.props.logicalId, schema.businessElementId);
 assert.equal(schema.parentBusinessElementId, aiProps.parentLogicalId);
 assert.deepEqual(props.entryAnimiation, { type: "", isShow: false });
+
+const longComponentIdSchema = generateComponentsSchema({
+  ...aiProps,
+  logicalId: "very_long_component_identifier_for_backend_limit_should_be_trimmed_to_fifty_chars",
+});
+const secondLongComponentIdSchema = generateComponentsSchema({
+  ...aiProps,
+  logicalId: "very_long_component_identifier_for_backend_limit_should_be_trimmed_to_fifty_chars",
+});
+assert.ok(
+  longComponentIdSchema.businessElementId.length <= 50,
+  "component businessElementId should not exceed backend id length limit",
+);
+assert.match(
+  longComponentIdSchema.businessElementId,
+  /_[0-9a-f]{8}$/u,
+  "component businessElementId should include random segment",
+);
+assert.equal(
+  longComponentIdSchema.props.logicalId,
+  longComponentIdSchema.businessElementId,
+  "component props logicalId should not exceed backend id length limit",
+);
+assert.notEqual(
+  longComponentIdSchema.businessElementId,
+  secondLongComponentIdSchema.businessElementId,
+  "component ids from the same semantic input should include different random segments",
+);
 
 const forbiddenOverrideSchema = generateComponentsSchema({
   ...aiProps,
@@ -621,6 +676,12 @@ assert.ok(
   "ChartPanel should keep image components below visible content",
 );
 assert.ok(
+  moduleLayoutRules.some(
+    (rule) => rule.includes("最长 50 个字符") && rule.includes("短随机段"),
+  ),
+  "ChartPanel should document backend id length and random segment requirements",
+);
+assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("不要太花")),
   "ChartPanel should interpret simple style requests without removing structure",
 );
@@ -900,6 +961,65 @@ const chartPanelInput = {
 
 const moduleSchemas = generateModuleSchema(chartPanelInput);
 assert.equal(moduleSchemas.length, 10);
+assertUniqueIds(
+  moduleSchemas.map((item) => item.businessElementId),
+  "ChartPanel generated component ids should be unique",
+);
+const longModuleIdInput = {
+  ...chartPanelInput,
+  logicalId: "very_long_chart_panel_identifier_for_backend_component_id_limit_over_fifty_chars",
+} satisfies JsonObject;
+const longModuleSchemas = generateModuleSchema(longModuleIdInput);
+assert.ok(
+  longModuleSchemas.every(
+    (item) =>
+      item.businessElementId.length <= 50 &&
+      ((item.props.logicalId as string | undefined)?.length ?? 0) <= 50,
+  ),
+  "ChartPanel generated component ids should not exceed backend id length limit",
+);
+assertUniqueIds(
+  longModuleSchemas.map((item) => item.businessElementId),
+  "ChartPanel generated long component ids should be unique",
+);
+assert.ok(
+  longModuleSchemas.every(
+    (item) => ((item.props.parentLogicalId as string | undefined)?.length ?? 0) <= 50,
+  ),
+  "ChartPanel generated child parent ids should not exceed backend id length limit",
+);
+assert.ok(
+  longModuleSchemas.every((item) => /_[0-9a-f]{8}$/u.test(item.businessElementId)),
+  "ChartPanel generated component ids should include random segment",
+);
+const longModuleTreeSchema = generateModuleTreeSchema(longModuleIdInput);
+assert.ok(
+  longModuleTreeSchema.id.length <= 50,
+  "ChartPanel group id should not exceed backend id length limit",
+);
+assert.match(
+  longModuleTreeSchema.id,
+  /_[0-9a-f]{8}$/u,
+  "ChartPanel group id should include random segment",
+);
+assert.ok(
+  longModuleTreeSchema.children.every(
+    (item) =>
+      item.id.length <= 50 &&
+      ((item.props.logicalId as string | undefined)?.length ?? 0) <= 50,
+  ),
+  "ChartPanel tree child ids should not exceed backend id length limit",
+);
+assertUniqueIds(
+  [longModuleTreeSchema.id, ...longModuleTreeSchema.children.map((item) => item.id)],
+  "ChartPanel tree ids should be unique",
+);
+assert.ok(
+  longModuleTreeSchema.children.every(
+    (item) => (item.props.parentLogicalId as string | undefined) === longModuleTreeSchema.id,
+  ),
+  "ChartPanel tree child parent ids should reference randomized group id",
+);
 assert.deepEqual(
   moduleSchemas.map((item) => item.componentName),
   [
@@ -919,16 +1039,16 @@ assert.deepEqual(
   moduleSchemas.map((item) => item.indexNum),
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
 );
-assert.equal(moduleSchemas[0]?.businessElementId, "sales_channel_panel_title");
-assert.equal(moduleSchemas[1]?.businessElementId, "sales_channel_panel_aux_text_1");
-assert.equal(moduleSchemas[2]?.businessElementId, "sales_channel_panel_title_badge");
-assert.equal(moduleSchemas[3]?.businessElementId, "sales_channel_panel_decoration_1");
-assert.equal(moduleSchemas[4]?.businessElementId, "sales_channel_panel_decoration_2");
-assert.equal(moduleSchemas[5]?.businessElementId, "sales_channel_panel_decoration_3");
-assert.equal(moduleSchemas[6]?.businessElementId, "sales_channel_panel_decoration_4");
-assert.equal(moduleSchemas[7]?.businessElementId, "sales_channel_panel_decoration_5");
-assert.equal(moduleSchemas[8]?.businessElementId, "sales_channel_panel_main_chart");
-assert.equal(moduleSchemas[9]?.businessElementId, "sales_channel_panel_background");
+assertRandomizedId(moduleSchemas[0]?.businessElementId ?? "", "title", "module title id");
+assertRandomizedId(moduleSchemas[1]?.businessElementId ?? "", "aux_text_1", "module auxiliary text id");
+assertRandomizedId(moduleSchemas[2]?.businessElementId ?? "", "title_badge", "module title badge id");
+assertRandomizedId(moduleSchemas[3]?.businessElementId ?? "", "decoration_1", "module decoration 1 id");
+assertRandomizedId(moduleSchemas[4]?.businessElementId ?? "", "decoration_2", "module decoration 2 id");
+assertRandomizedId(moduleSchemas[5]?.businessElementId ?? "", "decoration_3", "module decoration 3 id");
+assertRandomizedId(moduleSchemas[6]?.businessElementId ?? "", "decoration_4", "module decoration 4 id");
+assertRandomizedId(moduleSchemas[7]?.businessElementId ?? "", "decoration_5", "module decoration 5 id");
+assertRandomizedId(moduleSchemas[8]?.businessElementId ?? "", "main_chart", "module main chart id");
+assertRandomizedId(moduleSchemas[9]?.businessElementId ?? "", "background", "module background id");
 const moduleTextDatasource = moduleSchemas[0]?.props.datasource as JsonObject;
 const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
 const moduleTitleEntryAnimation = moduleSchemas[0]?.props.entryAnimiation as JsonObject;
@@ -962,7 +1082,7 @@ assert.equal(moduleTitleBadgeStyle.width, 220);
 assert.equal(moduleTitleBadgeStyle.height, 52);
 assert.equal(moduleTitleBadgeStyle.zIndex, 16);
 const moduleAuxText = moduleSchemas.find(
-  (item) => item.businessElementId === "sales_channel_panel_aux_text_1",
+  (item) => item.businessElementId.includes("aux_text_1"),
 );
 assert.ok(moduleAuxText, "module should include auxiliary text");
 const moduleAuxTextDatasource = moduleAuxText.props.datasource as JsonObject;
@@ -981,7 +1101,7 @@ const moduleAuxTextStyle = moduleAuxText.props.style as JsonObject;
 assert.equal(moduleAuxTextStyle.height, 14);
 assert.equal(moduleAuxTextStyle.lineHeight, 1);
 const moduleBackground = moduleSchemas.find(
-  (item) => item.businessElementId === "sales_channel_panel_background",
+  (item) => item.businessElementId.includes("background"),
 );
 assert.ok(moduleBackground, "module should include background");
 assert.equal(moduleBackground.props.imageBase64, "");
@@ -1000,7 +1120,7 @@ const moduleBackgroundStyle = moduleBackground.props.style as JsonObject;
 assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(4,16,32,0.96)");
 assert.equal(moduleBackgroundStyle.zIndex, 10);
 const moduleChart = moduleSchemas.find(
-  (item) => item.businessElementId === "sales_channel_panel_main_chart",
+  (item) => item.businessElementId.includes("main_chart"),
 );
 assert.ok(moduleChart, "module should include main chart");
 const moduleChartOption = moduleChart.props.option as JsonObject;
@@ -1096,7 +1216,7 @@ const noResourcePanelInput = {
 } satisfies JsonObject;
 const noResourceSchemas = generateModuleSchema(noResourcePanelInput);
 const noResourceBackground = noResourceSchemas.find(
-  (item) => item.businessElementId === "no_resource_panel_background",
+  (item) => item.businessElementId.includes("background"),
 );
 assert.ok(noResourceBackground, "no-resource module should include background");
 assert.equal(noResourceBackground?.props.imageSrc, "");
@@ -1452,7 +1572,7 @@ assert.ok(
   "center total label should not stick to the center number",
 );
 const terseBackground = terseUserPanelSchemas.find(
-  (item) => item.businessElementId === "terse_risk_level_panel_background",
+  (item) => item.businessElementId.includes("background"),
 );
 assert.ok(terseBackground, "terse input should get a default background");
 assert.equal(terseBackground.props.svgSource, "custom");
@@ -2134,7 +2254,11 @@ assert.equal(
 );
 
 const moduleTreeSchema = generateModuleTreeSchema(chartPanelInput);
-assert.equal(moduleTreeSchema.id, "sales_channel_panel");
+assertRandomizedId(
+  moduleTreeSchema.id,
+  "sales_channel_panel",
+  "module tree group id",
+);
 assert.equal(moduleTreeSchema.componentName, "__Group__");
 assert.equal(moduleTreeSchema.structVersion, "0.0.0");
 assert.deepEqual(moduleTreeSchema.props, {});
@@ -2158,13 +2282,23 @@ assert.deepEqual(
     "SingleImage",
   ],
 );
-assert.equal(moduleTreeSchema.children[8]?.id, "sales_channel_panel_main_chart");
-assert.equal(moduleTreeSchema.children[0]?.id, "sales_channel_panel_title");
+assertUniqueIds(
+  [moduleTreeSchema.id, ...moduleTreeSchema.children.map((item) => item.id)],
+  "module tree ids should be unique",
+);
+assert.ok(
+  moduleTreeSchema.children.every(
+    (item) => (item.props.parentLogicalId as string | undefined) === moduleTreeSchema.id,
+  ),
+  "module tree child parentLogicalId should reference randomized group id",
+);
+assertRandomizedId(moduleTreeSchema.children[8]?.id ?? "", "main_chart", "module tree chart id");
+assertRandomizedId(moduleTreeSchema.children[0]?.id ?? "", "title", "module tree title id");
 assert.equal(moduleTreeSchema.children[0]?.isGroup, false);
 assert.equal(moduleTreeSchema.children[0]?.structVersion, "0.0.2");
 assert.equal(
   (moduleTreeSchema.children[0]?.props as JsonObject).logicalId,
-  "sales_channel_panel_title",
+  moduleTreeSchema.children[0]?.id,
 );
 
 const nodePath = process.execPath;
@@ -2264,7 +2398,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-11.1-bottom-conclusion-linebox-chart-height",
+    "2026-06-11.3-component-id-randomized",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -2365,6 +2499,10 @@ try {
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("center-summary-text-spacing"),
     "diagnostics should expose center summary text spacing fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("component-id-max-50-randomized"),
+    "diagnostics should expose randomized component id fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

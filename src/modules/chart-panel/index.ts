@@ -1,6 +1,8 @@
 import {
   componentSchemaToEditorNode,
   generateComponentsSchema,
+  toSchemaId,
+  uniqueSchemaId,
 } from "../../core/schema.js";
 import type { EditorGroupNode, JsonObject, JsonValue } from "../../types/component.js";
 import type {
@@ -1226,6 +1228,10 @@ function isPlaceholderBase64(value: string): boolean {
   return trimmed === "" || trimmed === "data:image/png;base64,..." || trimmed.endsWith(",AAAA") || trimmed.endsWith(",BBBB");
 }
 
+function childLogicalId(input: ModuleInput, suffix: string): string {
+  return uniqueSchemaId(input.logicalId, suffix);
+}
+
 function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonObject {
   const props = slotProps(slot);
   const imageBase64 = typeof props.imageBase64 === "string" ? props.imageBase64 : "";
@@ -1237,7 +1243,7 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
   return {
     ...props,
     componentName: componentNameFor(slot, "SingleImage"),
-    logicalId: `${input.logicalId}_background`,
+    logicalId: childLogicalId(input, "background"),
     parentLogicalId: input.logicalId,
     name: typeof props.name === "string" ? props.name : "模块背景",
     imageUseMode: hasImageBase64 ? "base64" : "upload",
@@ -1271,7 +1277,7 @@ function createTitleBadgeProps(input: ModuleInput): JsonObject {
 
   return {
     componentName: "SvgDecoration",
-    logicalId: `${input.logicalId}_title_badge`,
+    logicalId: childLogicalId(input, "title_badge"),
     parentLogicalId: input.logicalId,
     name: "标题背景点缀",
     style: {
@@ -1313,7 +1319,7 @@ function createTitleProps(input: ModuleInput, slot: ModuleSlotInput | undefined)
   return {
     ...props,
     componentName: componentNameFor(slot, "SingleText"),
-    logicalId: `${input.logicalId}_title`,
+    logicalId: childLogicalId(input, "title"),
     parentLogicalId: input.logicalId,
     name: typeof props.name === "string" ? props.name : "模块标题",
     textContent,
@@ -1438,7 +1444,7 @@ function createMainChartProps(
         }
       : {}),
     componentName: slot.componentName,
-    logicalId: `${input.logicalId}_main_chart`,
+    logicalId: childLogicalId(input, "main_chart"),
     parentLogicalId: input.logicalId,
     name: typeof props.name === "string" ? props.name : "主图表",
     entryAnimiation: entryAnimation(props, CHART_ENTRY_ANIMATION),
@@ -1567,7 +1573,7 @@ function createDecorationProps(
   return {
     ...props,
     componentName: slot.componentName,
-    logicalId: `${input.logicalId}_decoration_${index + 1}`,
+    logicalId: childLogicalId(input, `decoration_${index + 1}`),
     parentLogicalId: input.logicalId,
     name: typeof props.name === "string" ? props.name : `模块装饰${index + 1}`,
     entryAnimiation: entryAnimation(props, DECORATION_ENTRY_ANIMATION),
@@ -1603,7 +1609,7 @@ function createAuxiliaryTextProps(
   return {
     ...props,
     componentName: componentNameFor(slot, "SingleText"),
-    logicalId: `${input.logicalId}_aux_text_${index + 1}`,
+    logicalId: childLogicalId(input, `aux_text_${index + 1}`),
     parentLogicalId: input.logicalId,
     name: typeof props.name === "string" ? props.name : `辅助文本${index + 1}`,
     textContent:
@@ -1640,14 +1646,13 @@ function normalizeModuleInput(rawInput: ModuleInput): ModuleInput {
   return {
     ...rawInput,
     moduleName,
-    logicalId: assertString(rawInput.logicalId, "logicalId"),
+    logicalId: uniqueSchemaId(assertString(rawInput.logicalId, "logicalId")),
     parentLogicalId: assertString(rawInput.parentLogicalId, "parentLogicalId"),
     style: assertStyle(rawInput.style),
   };
 }
 
-export function generateChartPanelSchemas(rawInput: ModuleInput) {
-  const input = normalizeModuleInput(rawInput);
+function generateChartPanelSchemasForInput(input: ModuleInput) {
   const slots = input.slots;
   if (!isJsonObject(slots)) {
     throw new Error("missing required module prop: slots");
@@ -1713,9 +1718,13 @@ export function generateChartPanelSchemas(rawInput: ModuleInput) {
   }));
 }
 
+export function generateChartPanelSchemas(rawInput: ModuleInput) {
+  return generateChartPanelSchemasForInput(normalizeModuleInput(rawInput));
+}
+
 export function generateChartPanelTreeSchema(rawInput: ModuleInput): EditorGroupNode {
   const input = normalizeModuleInput(rawInput);
-  const children = generateChartPanelSchemas(input).map(componentSchemaToEditorNode);
+  const children = generateChartPanelSchemasForInput(input).map(componentSchemaToEditorNode);
 
   return {
     id: input.logicalId,
