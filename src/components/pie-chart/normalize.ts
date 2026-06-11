@@ -32,6 +32,32 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   return fallback;
 }
 
+function asPercentString(value: JsonValue | undefined, fallback: string): string {
+  if (typeof value === "string" && value.trim() !== "") {
+    return value.trim();
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `${value}%`;
+  }
+
+  return fallback;
+}
+
+function normalizeStringPair(
+  value: JsonValue | undefined,
+  fallback: [string, string],
+): [string, string] {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  return [
+    asPercentString(value[0], fallback[0]),
+    asPercentString(value[1], fallback[1]),
+  ];
+}
+
 function isValidLegendPosition(left: JsonValue, top: JsonValue): boolean {
   if (typeof left !== "string" || typeof top !== "string") {
     return false;
@@ -51,6 +77,12 @@ function normalizePieSeries(option: JsonObject): void {
   for (const item of series) {
     if (isJsonObject(item)) {
       item.type = "pie";
+      item.left = 0;
+      item.top = 0;
+      item.right = 0;
+      item.bottom = 0;
+      item.center = normalizeStringPair(item.center, ["50%", "50%"]);
+      item.radius = normalizeStringPair(item.radius, ["0%", "60%"]);
     }
   }
 }
@@ -121,11 +153,15 @@ export function normalizePieChartProps(props: JsonObject): JsonObject {
   }
 
   if (isValidLegendPosition(legend.left, legend.top)) {
+    legend.offsetX = asNumber(legend.offsetX, 0);
+    legend.offsetY = asNumber(legend.offsetY, 0);
     return props;
   }
 
   legend.left = "center";
   legend.top = "top";
+  legend.offsetX = asNumber(legend.offsetX, 0);
+  legend.offsetY = asNumber(legend.offsetY, 0);
 
   return props;
 }

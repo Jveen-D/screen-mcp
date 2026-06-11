@@ -91,6 +91,7 @@ export const singleImageCapability: JsonObject = {
     "数组按下标深合并。",
     "AI 不应凭空生成 base64，只能使用用户提供的 base64 或素材路径。",
     "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
+    "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
   ],
   examples: [
     {

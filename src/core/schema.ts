@@ -45,6 +45,28 @@ function removeChartData(props: JsonObject): JsonObject {
   return nextProps;
 }
 
+function applySingleTextLineBoxDefaults(props: JsonObject): JsonObject {
+  if (props.componentName !== "SingleText") {
+    return props;
+  }
+
+  const nextProps = cloneJson(props);
+  const style = nextProps.style;
+  if (!isJsonObject(style)) {
+    return nextProps;
+  }
+
+  if (style.lineHeight === undefined) {
+    style.lineHeight = 1;
+  }
+
+  if (style.height === undefined && typeof style.fontSize === "number" && style.fontSize > 0) {
+    style.height = style.fontSize;
+  }
+
+  return nextProps;
+}
+
 function applyPieChartDataRows(props: JsonObject, rows: JsonValue[] | undefined): void {
   props.chartData = cloneJson(getComponentDefinition("PieChart").defaultProps.chartData);
 
@@ -69,7 +91,9 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
   assertRequiredString(aiProps, "parentLogicalId");
 
   const definition = getComponentDefinition(componentName);
-  const sanitizedAiProps = removeAiForbiddenProps(aiProps, { componentName });
+  const sanitizedAiProps = applySingleTextLineBoxDefaults(
+    removeAiForbiddenProps(aiProps, { componentName }),
+  );
   const pieChartDataRows =
     componentName === "PieChart" ? getPieChartDataRows(sanitizedAiProps) : undefined;
   const mergeableAiProps =
@@ -111,7 +135,14 @@ export function generateComponentsSchema(aiProps: JsonObject): ComponentSchema {
 export function generateComponentsSchemas(
   componentsProps: JsonObject[],
 ): ComponentSchema[] {
-  return componentsProps.map((props, index) => ({
+  const orderedProps = [...componentsProps].sort((left, right) => {
+    const leftIsImage = left.componentName === "SingleImage";
+    const rightIsImage = right.componentName === "SingleImage";
+
+    return Number(leftIsImage) - Number(rightIsImage);
+  });
+
+  return orderedProps.map((props, index) => ({
     ...generateComponentsSchema(props),
     indexNum: index + 1,
   }));

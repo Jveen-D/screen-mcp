@@ -28,7 +28,7 @@ export const singleTextDefaultProps: JsonObject = {
   },
   style: {
     width: 320,
-    height: 40,
+    height: 18,
     position: "absolute",
     left: 992,
     top: 228.923582580115,
@@ -41,7 +41,7 @@ export const singleTextDefaultProps: JsonObject = {
     fontStyle: "normal",
     fontWeight: "normal",
     letterSpacing: 1,
-    lineHeight: 2,
+    lineHeight: 1,
     zIndex: 501,
   },
   rotate: 0,

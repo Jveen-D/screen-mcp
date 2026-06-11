@@ -12,6 +12,7 @@ import {
   generateComponentsSchema,
   generateComponentsSchemas,
 } from "../src/core/schema.js";
+import { generateScreenModuleFromPrompt } from "../src/core/promptModule.js";
 import type { JsonObject } from "../src/types/component.js";
 
 function readToolJson(result: Awaited<ReturnType<Client["callTool"]>>) {
@@ -26,6 +27,11 @@ function readToolJson(result: Awaited<ReturnType<Client["callTool"]>>) {
   assert.equal(typeof text, "string");
 
   return JSON.parse(text);
+}
+
+function hasPropName(item: JsonObject, name: string): boolean {
+  const props = item.props;
+  return typeof props === "object" && props !== null && !Array.isArray(props) && props.name === name;
 }
 
 const components = listComponents();
@@ -111,6 +117,26 @@ const pieSeriesCapability = pieWritableProps.find(
   (item) => item.path === "option.series[0]",
 ) as JsonObject | undefined;
 const pieSeriesChildren = pieSeriesCapability?.children as JsonObject[] | undefined;
+const pieLegendCapability = pieWritableProps.find(
+  (item) => item.path === "option.legend",
+) as JsonObject | undefined;
+const pieLegendChildren = pieLegendCapability?.children as JsonObject[] | undefined;
+assert.ok(
+  pieLegendChildren?.some((item) => item.path === "option.legend.offsetX"),
+  "PieChart legend should expose horizontal offset",
+);
+assert.ok(
+  pieLegendChildren?.some((item) => item.path === "option.legend.offsetY"),
+  "PieChart legend should expose vertical offset",
+);
+assert.ok(
+  pieSeriesChildren?.some((item) => item.path === "option.series[0].center"),
+  "PieChart series should expose center position",
+);
+assert.ok(
+  pieSeriesChildren?.some((item) => item.path === "option.series[0].radius"),
+  "PieChart series should expose radius pair",
+);
 const pieLabelCapability = pieSeriesChildren?.find(
   (item) => item.path === "option.series[0].label",
 ) as JsonObject | undefined;
@@ -158,6 +184,18 @@ assert.ok(
   pieVisualRules.some((rule) => rule.includes("侧边信息卡")),
   "PieChart should guide label and side-card information roles",
 );
+assert.ok(
+  pieVisualRules.some((rule) => rule.includes("legend 默认必须保留")),
+  "PieChart should keep legend by default",
+);
+assert.ok(
+  pieVisualRules.some((rule) => rule.includes("截断是可接受现象")),
+  "PieChart should allow label truncation while avoiding overlap",
+);
+assert.ok(
+  pieVisualRules.some((rule) => rule.includes("legend.offsetX/offsetY")),
+  "PieChart should document legend offset plus center/radius spacing strategy",
+);
 const pieForbiddenProps = capability.aiForbiddenProps as JsonObject[];
 assert.ok(
   pieForbiddenProps.some((item) => item.path === "chartData.sourceType"),
@@ -196,7 +234,10 @@ assert.deepEqual(chartDataOriginalRows, chartDataRows);
 assert.equal("title" in option, false);
 assert.equal(legend.left, "center");
 assert.equal(legend.top, "bottom");
+assert.equal(legend.offsetX, 0);
+assert.equal(legend.offsetY, -6);
 assert.equal(firstSeries.type, "pie");
+assert.deepEqual(firstSeries.center, inputFirstSeries.center);
 assert.deepEqual(firstSeries.radius, inputFirstSeries.radius);
 assert.equal(schema.businessElementId, aiProps.logicalId);
 assert.equal(schema.parentBusinessElementId, aiProps.parentLogicalId);
@@ -372,6 +413,24 @@ assert.equal(textConstantData[0]?.text, "销售渠道占比");
 const textStyle = textSchema.props.style as JsonObject;
 assert.equal(textStyle.lineHeight, 1.09);
 
+const defaultLineBoxTextSchema = generateComponentsSchema({
+  componentName: "SingleText",
+  logicalId: "single_line_label",
+  parentLogicalId: "sales_group",
+  textContent: "单行标签",
+  style: {
+    position: "absolute",
+    left: 80,
+    top: 150,
+    width: 120,
+    fontSize: 20,
+    backgroundColor: "rgba(0,0,0,0)",
+  },
+});
+const defaultLineBoxTextStyle = defaultLineBoxTextSchema.props.style as JsonObject;
+assert.equal(defaultLineBoxTextStyle.height, 20);
+assert.equal(defaultLineBoxTextStyle.lineHeight, 1);
+
 const svgCapability = getComponentCapability("SvgDecoration");
 assert.ok(Array.isArray(svgCapability.aiWritableProps));
 const safeSvg =
@@ -464,6 +523,11 @@ assert.deepEqual(
   panelSchemas.map((item) => item.indexNum),
   [1, 2, 3, 4],
 );
+assert.deepEqual(
+  panelSchemas.map((item) => item.componentName),
+  ["SingleText", "PieChart", "SvgDecoration", "SingleImage"],
+  "batch component generation should place images below text, charts, and icons",
+);
 
 const modules = listModules();
 assert.ok(
@@ -474,6 +538,56 @@ assert.ok(
 const moduleCapability = getModuleCapability("ChartPanel");
 assert.ok(moduleCapability.slots, "ChartPanel capability should include slots");
 const moduleLayoutRules = moduleCapability.layoutRules as string[];
+const moduleLayoutRuleGroups = moduleCapability.layoutRuleGroups as JsonObject[];
+assert.ok(
+  Array.isArray(moduleLayoutRuleGroups),
+  "ChartPanel capability should include grouped layout rules",
+);
+const layoutRuleGroupCategories = moduleLayoutRuleGroups.map(
+  (group) => group.category,
+);
+assert.ok(
+  layoutRuleGroupCategories.includes("legend"),
+  "ChartPanel grouped rules should include legend category",
+);
+assert.ok(
+  layoutRuleGroupCategories.includes("schema-output-layering"),
+  "ChartPanel grouped rules should include schema output layering category",
+);
+assert.ok(
+  layoutRuleGroupCategories.includes("side-summary-and-data-semantics"),
+  "ChartPanel grouped rules should include side summary semantics category",
+);
+assert.ok(
+  layoutRuleGroupCategories.includes("svg-decoration-structure"),
+  "ChartPanel grouped rules should include SVG decoration structure category",
+);
+assert.ok(
+  moduleLayoutRuleGroups.every((group) =>
+    ["must", "should", "niceToHave"].includes(group.priority as string),
+  ),
+  "ChartPanel grouped rules should use known priority values",
+);
+assert.deepEqual(
+  moduleLayoutRuleGroups.flatMap((group) => group.rules as string[]),
+  moduleLayoutRules,
+  "ChartPanel grouped rules should flatten to layoutRules for compatibility",
+);
+const legendRuleGroup = moduleLayoutRuleGroups.find(
+  (group) => group.category === "legend",
+);
+assert.ok(
+  (legendRuleGroup?.rules as string[] | undefined)?.some((rule) =>
+    rule.includes("legend 默认必须保留"),
+  ),
+  "legend grouped rules should include default retention",
+);
+assert.ok(
+  (legendRuleGroup?.rules as string[] | undefined)?.some((rule) =>
+    rule.includes("预判 legend 是否会换行"),
+  ),
+  "legend grouped rules should include wrapping forecast",
+);
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("连续的主横线")),
   "ChartPanel should guide bottom decorations as one continuous structure line",
@@ -483,8 +597,48 @@ assert.ok(
   "ChartPanel should guide decorations as panel frame elements",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("不要所有模块都使用同一种标题栏")),
-  "ChartPanel should guide title structure without fixed title bar defaults",
+  moduleLayoutRules.some((rule) => rule.includes("避免大面积高亮实色标题底板")),
+  "ChartPanel should guide title structure without heavy filled title slabs",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("最终用户通常只会说")),
+  "ChartPanel should cover terse end-user prompts",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("自动生成深色背景")),
+  "ChartPanel should autonomously fill missing structure slots",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("最终用户通常不会主动提入场动画")),
+  "ChartPanel should add restrained entry animations by default",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("ChartPanel 默认动画策略")),
+  "ChartPanel should document default animation strategy",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("SingleImage") && rule.includes("遮盖")),
+  "ChartPanel should keep image components below visible content",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不要太花")),
+  "ChartPanel should interpret simple style requests without removing structure",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不允许只输出裸标题")),
+  "ChartPanel should forbid bare layouts even when concise",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("轻量线性承托")),
+  "ChartPanel should prefer lightweight title support",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("亮色牌子")),
+  "ChartPanel should avoid detached bright title slabs",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("填充透明度应低于 0.18")),
+  "ChartPanel should constrain title support fill opacity",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("按语义选择实心饼图、环形图或细环")),
@@ -495,12 +649,124 @@ assert.ok(
   "ChartPanel should avoid fixed design comp parameters",
 );
 assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("中心总数") && rule.includes("排在 PieChart 之前")),
+  "ChartPanel should keep center total text above PieChart",
+);
+assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("分工展示")),
   "ChartPanel should guide information role separation",
 );
 assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("数据复读")),
+  "ChartPanel should prevent side summaries from merely repeating legend data",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("主体供给")),
+  "ChartPanel should include energy-like semantic side summary examples",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("formatter: \"{b}\"")),
+  "ChartPanel should prefer lighter pie labels when summaries carry values",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("show=true")),
+  "ChartPanel should keep external pie labels visible but lightweight when side summaries carry values",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("legend 默认必须保留")),
+  "ChartPanel should keep PieChart legend by default",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("朴素原生小圆点列表")),
+  "ChartPanel should style legend beyond native plain dots",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("视觉重量必须低于主图")),
+  "ChartPanel should keep legend visually subordinate",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("右侧信息卡不是 legend")),
+  "ChartPanel should prevent side summary cards from being named as legends",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("标题不能压在边框线上")),
+  "ChartPanel should keep side-card heading clear of the border",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("按摘要文本行的 top")),
+  "ChartPanel should align side summary row rules from text row coordinates",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("预判 legend 是否会换行")),
+  "ChartPanel should forecast legend wrapping from chart size and data items",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("主图数据必须和中心摘要")),
+  "ChartPanel should require main chart data to match summary cards",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("保留原始分类名")),
+  "ChartPanel should preserve source category labels in side summaries",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("分类名 + 数值 + 占比")),
+  "ChartPanel should define side summary two-line text structure",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("正文区域宽度不低于 156px")),
+  "ChartPanel should reserve enough side summary text width",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("客户来源")),
+  "ChartPanel should include customer-source summary semantics",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("信息分工策略")),
+  "ChartPanel should treat side cards as information hierarchy, not legend crowding fix",
+);
+assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("连接线应短、少、淡")),
   "ChartPanel should reduce connector line noise",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("只表达区域关联")),
+  "ChartPanel should treat side-card connector lines as structural only",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("落到侧边信息卡左边缘")),
+  "ChartPanel should anchor connector lines to the side-card edge",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("避免穿过环形图中心")),
+  "ChartPanel should keep side-card connectors out of the donut center",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("底部结论默认使用主文本色")),
+  "ChartPanel should keep bottom conclusions visually subordinate",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("底部结论默认是单行 SingleText")),
+  "ChartPanel should keep bottom conclusion as a single-line text box",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不能把结构感削没")),
+  "ChartPanel should restore lightweight structure after visual dedupe",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("侧边摘要色标")),
+  "ChartPanel should keep side summary color anchors visible",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("告警、预警、设备异常")),
+  "ChartPanel should use alarm-specific wording outside risk scenes",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("两行排版")),
+  "ChartPanel should adapt side-card rows for longer summary text",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("legend 预估行数收缩")),
+  "ChartPanel should tighten pie labels according to estimated legend line count",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("高等级风险")),
@@ -521,6 +787,26 @@ assert.ok(
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("不要因为禁止 SVG")),
   "ChartPanel should require decoration structures without SVG misuse",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("不使用 SVG 装饰")),
+  "ChartPanel should not confuse SVG content bans with removing decorations",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("默认装饰必须肉眼可见")),
+  "ChartPanel should require visible default SVG decorations",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("只能作为最低保底结构")),
+  "ChartPanel should treat built-in default SVGs as fallback only",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("多个 ChartPanel 模块")),
+  "ChartPanel should avoid reusing one default SVG look across many modules",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("结构原则而不是固定图形")),
+  "ChartPanel should preserve design autonomy beyond fixed default SVG paths",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("信息卡外框")),
@@ -613,63 +899,113 @@ const chartPanelInput = {
 } satisfies JsonObject;
 
 const moduleSchemas = generateModuleSchema(chartPanelInput);
-assert.equal(moduleSchemas.length, 6);
+assert.equal(moduleSchemas.length, 10);
 assert.deepEqual(
   moduleSchemas.map((item) => item.componentName),
   [
     "SingleText",
-    "SvgDecoration",
-    "SvgDecoration",
     "SingleText",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
     "PieChart",
     "SingleImage",
   ],
 );
 assert.deepEqual(
   moduleSchemas.map((item) => item.indexNum),
-  [1, 2, 3, 4, 5, 6],
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
 );
 assert.equal(moduleSchemas[0]?.businessElementId, "sales_channel_panel_title");
-assert.equal(moduleSchemas[1]?.businessElementId, "sales_channel_panel_title_badge");
-assert.equal(moduleSchemas[2]?.businessElementId, "sales_channel_panel_decoration_1");
-assert.equal(moduleSchemas[3]?.businessElementId, "sales_channel_panel_aux_text_1");
-assert.equal(moduleSchemas[4]?.businessElementId, "sales_channel_panel_main_chart");
-assert.equal(moduleSchemas[5]?.businessElementId, "sales_channel_panel_background");
+assert.equal(moduleSchemas[1]?.businessElementId, "sales_channel_panel_aux_text_1");
+assert.equal(moduleSchemas[2]?.businessElementId, "sales_channel_panel_title_badge");
+assert.equal(moduleSchemas[3]?.businessElementId, "sales_channel_panel_decoration_1");
+assert.equal(moduleSchemas[4]?.businessElementId, "sales_channel_panel_decoration_2");
+assert.equal(moduleSchemas[5]?.businessElementId, "sales_channel_panel_decoration_3");
+assert.equal(moduleSchemas[6]?.businessElementId, "sales_channel_panel_decoration_4");
+assert.equal(moduleSchemas[7]?.businessElementId, "sales_channel_panel_decoration_5");
+assert.equal(moduleSchemas[8]?.businessElementId, "sales_channel_panel_main_chart");
+assert.equal(moduleSchemas[9]?.businessElementId, "sales_channel_panel_background");
 const moduleTextDatasource = moduleSchemas[0]?.props.datasource as JsonObject;
 const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
+const moduleTitleEntryAnimation = moduleSchemas[0]?.props.entryAnimiation as JsonObject;
 assert.equal(moduleTextConstantData[0]?.text, "销售渠道占比");
-assert.equal(moduleSchemas[1]?.props.svgSource, "custom");
-assert.equal(moduleSchemas[1]?.props.name, "标题背景点缀");
-assert.equal(moduleSchemas[1]?.props.opacity, 0.7);
+assert.deepEqual(moduleTitleEntryAnimation, {
+  isShow: true,
+  type: "animate__fadeInLeft",
+});
+assert.equal(moduleSchemas[2]?.props.svgSource, "custom");
+assert.equal(moduleSchemas[2]?.props.name, "标题背景点缀");
+assert.equal(moduleSchemas[2]?.props.opacity, 0.72);
+assert.deepEqual(moduleSchemas[2]?.props.entryAnimiation, {
+  isShow: true,
+  type: "animate__fadeInLeft",
+});
+assert.ok(
+  !(moduleSchemas[2]?.props.svgContent as string).includes("<rect"),
+  "title support should avoid filled rectangular slabs",
+);
 const moduleTitleStyle = moduleSchemas[0]?.props.style as JsonObject;
 assert.equal(moduleTitleStyle.left, 72);
 assert.equal(moduleTitleStyle.top, 114);
 assert.equal(moduleTitleStyle.width, 472);
+assert.equal(moduleTitleStyle.height, 22);
 assert.equal(moduleTitleStyle.fontSize, 22);
-assert.equal(moduleTitleStyle.lineHeight, 1.4);
-const moduleTitleBadgeStyle = moduleSchemas[1]?.props.style as JsonObject;
+assert.equal(moduleTitleStyle.lineHeight, 1);
+const moduleTitleBadgeStyle = moduleSchemas[2]?.props.style as JsonObject;
 assert.equal(moduleTitleBadgeStyle.left, 56);
 assert.equal(moduleTitleBadgeStyle.top, 100);
-assert.equal(moduleTitleBadgeStyle.width, 200);
-assert.equal(moduleTitleBadgeStyle.height, 50);
+assert.equal(moduleTitleBadgeStyle.width, 220);
+assert.equal(moduleTitleBadgeStyle.height, 52);
 assert.equal(moduleTitleBadgeStyle.zIndex, 16);
-const moduleAuxTextDatasource = moduleSchemas[3]?.props.datasource as JsonObject;
+const moduleAuxText = moduleSchemas.find(
+  (item) => item.businessElementId === "sales_channel_panel_aux_text_1",
+);
+assert.ok(moduleAuxText, "module should include auxiliary text");
+const moduleAuxTextDatasource = moduleAuxText.props.datasource as JsonObject;
 const moduleAuxTextConstantData =
   moduleAuxTextDatasource.constantData as JsonObject[];
+const moduleAuxTextEntryAnimation = moduleAuxText.props.entryAnimiation as JsonObject;
 assert.equal(
   moduleAuxTextConstantData[0]?.text,
   "高等级风险占比 29.0%，处置优先级：红 / 橙",
 );
-const moduleAuxTextStyle = moduleSchemas[3]?.props.style as JsonObject;
-assert.equal(moduleAuxTextStyle.lineHeight, 1.4);
-assert.equal(moduleSchemas[5]?.props.imageBase64, "");
-assert.equal(moduleSchemas[5]?.props.imageUseMode, "upload");
-assert.equal(moduleSchemas[5]?.props.svgSource, "custom");
-const moduleBackgroundStyle = moduleSchemas[5]?.props.style as JsonObject;
+assert.deepEqual(moduleAuxTextEntryAnimation, {
+  isShow: true,
+  type: "animate__fadeInLeft",
+});
+const moduleAuxTextStyle = moduleAuxText.props.style as JsonObject;
+assert.equal(moduleAuxTextStyle.height, 14);
+assert.equal(moduleAuxTextStyle.lineHeight, 1);
+const moduleBackground = moduleSchemas.find(
+  (item) => item.businessElementId === "sales_channel_panel_background",
+);
+assert.ok(moduleBackground, "module should include background");
+assert.equal(moduleBackground.props.imageBase64, "");
+assert.equal(moduleBackground.props.imageUseMode, "upload");
+assert.equal(moduleBackground.props.svgSource, "custom");
+assert.equal(
+  (moduleBackground.props.svgContent as string).includes("#00E5FF"),
+  false,
+  "default background should use theme-driven structure color instead of fixed cyan",
+);
+assert.deepEqual(moduleBackground.props.entryAnimiation, {
+  isShow: false,
+  type: "",
+});
+const moduleBackgroundStyle = moduleBackground.props.style as JsonObject;
 assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(4,16,32,0.96)");
 assert.equal(moduleBackgroundStyle.zIndex, 10);
-const moduleChartOption = moduleSchemas[4]?.props.option as JsonObject;
-const moduleChartData = moduleSchemas[4]?.props.chartData as JsonObject;
+const moduleChart = moduleSchemas.find(
+  (item) => item.businessElementId === "sales_channel_panel_main_chart",
+);
+assert.ok(moduleChart, "module should include main chart");
+const moduleChartOption = moduleChart.props.option as JsonObject;
+const moduleChartData = moduleChart.props.chartData as JsonObject;
+const moduleChartEntryAnimation = moduleChart.props.entryAnimiation as JsonObject;
 const moduleChartDataConstant = moduleChartData.constant as JsonObject;
 const moduleChartRows = moduleChartDataConstant.data as JsonObject[];
 const moduleChartSeries = moduleChartOption.series as JsonObject[];
@@ -680,26 +1016,72 @@ assert.deepEqual(moduleChartRows, [
   { name: "代理", type: "渠道", value: 96 },
   { name: "线上", type: "渠道", value: 76 },
 ]);
-assert.deepEqual(moduleChartSeries[0]?.radius, ["42%", "68%"]);
+assert.deepEqual(moduleChartEntryAnimation, {
+  isShow: true,
+  type: "animate__zoomIn",
+});
+assert.deepEqual(moduleChartSeries[0]?.radius, ["36%", "64%"]);
+assert.deepEqual(moduleChartSeries[0]?.center, ["50%", "44%"]);
+assert.equal(moduleChartSeries[0]?.left, 0);
+assert.equal(moduleChartSeries[0]?.top, 0);
+assert.equal(moduleChartSeries[0]?.right, 0);
+assert.equal(moduleChartSeries[0]?.bottom, 0);
 assert.equal(moduleChartSeries[0]?.type, "pie");
+assert.equal(moduleChartSeries[0]?.selectedMode, false);
+assert.equal(moduleChartSeries[0]?.selectOffset, 0);
+const moduleChartSeriesEmphasis = moduleChartSeries[0]?.emphasis as JsonObject;
+const moduleChartSeriesSelect = moduleChartSeries[0]?.select as JsonObject;
+assert.equal(moduleChartSeriesEmphasis.disabled, true);
+assert.equal(moduleChartSeriesSelect.disabled, true);
 const moduleChartLegend = moduleChartOption.legend as JsonObject;
 assert.equal(moduleChartLegend.top, "bottom");
 assert.equal(moduleChartLegend.left, "center");
-assert.equal(moduleSchemas[2]?.props.svgSource, "custom");
-assert.equal(typeof moduleSchemas[2]?.props.svgContent, "string");
-const moduleDecorationStyle = moduleSchemas[2]?.props.style as JsonObject;
-const moduleChartStyle = moduleSchemas[4]?.props.style as JsonObject;
+assert.equal(moduleChartLegend.icon, "roundRect");
+assert.equal(moduleChartLegend.itemGap, 18);
+assert.equal(moduleChartLegend.backgroundColor, "rgba(0, 229, 255, 0.055)");
+assert.equal(moduleChartLegend.borderColor, "rgba(0, 229, 255, 0.2)");
+assert.equal(moduleChartLegend.borderWidth, 1);
+const moduleChartLegendTextStyle = moduleChartLegend.textStyle as JsonObject;
+assert.equal(moduleChartLegendTextStyle.fontSize, 12);
+assert.equal(moduleChartLegendTextStyle.fontWeight, "normal");
+assert.equal(moduleSchemas[3]?.props.svgSource, "custom");
+assert.equal(typeof moduleSchemas[3]?.props.svgContent, "string");
+assert.deepEqual(moduleSchemas[3]?.props.entryAnimiation, {
+  isShow: true,
+  type: "animate__fadeInLeft",
+});
+const moduleDecorationStyle = moduleSchemas[3]?.props.style as JsonObject;
+const moduleChartStyle = moduleChart.props.style as JsonObject;
 assert.equal(moduleTitleStyle.zIndex, 18);
 assert.equal(moduleChartStyle.zIndex, 12);
 assert.equal(moduleDecorationStyle.zIndex, 14);
 assert.equal(moduleChartStyle.left, 68);
 assert.equal(moduleChartStyle.top, 188);
 assert.equal(moduleChartStyle.width, 480);
-assert.equal(moduleChartStyle.height, 200);
+assert.ok(
+  (moduleChartStyle.height as number) >= 160,
+  "module chart should use the released bottom space to make the left panel taller",
+);
 assert.equal(moduleDecorationStyle.left, 372);
 assert.equal(moduleDecorationStyle.top, 116);
 assert.equal(moduleDecorationStyle.width, 180);
 assert.equal(moduleDecorationStyle.height, 72);
+assert.ok(
+  moduleSchemas.some((item) => item.props.name === "侧边摘要容器"),
+  "module should supplement visible side summary decoration",
+);
+assert.ok(
+  moduleSchemas.some((item) => item.props.name === "侧边摘要分隔线"),
+  "module should supplement side summary row-rule decoration",
+);
+assert.ok(
+  moduleSchemas.some((item) => item.props.name === "主图侧卡关联线"),
+  "module should supplement a subtle chart-to-side-card connector",
+);
+assert.ok(
+  moduleSchemas.some((item) => item.props.name === "底部结构线"),
+  "module should supplement visible bottom structure decoration",
+);
 
 const noResourcePanelInput = {
   ...chartPanelInput,
@@ -713,12 +1095,1043 @@ const noResourcePanelInput = {
   },
 } satisfies JsonObject;
 const noResourceSchemas = generateModuleSchema(noResourcePanelInput);
-const noResourceBackground = noResourceSchemas[5];
+const noResourceBackground = noResourceSchemas.find(
+  (item) => item.businessElementId === "no_resource_panel_background",
+);
+assert.ok(noResourceBackground, "no-resource module should include background");
 assert.equal(noResourceBackground?.props.imageSrc, "");
 assert.equal(noResourceBackground?.props.imageBase64, "");
 assert.equal(noResourceBackground?.props.imageUseMode, "upload");
 assert.equal(noResourceBackground?.props.opacity, 1);
 assert.equal(noResourceBackground?.props.svgSource, "custom");
+
+const sideTextDerivedDataInput = {
+  moduleName: "ChartPanel",
+  logicalId: "risk_level_panel",
+  parentLogicalId: "root",
+  title: "风险等级分析",
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+    position: "absolute",
+  },
+  slots: {
+    mainChart: {
+      componentName: "PieChart",
+      props: {
+        option: {
+          legend: {
+            left: "center",
+            top: "bottom",
+          },
+        },
+      },
+    },
+    auxiliaryTexts: [
+      {
+        componentName: "SingleText",
+        props: {
+          textContent: "风险总数 126",
+        },
+      },
+      {
+        componentName: "SingleText",
+        props: {
+          textContent: "高风险 18",
+        },
+      },
+      {
+        componentName: "SingleText",
+        props: {
+          textContent: "中风险 37",
+        },
+      },
+      {
+        componentName: "SingleText",
+        props: {
+          textContent: "低风险 71",
+        },
+      },
+      {
+        componentName: "SingleText",
+        props: {
+          textContent: "处置优先级：高风险项优先闭环，中风险项限期跟踪",
+        },
+      },
+    ],
+  },
+} satisfies JsonObject;
+const sideTextDerivedSchemas = generateModuleSchema(sideTextDerivedDataInput);
+const sideTextDerivedChart = sideTextDerivedSchemas.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(sideTextDerivedChart, "derived data module should include PieChart");
+const sideTextDerivedChartData = sideTextDerivedChart.props.chartData as JsonObject;
+const sideTextDerivedConstant = sideTextDerivedChartData.constant as JsonObject;
+assert.deepEqual(sideTextDerivedConstant.data, [
+  { name: "高风险", type: "系列", value: 18 },
+  { name: "中风险", type: "系列", value: 37 },
+  { name: "低风险", type: "系列", value: 71 },
+]);
+
+const moduleDataItemsInput = {
+  ...sideTextDerivedDataInput,
+  logicalId: "risk_level_data_items_panel",
+  dataItems: [
+    { name: "重大风险", type: "风险", value: 34 },
+    { name: "较大风险", type: "风险", value: 78 },
+    { name: "一般风险", type: "风险", value: 156 },
+    { name: "低风险", type: "风险", value: 118 },
+  ],
+} satisfies JsonObject;
+const moduleDataItemsSchemas = generateModuleSchema(moduleDataItemsInput);
+const moduleDataItemsChart = moduleDataItemsSchemas.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(moduleDataItemsChart, "dataItems module should include PieChart");
+const moduleDataItemsChartData = moduleDataItemsChart.props.chartData as JsonObject;
+const moduleDataItemsConstant = moduleDataItemsChartData.constant as JsonObject;
+assert.deepEqual(moduleDataItemsConstant.data, [
+  { name: "重大风险", type: "风险", value: 34 },
+  { name: "较大风险", type: "风险", value: 78 },
+  { name: "一般风险", type: "风险", value: 156 },
+  { name: "低风险", type: "风险", value: 118 },
+]);
+
+const terseUserPanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "terse_risk_level_panel",
+  parentLogicalId: "root",
+  title: "风险等级分析",
+  dataItems: [
+    { name: "高风险", type: "风险", value: 18 },
+    { name: "中风险", type: "风险", value: 37 },
+    { name: "低风险", type: "风险", value: 71 },
+  ],
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+    position: "absolute",
+  },
+  slots: {
+    mainChart: {
+      componentName: "PieChart",
+      props: {
+        option: {
+          legend: {
+            left: "center",
+            top: "bottom",
+          },
+          series: [
+            {
+              radius: ["42%", "66%"],
+            },
+          ],
+        },
+      },
+    },
+  },
+} satisfies JsonObject;
+const terseUserPanelSchemas = generateModuleSchema(terseUserPanelInput);
+const terseComponentNames = terseUserPanelSchemas.map((item) => item.componentName);
+assert.equal(terseUserPanelSchemas.at(-1)?.componentName, "SingleImage");
+assert.equal(terseUserPanelSchemas.at(-2)?.componentName, "PieChart");
+assert.equal(
+  terseComponentNames.filter((componentName) => componentName === "SvgDecoration").length,
+  8,
+  "terse input should include title support, structural decorations, connector, side row rules, and color anchors",
+);
+assert.ok(
+  terseComponentNames.filter((componentName) => componentName === "SingleText").length >= 7,
+  "terse input should still include title, center summary, side summaries, and conclusion",
+);
+const terseDecorations = terseUserPanelSchemas.filter(
+  (item) => item.componentName === "SvgDecoration",
+);
+assert.ok(
+  terseDecorations.every(
+    (item) => !(item.props.svgContent as string | undefined)?.includes("currentColor"),
+  ),
+  "default module decorations should use explicit visible colors",
+);
+assert.ok(
+  terseDecorations.some((item) => item.props.name === "侧边摘要容器"),
+  "terse input should include visible side summary SVG container",
+);
+const terseSideContainer = terseDecorations.find(
+  (item) => item.props.name === "侧边摘要容器",
+);
+const terseSideRowRules = terseDecorations.find(
+  (item) => item.props.name === "侧边摘要分隔线",
+);
+assert.ok(terseSideContainer, "terse input should include side summary container");
+assert.ok(terseSideRowRules, "terse input should include side summary row-rule decoration");
+assert.equal(
+  ((terseSideContainer.props.svgContent as string | undefined) ?? "").includes("M22 58H258"),
+  false,
+  "side summary container should not bake fixed row rules into its background SVG",
+);
+assert.ok(
+  terseDecorations.some((item) => item.props.name === "主图侧卡关联线"),
+  "terse input should include subtle chart-to-side-card connector",
+);
+const terseSideConnector = terseDecorations.find(
+  (item) => item.props.name === "主图侧卡关联线",
+);
+assert.ok(terseSideConnector, "terse input should include chart-to-side-card connector");
+assert.ok(
+  (terseSideConnector.props.opacity as number) >= 0.5,
+  "chart-to-side-card connector should stay visible enough to show structure",
+);
+assert.ok(
+  terseDecorations.some((item) => item.props.name === "底部结构线"),
+  "terse input should include visible bottom SVG structure line",
+);
+assert.equal(
+  terseDecorations.filter((item) =>
+    typeof item.props.name === "string" && item.props.name.startsWith("侧边摘要色标"),
+  ).length,
+  3,
+  "terse input should include side summary color anchors",
+);
+const terseChart = terseUserPanelSchemas.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(terseChart, "terse input should include a real PieChart");
+const terseChartData = terseChart.props.chartData as JsonObject;
+const terseChartConstant = terseChartData.constant as JsonObject;
+assert.deepEqual(terseChartConstant.data, [
+  { name: "高风险", type: "风险", value: 18 },
+  { name: "中风险", type: "风险", value: 37 },
+  { name: "低风险", type: "风险", value: 71 },
+]);
+const terseTexts = terseUserPanelSchemas
+  .filter((item) => item.componentName === "SingleText")
+  .map((item) => item.props.textContent);
+assert.ok(terseTexts.includes("126"), "terse input should derive center total text");
+const terseSideSummary1 = terseUserPanelSchemas.find(
+  (item) => item.props.name === "侧边摘要1",
+);
+const terseSideSummary2 = terseUserPanelSchemas.find(
+  (item) => item.props.name === "侧边摘要2",
+);
+assert.ok(terseSideSummary1, "terse input should include first side summary text");
+assert.ok(terseSideSummary2, "terse input should include second side summary text");
+const terseSideSummary1Style = terseSideSummary1.props.style as JsonObject;
+const terseSideSummary2Style = terseSideSummary2.props.style as JsonObject;
+const terseSideContainerStyle = terseSideContainer.props.style as JsonObject;
+const terseSideConnectorStyle = terseSideConnector.props.style as JsonObject;
+const terseSideRowRulesStyle = terseSideRowRules.props.style as JsonObject;
+assert.ok(
+  (terseSideContainerStyle.height as number) <= 180,
+  "side summary container should stay compact for three single-line summaries",
+);
+assert.ok(
+  Math.abs(
+    ((terseSideConnectorStyle.left as number) + (terseSideConnectorStyle.width as number)) -
+      ((terseSideContainerStyle.left as number) + 22),
+  ) <= 2,
+  "chart-to-side-card connector should reach the side-card left edge",
+);
+assert.equal(
+  terseSideRowRulesStyle.top,
+  (terseSideSummary1Style.top as number) +
+    (terseSideSummary1Style.height as number) +
+    Math.max(
+      ((terseSideSummary2Style.top as number) -
+        (terseSideSummary1Style.top as number) -
+        (terseSideSummary1Style.height as number)) /
+        2 -
+        4,
+      0,
+    ),
+  "side summary row-rule decoration should align between text rows",
+);
+assert.ok(
+  terseTexts.includes("处置建议"),
+  "terse input should label side card as treatment advice instead of legend",
+);
+assert.ok(
+  terseTexts.includes("高风险 18  14.3% 优先处置"),
+  "terse input should derive side summary from dataItems",
+);
+assert.ok(
+  terseTexts.includes("处置优先级：高风险项优先闭环，中风险项限期整改，低风险项常规跟踪"),
+  "terse input should derive risk conclusion",
+);
+assert.equal(
+  terseTexts.some((text) => typeof text === "string" && text.includes("图例")),
+  false,
+  "terse input should not call side summary a legend",
+);
+const terseChartOption = terseChart.props.option as JsonObject;
+const terseChartLegend = terseChartOption.legend as JsonObject;
+const terseChartSeries = terseChartOption.series as JsonObject[];
+const terseChartLabel = terseChartSeries[0]?.label as JsonObject;
+assert.equal(terseChartLegend.show, true);
+assert.equal(terseChartLegend.icon, "roundRect");
+assert.equal(terseChartLegend.backgroundColor, "rgba(0, 229, 255, 0.055)");
+const terseChartLegendTextStyle = terseChartLegend.textStyle as JsonObject;
+assert.equal(terseChartLegendTextStyle.fontWeight, "normal");
+assert.equal(terseChartLabel.show, true);
+assert.equal(terseChartLabel.formatter, "{b}");
+assert.equal(terseChartLabel.fontWeight, "normal");
+const terseConclusion = terseUserPanelSchemas.find(
+  (item) => item.props.name === "底部结论",
+);
+const terseBottomLine = terseUserPanelSchemas.find(
+  (item) => item.props.name === "底部结构线",
+);
+assert.ok(terseConclusion, "terse input should include conclusion text");
+assert.ok(terseBottomLine, "terse input should include bottom structure line");
+const terseConclusionStyle = terseConclusion.props.style as JsonObject;
+const terseBottomLineStyle = terseBottomLine.props.style as JsonObject;
+const terseChartStyle = terseChart.props.style as JsonObject;
+assert.ok(
+  (terseChartStyle.height as number) >= 320,
+  "left main chart area should be tall enough after reducing bottom padding",
+);
+assert.equal(terseConclusionStyle.height, 14);
+assert.equal(terseConclusionStyle.fontSize, 14);
+assert.equal(terseConclusionStyle.lineHeight, 1);
+assert.ok(
+  (terseConclusionStyle.top as number) + (terseConclusionStyle.height as number) <=
+    (terseBottomLineStyle.top as number),
+  "bottom conclusion should not overlap bottom structure line",
+);
+assert.ok(
+  (terseChartStyle.top as number) + (terseChartStyle.height as number) + 12 <=
+    (terseConclusionStyle.top as number),
+  "chart and legend region should leave vertical space before conclusion",
+);
+assert.ok(
+  (terseSideContainerStyle.top as number) + (terseSideContainerStyle.height as number) + 28 <=
+    (terseConclusionStyle.top as number),
+  "bottom conclusion should keep a safe gap from the side summary card",
+);
+assert.ok(
+  Math.abs(
+    ((terseBottomLineStyle.top as number) -
+      ((terseConclusionStyle.top as number) + (terseConclusionStyle.height as number))) -
+      12,
+  ) <= 2,
+  "bottom conclusion should sit close to the bottom structure line with a visible gap",
+);
+assert.equal(
+  terseConclusionStyle.color,
+  "#DFF8FF",
+  "bottom conclusion should use normal text color instead of full-line accent highlight",
+);
+const terseCenterValue = terseUserPanelSchemas.find(
+  (item) => item.componentName === "SingleText" && item.props.textContent === "126",
+);
+const terseChartIndex = terseUserPanelSchemas.findIndex(
+  (item) => item.componentName === "PieChart",
+);
+const terseCenterValueIndex = terseUserPanelSchemas.findIndex(
+  (item) => item.componentName === "SingleText" && item.props.textContent === "126",
+);
+const terseCenterLabel = terseUserPanelSchemas.find(
+  (item) => item.props.name === "风险总数说明",
+);
+assert.ok(terseCenterValue, "terse input should include center total value");
+assert.ok(terseCenterLabel, "terse input should include center total label");
+assert.ok(
+  terseCenterValueIndex < terseChartIndex,
+  "terse center total should be emitted before PieChart",
+);
+const terseCenterValueStyle = terseCenterValue.props.style as JsonObject;
+const terseCenterLabelStyle = terseCenterLabel.props.style as JsonObject;
+assert.ok(
+  (terseCenterValueStyle.top as number) + (terseCenterValueStyle.height as number) + 8 <=
+    (terseCenterLabelStyle.top as number),
+  "center total label should not stick to the center number",
+);
+const terseBackground = terseUserPanelSchemas.find(
+  (item) => item.businessElementId === "terse_risk_level_panel_background",
+);
+assert.ok(terseBackground, "terse input should get a default background");
+assert.equal(terseBackground.props.svgSource, "custom");
+assert.deepEqual(terseChart.props.entryAnimiation, {
+  isShow: true,
+  type: "animate__zoomIn",
+});
+
+const customerSourcePanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "customer_source_panel",
+  parentLogicalId: "root",
+  title: "客户来源分析",
+  dataItems: [
+    { name: "线上广告", type: "来源", value: 86 },
+    { name: "老客户推荐", type: "来源", value: 54 },
+    { name: "门店自然到访", type: "来源", value: 37 },
+    { name: "活动引流", type: "来源", value: 23 },
+  ],
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+    position: "absolute",
+  },
+  slots: {
+    mainChart: {
+      componentName: "PieChart",
+      props: {
+        option: {
+          legend: {
+            left: "center",
+            top: "bottom",
+          },
+          series: [
+            {
+              radius: ["42%", "66%"],
+            },
+          ],
+        },
+      },
+    },
+  },
+} satisfies JsonObject;
+const customerSourceSchemas = generateModuleSchema(customerSourcePanelInput);
+const customerSourceTexts = customerSourceSchemas
+  .filter((item) => item.componentName === "SingleText")
+  .map((item) => item.props.textContent);
+assert.ok(
+  customerSourceTexts.includes("线上广告 86  43% 主要获客"),
+  "customer source panel should keep fitting source summaries on one line",
+);
+assert.ok(
+  customerSourceTexts.includes("老客户推荐 54  27% 口碑转化"),
+  "customer source panel should use customer-source semantics",
+);
+assert.ok(
+  customerSourceTexts.includes("门店自然到访 37  18.5% 自然流量"),
+  "customer source panel should preserve original category names",
+);
+assert.ok(
+  customerSourceTexts.includes("线上广告贡献最高，活动引流仍有提升空间"),
+  "customer source panel should use business-like conclusion wording",
+);
+assert.equal(
+  customerSourceTexts.some((text) => typeof text === "string" && text.includes("门店到访")),
+  false,
+  "customer source panel should not rewrite source category names",
+);
+const customerSideText = customerSourceSchemas.find(
+  (item) => item.props.name === "侧边摘要1",
+);
+const customerSideContainer = customerSourceSchemas.find(
+  (item) => item.props.name === "侧边摘要容器",
+);
+const customerChart = customerSourceSchemas.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(customerSideText, "customer source panel should include side summary text");
+assert.ok(customerSideContainer, "customer source panel should include side container");
+assert.ok(customerChart, "customer source panel should include chart");
+const customerSideTextStyle = customerSideText.props.style as JsonObject;
+const customerSideContainerStyle = customerSideContainer.props.style as JsonObject;
+const customerChartOption = customerChart.props.option as JsonObject;
+const customerChartSeries = customerChartOption.series as JsonObject[];
+const customerChartLabel = customerChartSeries[0]?.label as JsonObject;
+const customerChartLabelLine = customerChartSeries[0]?.labelLine as JsonObject;
+assert.ok(
+  !((customerSideText.props.textContent as string | undefined) ?? "").includes("\n"),
+  "customer source side summary should not wrap when the single-line text fits",
+);
+assert.ok(
+  (customerSideContainerStyle.width as number) >= 300,
+  "customer source side container should reserve wider text space",
+);
+assert.ok(
+  (customerSideTextStyle.width as number) >= 220,
+  "customer source side text should avoid breaking short phrases and percentages",
+);
+assert.equal(customerSideTextStyle.height, 14);
+assert.equal(customerSideTextStyle.fontSize, 14);
+assert.equal(customerSideTextStyle.lineHeight, 1);
+assert.equal(customerChartLabel.fontSize, 11);
+assert.equal(customerChartLabel.show, true);
+assert.equal(customerChartLabelLine.length, 8);
+assert.equal(customerChartLabelLine.length2, 4);
+
+const energyPanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "energy_usage_panel",
+  parentLogicalId: "root",
+  title: "园区能耗占比",
+  dataItems: [
+    { name: "空调", type: "能耗", value: 46 },
+    { name: "照明", type: "能耗", value: 22 },
+    { name: "动力设备", type: "能耗", value: 18 },
+    { name: "办公设备", type: "能耗", value: 9 },
+    { name: "其他", type: "能耗", value: 5 },
+  ],
+  style: {
+    left: 24,
+    top: 30,
+    width: 768,
+    height: 532,
+    position: "absolute",
+  },
+  theme: {
+    primaryColor: "#00D9FF",
+    secondaryColor: "#6C5CFF",
+    accentColor: "#FFB300",
+    textColor: "#DFF8FF",
+  },
+  slots: {
+    mainChart: {
+      componentName: "PieChart",
+      props: {
+        style: {
+          width: 260,
+          height: 260,
+        },
+        option: {
+          legend: {
+            left: "center",
+            top: "bottom",
+          },
+        },
+      },
+    },
+  },
+} satisfies JsonObject;
+const energyPanelSchemas = generateModuleSchema(energyPanelInput);
+const energyChart = energyPanelSchemas.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(energyChart, "energy panel should include chart");
+const energyChartStyle = energyChart.props.style as JsonObject;
+const energyChartOption = energyChart.props.option as JsonObject;
+const energyLegend = energyChartOption.legend as JsonObject;
+const energyLegendTextStyle = energyLegend.textStyle as JsonObject;
+const energySeries = energyChartOption.series as JsonObject[];
+const energyFirstSeries = energySeries[0] as JsonObject;
+const energyLabel = energyFirstSeries.label as JsonObject;
+const energyLabelLine = energyFirstSeries.labelLine as JsonObject;
+assert.ok(
+  (energyChartStyle.width as number) < 300,
+  "energy test should exercise a narrow chart region with side summary",
+);
+assert.equal(energyLegend.itemGap, 14);
+assert.equal(energyLegend.itemWidth, 14);
+assert.equal(energyLegend.itemHeight, 8);
+assert.equal(energyLegendTextStyle.fontSize, 12);
+assert.equal(energyLegend.offsetY, -10);
+assert.deepEqual(energyFirstSeries.center, ["50%", "39%"]);
+assert.deepEqual(energyFirstSeries.radius, ["34%", "50%"]);
+assert.equal(energyLabel.fontSize, 10);
+assert.equal(energyLabelLine.length, 6);
+assert.equal(energyLabelLine.length2, 3);
+
+const cleanEnergyPanel = generateScreenModuleFromPrompt({
+  prompt: "做个新能源发电结构分析模块，光伏发电48，风力发电31，储能放电14，外购绿电7。偏绿色科技风。",
+  style: {
+    left: 24,
+    top: 30,
+    width: 1060,
+    height: 600,
+  },
+});
+const cleanEnergyChart = cleanEnergyPanel.children.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(cleanEnergyChart, "clean energy prompt should generate a chart");
+const cleanEnergySideContainer = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "侧边摘要容器",
+);
+const cleanEnergyConclusion = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "底部结论",
+);
+const cleanEnergySideSummary1 = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "侧边摘要1",
+);
+const cleanEnergySideSummary2 = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "侧边摘要2",
+);
+const cleanEnergySideSummary3 = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "侧边摘要3",
+);
+const cleanEnergyConnector = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "主图侧卡关联线",
+);
+const cleanEnergySideMarker1 = cleanEnergyPanel.children.find(
+  (item) => item.props.name === "侧边摘要色标1",
+);
+assert.ok(cleanEnergySideContainer, "clean energy prompt should generate side summary card");
+assert.ok(cleanEnergyConclusion, "clean energy prompt should generate bottom conclusion");
+assert.ok(cleanEnergySideSummary1, "clean energy prompt should generate first side summary");
+assert.ok(cleanEnergySideSummary2, "clean energy prompt should generate second side summary");
+assert.ok(cleanEnergySideSummary3, "clean energy prompt should generate third side summary");
+assert.ok(cleanEnergyConnector, "clean energy prompt should generate side-card connector");
+assert.ok(cleanEnergySideMarker1, "clean energy prompt should keep side summary color anchors");
+const cleanEnergySideStyle = cleanEnergySideContainer.props.style as JsonObject;
+const cleanEnergyConclusionStyle = cleanEnergyConclusion.props.style as JsonObject;
+const cleanEnergyConnectorStyle = cleanEnergyConnector.props.style as JsonObject;
+const cleanEnergyChartStyle = cleanEnergyChart.props.style as JsonObject;
+const cleanEnergySideMarker1Style = cleanEnergySideMarker1.props.style as JsonObject;
+const cleanEnergySideSummary1Style = cleanEnergySideSummary1.props.style as JsonObject;
+assert.ok(
+  (cleanEnergySideStyle.height as number) <= 230,
+  "clean energy side summary card should stay compact after restoring structure",
+);
+assert.ok(
+  (cleanEnergySideStyle.top as number) + (cleanEnergySideStyle.height as number) + 28 <=
+    (cleanEnergyConclusionStyle.top as number),
+  "prompt-generated conclusion should not sit too close to the side summary artwork",
+);
+assert.equal(cleanEnergyConclusionStyle.height, 14);
+assert.equal(cleanEnergyConclusionStyle.lineHeight, 1);
+assert.ok(
+  ((cleanEnergySideSummary1.props.textContent as string | undefined) ?? "").includes("主体供给"),
+  "clean energy side summary should add business judgement beyond value repetition",
+);
+assert.ok(
+  ((cleanEnergySideSummary2.props.textContent as string | undefined) ?? "").includes("主体供给"),
+  "clean energy wind summary should identify supply role",
+);
+assert.ok(
+  ((cleanEnergySideSummary3.props.textContent as string | undefined) ?? "").includes("调峰支撑"),
+  "clean energy storage summary should identify peak-shaving support role",
+);
+assert.ok(
+  Math.abs(
+    ((cleanEnergyConnectorStyle.left as number) + (cleanEnergyConnectorStyle.width as number)) -
+      ((cleanEnergySideStyle.left as number) + 22),
+  ) <= 2,
+  "clean energy connector should visually reach the side summary card",
+);
+assert.ok(
+  (cleanEnergyConnectorStyle.left as number) >=
+    (cleanEnergyChartStyle.left as number) + (cleanEnergyChartStyle.width as number) * 0.7,
+  "clean energy connector should start from the chart outer-side region instead of crossing the donut center",
+);
+assert.equal(
+  cleanEnergyConclusionStyle.color,
+  "#E7FFF5",
+  "clean energy conclusion should use the green theme text color, not a full-line accent color",
+);
+assert.ok(
+  (cleanEnergySideMarker1Style.left as number) <
+    (cleanEnergySideSummary1Style.left as number),
+  "side summary color anchor should sit before the matching side summary text",
+);
+const cleanEnergyOption = cleanEnergyChart.props.option as JsonObject;
+const cleanEnergySeries = cleanEnergyOption.series as JsonObject[];
+const cleanEnergyLabel = cleanEnergySeries[0]?.label as JsonObject;
+assert.equal(
+  cleanEnergyLabel.show,
+  true,
+  "clean energy prompt should keep external pie labels visible but lightweight",
+);
+assert.deepEqual(
+  cleanEnergySeries[0]?.radius,
+  ["34%", "64%"],
+  "single-line-safe legend should enlarge the pie body enough to keep main visual weight",
+);
+
+const redComplaintPanel = generateScreenModuleFromPrompt({
+  prompt:
+    "做个门店投诉来源分析模块，产品问题38，物流延迟27，服务态度19，价格争议11，其他5，整体用红色科技风，并给我完整schema。",
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+  },
+});
+const redComplaintChart = redComplaintPanel.children.find(
+  (item) => item.componentName === "PieChart",
+);
+const redComplaintChartIndex = redComplaintPanel.children.findIndex(
+  (item) => item.componentName === "PieChart",
+);
+const redComplaintSideContainer = redComplaintPanel.children.find(
+  (item) => item.props.name === "侧边摘要容器",
+);
+const redComplaintSideSummary1 = redComplaintPanel.children.find(
+  (item) => item.props.name === "侧边摘要1",
+);
+const redComplaintTotal = redComplaintPanel.children.find(
+  (item) => item.props.name === "总数",
+);
+const redComplaintTotalIndex = redComplaintPanel.children.findIndex(
+  (item) => item.props.name === "总数",
+);
+assert.ok(redComplaintChart, "red complaint prompt should generate PieChart");
+assert.ok(redComplaintSideContainer, "red complaint prompt should generate side summary card");
+assert.ok(redComplaintSideSummary1, "red complaint prompt should generate side summary text");
+assert.ok(redComplaintTotal, "red complaint prompt should generate center total text");
+const redComplaintChartProps = redComplaintChart.props as JsonObject;
+const redComplaintChartStyle = redComplaintChartProps.style as JsonObject;
+const redComplaintOption = redComplaintChartProps.option as JsonObject;
+const redComplaintLegend = redComplaintOption.legend as JsonObject;
+const redComplaintSeries = redComplaintOption.series as JsonObject[];
+const redComplaintFirstSeries = redComplaintSeries[0] as JsonObject;
+const redComplaintSideStyle = redComplaintSideContainer.props.style as JsonObject;
+const redComplaintSideSummary1Style = redComplaintSideSummary1.props.style as JsonObject;
+const redComplaintTotalStyle = redComplaintTotal.props.style as JsonObject;
+assert.equal((redComplaintOption.color as string[])[0], "#FF2D4F");
+assert.equal((redComplaintLegend.textStyle as JsonObject).color, "#FFF3F3");
+assert.ok(
+  redComplaintTotalIndex < redComplaintChartIndex,
+  "center total text should be emitted before PieChart so it stays above the chart layer",
+);
+assert.ok(
+  (redComplaintChartStyle.left as number) +
+    (redComplaintChartStyle.width as number) +
+    12 <=
+    (redComplaintSideStyle.left as number),
+  "red complaint chart should stay inside the left main area instead of entering the side card",
+);
+const redComplaintCenter = redComplaintFirstSeries.center as string[];
+const redComplaintCenterY = Number(redComplaintCenter[1]?.replace(/[^0-9.]/g, "") ?? 50);
+const redComplaintPieCenterX =
+  (redComplaintChartStyle.left as number) + (redComplaintChartStyle.width as number) / 2;
+const redComplaintPieCenterY =
+  (redComplaintChartStyle.top as number) +
+  ((redComplaintChartStyle.height as number) * redComplaintCenterY) / 100;
+assert.ok(
+  Math.abs(
+    (redComplaintTotalStyle.left as number) +
+      (redComplaintTotalStyle.width as number) / 2 -
+      redComplaintPieCenterX,
+  ) <= 1,
+  "red complaint center total should align horizontally with pie center",
+);
+assert.ok(
+  Math.abs((redComplaintTotalStyle.top as number) + 26 - redComplaintPieCenterY) <= 1,
+  "red complaint center total should align vertically with pie center",
+);
+assert.equal(redComplaintFirstSeries.left, 0);
+assert.equal(redComplaintFirstSeries.top, 0);
+assert.equal(redComplaintFirstSeries.right, 0);
+assert.equal(redComplaintFirstSeries.bottom, 0);
+assert.deepEqual(redComplaintCenter, ["50%", "42%"]);
+assert.deepEqual(redComplaintFirstSeries.radius, ["34%", "54%"]);
+assert.equal((redComplaintFirstSeries.label as JsonObject).show, true);
+assert.equal((redComplaintFirstSeries.label as JsonObject).formatter, "{b}");
+assert.equal(redComplaintSideSummary1Style.height, 14);
+assert.equal(redComplaintSideSummary1Style.fontSize, 14);
+assert.equal(redComplaintSideSummary1Style.lineHeight, 1);
+assert.ok(
+  !((redComplaintSideSummary1.props.textContent as string | undefined) ?? "").includes("\n"),
+  "red complaint single-line side summary should not use a two-line 52px text box",
+);
+
+const mergedSummaryPanel = generateModuleSchema({
+  moduleName: "ChartPanel",
+  logicalId: "merged_summary_panel",
+  parentLogicalId: "root",
+  title: "门店投诉来源分析",
+  dataItems: [
+    { name: "产品问题", type: "来源", value: 38 },
+    { name: "物流延迟", type: "来源", value: 27 },
+    { name: "服务态度", type: "来源", value: 19 },
+    { name: "价格争议", type: "来源", value: 11 },
+    { name: "其他", type: "来源", value: 5 },
+  ],
+  style: {
+    left: 8,
+    top: 8,
+    width: 631,
+    height: 356,
+    position: "absolute",
+  },
+  slots: {
+    mainChart: {
+      componentName: "PieChart",
+      props: {},
+    },
+    auxiliaryTexts: [
+      {
+        componentName: "SingleText",
+        props: {
+          name: "重点摘要",
+          textContent:
+            "重点摘要 产品问题 38 38% 主要来源 物流延迟 27 27% 履约关注 服务态度 19 19% 体验短板",
+          style: {
+            position: "absolute",
+            left: 398,
+            top: 112,
+            width: 210,
+            height: 52,
+            fontSize: 14,
+            lineHeight: 1,
+          },
+        },
+      },
+    ],
+  },
+} satisfies JsonObject);
+const mergedSummaryTexts = mergedSummaryPanel.filter(
+  (item) => item.componentName === "SingleText",
+);
+const mergedSummaryRawText = mergedSummaryTexts.find(
+  (item) =>
+    item.props.name === "重点摘要" &&
+    typeof item.props.textContent === "string" &&
+    item.props.textContent.includes("物流延迟 27 27%"),
+);
+const mergedSummaryHeader = mergedSummaryTexts.find(
+  (item) => item.props.name === "侧边摘要标题",
+);
+const mergedSummaryRows = mergedSummaryTexts.filter(
+  (item) =>
+    typeof item.props.name === "string" &&
+    /^侧边摘要\d+$/.test(item.props.name),
+);
+assert.equal(
+  mergedSummaryRawText,
+  undefined,
+  "MCP should remove merged side-summary paragraph text",
+);
+assert.ok(mergedSummaryHeader, "MCP should regenerate an independent side summary header");
+assert.equal(
+  mergedSummaryRows.length,
+  3,
+  "MCP should regenerate independent side summary rows from data",
+);
+for (const row of mergedSummaryRows) {
+  const rowStyle = row.props.style as JsonObject;
+  assert.ok(
+    rowStyle.height === 14 || rowStyle.height === 40,
+    "regenerated side summary rows should use controlled line boxes",
+  );
+}
+
+const customDecorationPanelInput = {
+  ...terseUserPanelInput,
+  logicalId: "custom_decoration_risk_panel",
+  slots: {
+    ...terseUserPanelInput.slots,
+    decorations: [
+      {
+        componentName: "SvgDecoration",
+        props: {
+          name: "右上角科技装饰",
+          svgContent:
+            '<svg viewBox="0 0 120 64" xmlns="http://www.w3.org/2000/svg"><path d="M4 60V18C4 10.268 10.268 4 18 4h42" fill="none" stroke="#00E5FF" stroke-width="3" stroke-linecap="round"/></svg>',
+        },
+      },
+    ],
+  },
+} satisfies JsonObject;
+const customDecorationPanelSchemas = generateModuleSchema(customDecorationPanelInput);
+const customDecorationNames = customDecorationPanelSchemas
+  .filter((item) => item.componentName === "SvgDecoration")
+  .map((item) => item.props.name);
+assert.ok(customDecorationNames.includes("右上角科技装饰"));
+assert.ok(
+  customDecorationNames.includes("侧边摘要容器"),
+  "MCP should supplement side-card decoration when custom decorations omit it",
+);
+assert.ok(
+  customDecorationNames.includes("底部结构线"),
+  "MCP should supplement bottom structure decoration when custom decorations omit it",
+);
+
+const alarmPanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "device_alarm_panel",
+  parentLogicalId: "root",
+  title: "设备告警分类",
+  dataItems: [
+    { name: "严重告警", type: "告警", value: 12 },
+    { name: "一般告警", type: "告警", value: 46 },
+    { name: "提示告警", type: "告警", value: 83 },
+  ],
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+    position: "absolute",
+  },
+  slots: {
+    mainChart: {
+      componentName: "PieChart",
+      props: {
+        option: {
+          legend: {
+            left: "center",
+            top: "bottom",
+          },
+          series: [
+            {
+              radius: ["42%", "66%"],
+            },
+          ],
+        },
+      },
+    },
+  },
+} satisfies JsonObject;
+const alarmPanelSchemas = generateModuleSchema(alarmPanelInput);
+const alarmTexts = alarmPanelSchemas
+  .filter((item) => item.componentName === "SingleText")
+  .map((item) => item.props.textContent);
+assert.ok(alarmTexts.includes("141"), "alarm panel should derive total count");
+assert.ok(alarmTexts.includes("告警总数"), "alarm panel should label center total correctly");
+assert.ok(alarmTexts.includes("重点摘要"), "alarm panel should use summary heading");
+assert.ok(
+  alarmTexts.includes("严重告警 12  8.5%\n优先处理"),
+  "alarm panel should use two-line severe alarm summary",
+);
+assert.ok(
+  alarmTexts.includes("一般告警 46  32.6%\n持续跟进"),
+  "alarm panel should use alarm-specific action text",
+);
+assert.ok(
+  alarmTexts.includes("提示告警 83  58.9%\n常规关注"),
+  "alarm panel should use alarm-specific prompt action text",
+);
+assert.ok(
+  alarmTexts.includes("当前共 141 条告警，严重告警占 8.5%，建议优先处理"),
+  "alarm panel should use concise alarm conclusion",
+);
+assert.equal(
+  alarmTexts.some((text) => typeof text === "string" && /风险总数|限期整改|常规跟踪/.test(text)),
+  false,
+  "alarm panel should not leak risk-specific wording",
+);
+const alarmSideContainer = alarmPanelSchemas.find(
+  (item) => item.props.name === "侧边摘要容器",
+);
+const alarmSideFirstText = alarmPanelSchemas.find(
+  (item) => item.props.name === "侧边摘要1",
+);
+const alarmSideLastText = alarmPanelSchemas.find(
+  (item) => item.props.name === "侧边摘要3",
+);
+const alarmConclusion = alarmPanelSchemas.find(
+  (item) => item.props.name === "底部结论",
+);
+const alarmBottomLine = alarmPanelSchemas.find(
+  (item) => item.props.name === "底部结构线",
+);
+assert.ok(alarmSideContainer, "alarm panel should include side summary container");
+assert.ok(alarmSideFirstText, "alarm panel should include first side summary");
+assert.ok(alarmSideLastText, "alarm panel should include last side summary");
+assert.ok(alarmConclusion, "alarm panel should include bottom conclusion");
+assert.ok(alarmBottomLine, "alarm panel should include bottom structure line");
+const alarmSideContainerStyle = alarmSideContainer.props.style as JsonObject;
+const alarmSideFirstStyle = alarmSideFirstText.props.style as JsonObject;
+const alarmSideLastStyle = alarmSideLastText.props.style as JsonObject;
+const alarmConclusionStyle = alarmConclusion.props.style as JsonObject;
+const alarmBottomLineStyle = alarmBottomLine.props.style as JsonObject;
+assert.ok(
+  (alarmSideFirstStyle.height as number) >= 36 &&
+    (alarmSideFirstStyle.height as number) <= 44,
+  "alarm side rows should reserve compact two-line text height",
+);
+assert.ok(
+  (alarmSideLastStyle.top as number) + (alarmSideLastStyle.height as number) <=
+    (alarmSideContainerStyle.top as number) + (alarmSideContainerStyle.height as number),
+  "alarm side summaries should fit inside side container",
+);
+assert.ok(
+  alarmConclusionStyle.height === 14 && alarmConclusionStyle.lineHeight === 1,
+  "alarm conclusion should use a single-line text box",
+);
+assert.ok(
+  (alarmConclusionStyle.top as number) + (alarmConclusionStyle.height as number) <=
+    (alarmBottomLineStyle.top as number),
+  "alarm conclusion should not overlap bottom structure line",
+);
+assert.ok(
+  (alarmSideContainerStyle.top as number) + (alarmSideContainerStyle.height as number) + 28 <=
+    (alarmConclusionStyle.top as number),
+  "alarm conclusion should keep distance from the side summary card",
+);
+
+const sideLegendTextInput = {
+  ...terseUserPanelInput,
+  logicalId: "side_legend_text_risk_panel",
+  slots: {
+    ...terseUserPanelInput.slots,
+    auxiliaryTexts: [
+      {
+        componentName: "SingleText",
+        props: {
+          name: "等级图例标题",
+          textContent: "等级图例",
+        },
+      },
+    ],
+  },
+} satisfies JsonObject;
+const sideLegendTextSchemas = generateModuleSchema(sideLegendTextInput);
+const sideLegendTextContents = sideLegendTextSchemas
+  .filter((item) => item.componentName === "SingleText")
+  .map((item) => item.props.textContent);
+const sideLegendTextNames = sideLegendTextSchemas.map((item) => item.props.name);
+assert.ok(
+  sideLegendTextContents.includes("处置建议"),
+  "explicit side legend wording should be normalized to treatment advice",
+);
+assert.equal(
+  [...sideLegendTextContents, ...sideLegendTextNames].some(
+    (value) => typeof value === "string" && value.includes("图例"),
+  ),
+  false,
+  "side-card text and names should not use legend wording",
+);
+
+const promptGeneratedTree = generateScreenModuleFromPrompt({
+  prompt: "做个风险等级分析，数据：高风险18，中风险37，低风险71。深色科技风，简洁点。",
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+  },
+});
+assert.equal(promptGeneratedTree.componentName, "__Group__");
+assert.equal(promptGeneratedTree.title, "风险等级分析");
+const promptGeneratedChart = promptGeneratedTree.children.find(
+  (item) => item.componentName === "PieChart",
+);
+assert.ok(promptGeneratedChart, "prompt entry should generate a real PieChart");
+const promptGeneratedOption = promptGeneratedChart.props.option as JsonObject;
+const promptGeneratedLegend = promptGeneratedOption.legend as JsonObject;
+const promptGeneratedSeries = promptGeneratedOption.series as JsonObject[];
+const promptGeneratedLabel = promptGeneratedSeries[0]?.label as JsonObject;
+assert.equal(promptGeneratedLegend.show, true);
+assert.equal(promptGeneratedLegend.icon, "roundRect");
+assert.equal(promptGeneratedLegend.backgroundColor, "rgba(0, 229, 255, 0.055)");
+const promptGeneratedLegendTextStyle = promptGeneratedLegend.textStyle as JsonObject;
+assert.equal(promptGeneratedLegendTextStyle.fontWeight, "normal");
+assert.equal(promptGeneratedLabel.show, true);
+assert.equal(promptGeneratedLabel.formatter, "{b}");
+assert.equal(promptGeneratedLabel.fontWeight, "normal");
+const promptGeneratedChartData = promptGeneratedChart.props.chartData as JsonObject;
+const promptGeneratedConstant = promptGeneratedChartData.constant as JsonObject;
+assert.deepEqual(promptGeneratedConstant.data, [
+  { name: "高风险", type: "风险", value: 18 },
+  { name: "中风险", type: "风险", value: 37 },
+  { name: "低风险", type: "风险", value: 71 },
+]);
+const promptGeneratedTexts = promptGeneratedTree.children
+  .filter((item) => item.componentName === "SingleText")
+  .map((item) => item.props.textContent);
+assert.ok(
+  promptGeneratedTexts.includes("处置建议"),
+  "prompt entry should include side treatment-advice heading",
+);
+assert.equal(
+  promptGeneratedTexts.some((text) => typeof text === "string" && text.includes("图例")),
+  false,
+  "prompt entry should not call side summary a legend",
+);
 
 const moduleTreeSchema = generateModuleTreeSchema(chartPanelInput);
 assert.equal(moduleTreeSchema.id, "sales_channel_panel");
@@ -729,18 +2142,23 @@ assert.equal(moduleTreeSchema.title, "销售渠道占比");
 assert.equal(moduleTreeSchema.isHidden, false);
 assert.equal(moduleTreeSchema.isLocked, false);
 assert.equal(moduleTreeSchema.isGroup, true);
-assert.equal(moduleTreeSchema.children.length, 6);
+assert.equal(moduleTreeSchema.children.length, 10);
 assert.deepEqual(
   moduleTreeSchema.children.map((item) => item.componentName),
   [
     "SingleText",
-    "SvgDecoration",
-    "SvgDecoration",
     "SingleText",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
+    "SvgDecoration",
     "PieChart",
     "SingleImage",
   ],
 );
+assert.equal(moduleTreeSchema.children[8]?.id, "sales_channel_panel_main_chart");
 assert.equal(moduleTreeSchema.children[0]?.id, "sales_channel_panel_title");
 assert.equal(moduleTreeSchema.children[0]?.isGroup, false);
 assert.equal(moduleTreeSchema.children[0]?.structVersion, "0.0.2");
@@ -763,6 +2181,10 @@ await client.connect(transport);
 
 try {
   const tools = await client.listTools();
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "get_server_diagnostics"),
+    "MCP server should expose diagnostics",
+  );
   assert.ok(
     tools.tools.some((tool) => tool.name === "list_components"),
     "MCP server should expose list_components",
@@ -794,6 +2216,169 @@ try {
   assert.ok(
     tools.tools.some((tool) => tool.name === "generate_module_tree_schema"),
     "MCP server should expose generate_module_tree_schema",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "generate_screen_module_from_prompt"),
+    "MCP server should expose natural-language screen module entry",
+  );
+  const serverInstructions = client.getInstructions();
+  assert.ok(
+    serverInstructions?.includes("instead of generating HTML"),
+    "MCP server instructions should steer dashboard requests away from HTML generation",
+  );
+  assert.ok(
+    serverInstructions?.includes("完整schema") &&
+      serverInstructions.includes("complete JSON") &&
+      serverInstructions.includes("fenced json code block"),
+    "MCP server instructions should require complete schema output when requested",
+  );
+  const promptEntryTool = tools.tools.find(
+    (tool) => tool.name === "generate_screen_module_from_prompt",
+  );
+  assert.ok(
+    promptEntryTool?.description?.includes("做个风险等级分析"),
+    "prompt entry tool should be discoverable for terse Chinese dashboard requests",
+  );
+  assert.ok(
+    promptEntryTool?.description?.includes("完整schema") &&
+      promptEntryTool.description.includes("complete schema") &&
+      promptEntryTool.description.includes("complete returned JSON object"),
+    "prompt entry tool should require full JSON output when user asks for complete schema",
+  );
+  const moduleTreeTool = tools.tools.find(
+    (tool) => tool.name === "generate_module_tree_schema",
+  );
+  assert.ok(
+    moduleTreeTool?.description?.includes("complete returned JSON object") &&
+      moduleTreeTool.description.includes("not a summary"),
+    "module tree tool should require complete JSON output when user asks for full schema",
+  );
+
+  const diagnosticsResult = await client.callTool({
+    name: "get_server_diagnostics",
+    arguments: {},
+  });
+  assert.equal(diagnosticsResult.isError, undefined);
+  const diagnostics = readToolJson(diagnosticsResult);
+  assert.equal(diagnostics.serverName, "screen-component-mcp");
+  assert.equal(diagnostics.serverVersion, "0.1.0");
+  assert.equal(
+    diagnostics.rulesVersion,
+    "2026-06-11.1-bottom-conclusion-linebox-chart-height",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
+    "diagnostics should expose active rules fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("pie-legend-offset"),
+    "diagnostics should expose pie legend offset rule fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("pie-center-radius-layout"),
+    "diagnostics should expose pie center/radius layout rule fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("pie-legend-wrap-forecast"),
+    "diagnostics should expose pie legend wrap forecast rule fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("side-summary-svg-row-rules"),
+    "diagnostics should expose side summary svg row-rule fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("single-line-legend-pie-scale"),
+    "diagnostics should expose single-line legend pie scale fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("bottom-conclusion-side-card-spacing"),
+    "diagnostics should expose bottom conclusion side-card spacing fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("summary-sticker-conclusion-gap"),
+    "diagnostics should expose summary sticker conclusion gap fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("semantic-side-summary"),
+    "diagnostics should expose semantic side summary fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("side-card-connector-anchor"),
+    "diagnostics should expose side-card connector anchor fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("side-summary-label-dedupe"),
+    "diagnostics should expose side summary label dedupe fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("bottom-conclusion-muted-weight"),
+    "diagnostics should expose bottom conclusion muted weight fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("light-structure-restore"),
+    "diagnostics should expose lightweight structure restore fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("side-summary-color-anchors"),
+    "diagnostics should expose side summary color anchor fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("default-svg-fallback-only"),
+    "diagnostics should expose default SVG fallback-only fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("single-text-line-box"),
+    "diagnostics should expose single text line-box fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("pie-main-area-alignment"),
+    "diagnostics should expose pie main-area alignment fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("visible-pie-labels"),
+    "diagnostics should expose visible pie labels fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("single-line-side-summary-height"),
+    "diagnostics should expose single-line side summary height fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("structured-side-summary-texts"),
+    "diagnostics should expose structured side summary texts fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("center-total-above-pie"),
+    "diagnostics should expose center total above pie fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("bottom-conclusion-single-line-box"),
+    "diagnostics should expose bottom conclusion single-line box fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("larger-main-chart-safe-area"),
+    "diagnostics should expose larger main chart safe area fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("multi-panel-decoration-diversity"),
+    "diagnostics should expose multi-panel decoration diversity fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("center-summary-text-spacing"),
+    "diagnostics should expose center summary text spacing fingerprint",
+  );
+  assert.equal(
+    typeof (diagnostics.process as JsonObject).pid,
+    "number",
+    "diagnostics should expose process pid",
+  );
+  assert.ok(
+    ((diagnostics.process as JsonObject).cwd as string).endsWith("screen-mcp"),
+    "diagnostics should expose server cwd",
+  );
+  assert.ok(
+    ((diagnostics.source as JsonObject).entryFile as string).endsWith("src\\server.ts") ||
+      ((diagnostics.source as JsonObject).entryFile as string).endsWith("src/server.ts"),
+    "diagnostics should expose server entry file",
   );
 
   const listResult = await client.callTool({
@@ -874,10 +2459,11 @@ try {
   assert.equal(schemasResult.isError, undefined);
   const toolSchemas = readToolJson(schemasResult);
   assert.equal(toolSchemas.length, 4);
-  assert.equal(toolSchemas[0].componentName, "SingleImage");
-  assert.equal(toolSchemas[1].componentName, "SingleText");
-  assert.equal(toolSchemas[2].componentName, "PieChart");
-  assert.equal(toolSchemas[3].componentName, "SvgDecoration");
+  assert.deepEqual(
+    toolSchemas.map((item: JsonObject) => item.componentName),
+    ["SingleText", "PieChart", "SvgDecoration", "SingleImage"],
+    "MCP batch component generation should place images below text, charts, and icons",
+  );
 
   const moduleListResult = await client.callTool({
     name: "list_modules",
@@ -908,13 +2494,33 @@ try {
   });
   assert.equal(moduleSchemaResult.isError, undefined);
   const toolModuleSchemas = readToolJson(moduleSchemaResult);
-  assert.equal(toolModuleSchemas.length, 6);
+  assert.equal(toolModuleSchemas.length, 10);
   assert.equal(toolModuleSchemas[0].componentName, "SingleText");
-  assert.equal(toolModuleSchemas[1].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[1].componentName, "SingleText");
   assert.equal(toolModuleSchemas[2].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[3].componentName, "SingleText");
-  assert.equal(toolModuleSchemas[4].componentName, "PieChart");
-  assert.equal(toolModuleSchemas[5].componentName, "SingleImage");
+  assert.equal(toolModuleSchemas[3].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[4].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[5].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[6].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[7].componentName, "SvgDecoration");
+  assert.equal(toolModuleSchemas[8].componentName, "PieChart");
+  assert.equal(toolModuleSchemas[9].componentName, "SingleImage");
+  assert.ok(
+    toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "侧边摘要容器")),
+    "MCP tool should supplement side summary decoration",
+  );
+  assert.ok(
+    toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "侧边摘要分隔线")),
+    "MCP tool should supplement side summary row-rule decoration",
+  );
+  assert.ok(
+    toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "主图侧卡关联线")),
+    "MCP tool should supplement subtle chart-to-side-card connector",
+  );
+  assert.ok(
+    toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "底部结构线")),
+    "MCP tool should supplement bottom structure decoration",
+  );
 
   const moduleTreeSchemaResult = await client.callTool({
     name: "generate_module_tree_schema",
@@ -925,8 +2531,74 @@ try {
   assert.equal(toolModuleTreeSchema.componentName, "__Group__");
   assert.equal(toolModuleTreeSchema.structVersion, "0.0.0");
   assert.deepEqual(toolModuleTreeSchema.props, {});
-  assert.equal(toolModuleTreeSchema.children.length, 6);
-  assert.equal(toolModuleTreeSchema.children[4].componentName, "PieChart");
+  assert.equal(toolModuleTreeSchema.children.length, 10);
+  assert.equal(toolModuleTreeSchema.children[8].componentName, "PieChart");
+
+  const promptModuleResult = await client.callTool({
+    name: "generate_screen_module_from_prompt",
+    arguments: {
+      prompt: "做个风险等级分析，数据：高风险18，中风险37，低风险71。深色科技风，简洁点。",
+      style: {
+        left: 120,
+        top: 120,
+        width: 840,
+        height: 520,
+      },
+    },
+  });
+  assert.equal(promptModuleResult.isError, undefined);
+  const toolPromptModuleTree = readToolJson(promptModuleResult);
+  assert.equal(toolPromptModuleTree.componentName, "__Group__");
+  assert.equal(toolPromptModuleTree.title, "风险等级分析");
+  assert.equal(
+    toolPromptModuleTree.children.filter(
+      (item: JsonObject) => item.componentName === "SvgDecoration",
+    ).length,
+    8,
+  );
+  const toolPromptChart = toolPromptModuleTree.children.find(
+    (item: JsonObject) => item.componentName === "PieChart",
+  ) as JsonObject | undefined;
+  assert.ok(toolPromptChart, "prompt MCP tool should generate PieChart child");
+  const toolPromptChartProps = toolPromptChart.props as JsonObject;
+  const toolPromptOption = toolPromptChartProps.option as JsonObject;
+  const toolPromptLegend = toolPromptOption.legend as JsonObject;
+  assert.equal(toolPromptLegend.icon, "roundRect");
+  assert.equal(toolPromptLegend.backgroundColor, "rgba(0, 229, 255, 0.055)");
+  assert.equal(toolPromptLegend.show, true);
+  assert.equal(toolPromptLegend.offsetX, 0);
+  assert.equal(toolPromptLegend.offsetY, -6);
+  const toolPromptLegendTextStyle = toolPromptLegend.textStyle as JsonObject;
+  assert.equal(toolPromptLegendTextStyle.fontWeight, "normal");
+  const toolPromptSeries = toolPromptOption.series as JsonObject[];
+  const toolPromptFirstSeries = toolPromptSeries[0] as JsonObject;
+  assert.deepEqual(toolPromptFirstSeries.center, ["50%", "44%"]);
+  assert.deepEqual(toolPromptFirstSeries.radius, ["34%", "64%"]);
+  const toolPromptLabel = toolPromptSeries[0]?.label as JsonObject;
+  assert.equal(toolPromptLabel.show, true);
+  assert.equal(toolPromptLabel.formatter, "{b}");
+  assert.equal(toolPromptLabel.fontWeight, "normal");
+  const toolPromptChartData = toolPromptChartProps.chartData as JsonObject;
+  const toolPromptConstant = toolPromptChartData.constant as JsonObject;
+  assert.deepEqual(toolPromptConstant.data, [
+    { name: "高风险", type: "风险", value: 18 },
+    { name: "中风险", type: "风险", value: 37 },
+    { name: "低风险", type: "风险", value: 71 },
+  ]);
+  const toolPromptTexts = toolPromptModuleTree.children
+    .filter((item: JsonObject) => item.componentName === "SingleText")
+    .map((item: JsonObject) => (item.props as JsonObject).textContent);
+  assert.ok(
+    toolPromptTexts.includes("处置建议"),
+    "prompt MCP tool should include side treatment-advice heading",
+  );
+  assert.equal(
+    toolPromptTexts.some(
+      (text: unknown) => typeof text === "string" && text.includes("图例"),
+    ),
+    false,
+    "prompt MCP tool should not call side summary a legend",
+  );
 } finally {
   await client.close();
 }

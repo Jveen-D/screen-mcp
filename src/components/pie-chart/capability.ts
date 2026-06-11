@@ -129,6 +129,18 @@ export const pieChartCapability: JsonObject = {
           description:
             "图例垂直位置，必须与 option.legend.left 组合成 positionRules.options 中的一项。",
         },
+        {
+          path: "option.legend.offsetX",
+          type: "number",
+          description:
+            "图例水平偏移，单位 px。正数向右，负数向左。用于在保持 legend.left/legend.top 语义位置的基础上微调图例，不要用它替代正确的图例方位。",
+        },
+        {
+          path: "option.legend.offsetY",
+          type: "number",
+          description:
+            "图例垂直偏移，单位 px。正数向下，负数向上。底部 legend 与外部 label 或底部装饰挤压时，通常使用 -4 到 -14 让 legend 轻微上移。",
+        },
       ],
     },
     {
@@ -141,12 +153,13 @@ export const pieChartCapability: JsonObject = {
           path: "option.series[0].radius",
           type: "[string,string]",
           description:
-            "内外半径。可按主题选择实心饼图、环形图或细环，不要所有场景都套用同一组半径。",
+            "内外半径，格式为 [innerRadius, outerRadius]，通常使用百分比字符串。innerRadius 为 '0%' 时是实心饼图，非 0 时是环形图；外部 label、底部 legend 或侧边摘要拥挤时，应适当减小 outerRadius，例如 ['36%', '54%']。",
         },
         {
           path: "option.series[0].center",
           type: "[string,string]",
-          description: "圆心位置，例如 ['50%', '50%']。",
+          description:
+            "圆心位置，格式为 [x, y]，通常使用相对图表容器的百分比字符串，例如 ['50%', '50%']。底部 legend 与外部 label 挤压时，可把 y 调整到 '42%' 到 '46%'，让饼图主体上移。",
         },
         {
           path: "option.series[0].itemStyle",
@@ -253,6 +266,8 @@ export const pieChartCapability: JsonObject = {
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "option.series[0] 只写 radius 时，会保留默认 type、label、itemStyle。",
+    "option.legend.offsetX/offsetY 会被归一化为数字；未提供时默认为 0。",
+    "option.series[0].center 与 option.series[0].radius 会被归一化为两个字符串值；未提供时使用默认圆心和半径。",
   ],
   visualRules: [
     "根据语义选择饼图形态：风险等级、状态分布这类强调分类块面的主题可用实心饼图；销售占比、渠道构成这类适合中心摘要的主题可用环形图；不要所有主题都套用同一种形态。",
@@ -260,8 +275,12 @@ export const pieChartCapability: JsonObject = {
     "扇区分割线要和视觉风格匹配：强科技面板可用更明显的发光或高亮分割；轻量信息面板应使用克制描边，避免边框抢占主体。",
     "外部 label 应形成统一标注系统：字号、字重、颜色、连接线长度要成组设计，而不是只把默认标签打开。",
     "当模块里已经有侧边信息卡、摘要卡或明细卡时，饼图 label 应承担定位和识别功能，优先显示名称和值；占比、解释性文字和优先级说明交给信息卡，避免同一信息在主图和卡片中同等强度重复。",
+    "label 文本被图表组件按容器宽高截断是可接受现象；MCP 重点避免 label、labelLine、legend 三者明显重叠，不应为未知长文本无限扩大标签区域。",
     "labelLine 应像标注系统的一部分：连接线角度、长度、颜色和标签位置应协调；不要让多条引线随机散开或穿过图形主体。",
-    "legend 的位置要承担结构功能：放在标题下方时用于承接标题和图表；放在底部时必须和底部装饰留出距离；放在侧边时要给主图留出足够空间。",
+    "legend 默认必须保留，除非用户明确要求隐藏。动态数据下 legend 承担完整分类展示和点击切换能力，右侧摘要卡不能替代 legend。",
+    "legend 的位置要承担结构功能：放在标题下方时用于承接标题和图表；放在底部时必须和图表主体、外部 label、底部装饰留出足够距离；放在侧边时要给主图留出足够空间。",
+    "处理饼图挤压时优先联动三类能力：legend.offsetX/offsetY 微调图例、series[0].center 调整圆心、series[0].radius 调整内外半径。不要只依赖扩大组件、隐藏 legend、关闭 label 或限制数据项个数。",
+    "底部 legend + 外部 label 的典型策略：先按组件 width、数据项数量、分类名长度、legend.itemGap 估算 legend 是否会换行；如果会换行，应降低 itemGap 和字号、让 legend.offsetY 更负、把 series[0].centerY 上移到约 '36%' 到 '42%'，并把 outerRadius 收到约 '46%' 到 '54%'。",
     "环形图如果中心空洞明显，应考虑由模块层放置中心摘要、总数或核心指标；如果没有中心信息，避免空洞成为无意义留白。",
   ],
   examples: [
@@ -286,6 +305,8 @@ export const pieChartCapability: JsonObject = {
             show: true,
             left: "center",
             top: "bottom",
+            offsetX: 0,
+            offsetY: -6,
             orient: "horizontal",
             icon: "circle",
             textStyle: {
@@ -309,8 +330,8 @@ export const pieChartCapability: JsonObject = {
           },
           series: [
             {
-              radius: ["42%", "68%"],
-              center: ["50%", "48%"],
+              radius: ["36%", "56%"],
+              center: ["50%", "43%"],
               itemStyle: {
                 borderWidth: 2,
                 borderColor: "#07182F",

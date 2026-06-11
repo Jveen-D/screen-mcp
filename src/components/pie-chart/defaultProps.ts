@@ -123,6 +123,8 @@ export const pieChartDefaultProps: JsonObject = {
       top: "top",
       orient: "horizontal",
       left: "center",
+      offsetX: 0,
+      offsetY: 0,
       itemHeight: 12,
       show: true,
       icon: "circle",

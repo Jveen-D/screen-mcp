@@ -7,6 +7,7 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
 function normalizeLineHeight(style: JsonObject): void {
   const lineHeight = style.lineHeight;
   if (typeof lineHeight !== "number") {
+    style.lineHeight = 1;
     return;
   }
 
@@ -21,7 +22,7 @@ function normalizeLineHeight(style: JsonObject): void {
 
   const fontSize = style.fontSize;
   const normalized =
-    typeof fontSize === "number" && fontSize > 0 ? lineHeight / fontSize : 1.4;
+    typeof fontSize === "number" && fontSize > 0 ? lineHeight / fontSize : 1;
 
   style.lineHeight = Math.min(Math.max(Number(normalized.toFixed(2)), 1), 2);
 }
@@ -30,6 +31,22 @@ export function normalizeSingleTextProps(props: JsonObject): JsonObject {
   const style = props.style;
   if (isJsonObject(style)) {
     normalizeLineHeight(style);
+    if (typeof style.height !== "number") {
+      const fontSize = style.fontSize;
+      style.height = typeof fontSize === "number" && fontSize > 0 ? fontSize : 18;
+    }
+
+    const textContent = props.textContent;
+    const fontSize = style.fontSize;
+    if (
+      typeof textContent === "string" &&
+      !textContent.includes("\n") &&
+      style.lineHeight === 1 &&
+      typeof fontSize === "number" &&
+      fontSize > 0
+    ) {
+      style.height = fontSize;
+    }
   }
 
   const textContent = props.textContent;
