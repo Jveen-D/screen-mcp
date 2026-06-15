@@ -62,7 +62,7 @@ export const chartPanelCapability: JsonObject = {
     {
       path: "slots.mainChart",
       type: "object",
-      description: "主图表 slot，当前可使用 PieChart，未来可扩展其他图表组件。",
+      description: "主图表 slot，当前可使用 PieChart、ThreeDPieChart、LineChart、BarChart。",
     },
   ],
   optionalProps: [
@@ -98,7 +98,7 @@ export const chartPanelCapability: JsonObject = {
       description: "标题文本，默认位于模块顶部。",
     },
     mainChart: {
-      supportedComponents: ["PieChart"],
+      supportedComponents: ["PieChart", "ThreeDPieChart", "LineChart", "BarChart"],
       required: true,
       multiple: false,
       description: "主图表，默认位于标题下方主体区域。",
@@ -206,7 +206,7 @@ export const chartPanelCapability: JsonObject = {
     "decorations 默认生成安全 custom svgContent，可通过 props.style 覆盖具体位置，但仍必须保持与 title/mainChart 的安全距离。",
     "模块层只做布局编排和主题映射，组件细节仍由 component capability 和 generateComponentsSchema 处理。",
   ],
-  supportedMainComponents: ["PieChart"],
+  supportedMainComponents: ["PieChart", "ThreeDPieChart", "LineChart", "BarChart"],
   examples: [
     {
       title: "科技风饼图面板",

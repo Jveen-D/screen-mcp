@@ -13,6 +13,7 @@ const FORBIDDEN_PATHS = [
 
 type RemoveAiForbiddenOptions = {
   componentName?: string;
+  isChartComponent?: boolean;
 };
 
 function isPlainObject(value: JsonValue | undefined): value is JsonObject {
@@ -89,7 +90,7 @@ function shouldKeepForbiddenPath(
   path: string[],
   options: RemoveAiForbiddenOptions,
 ): boolean {
-  return options.componentName === "PieChart" && path[0] === "chartData";
+  return Boolean(options.isChartComponent) && path[0] === "chartData";
 }
 
 export function removeAiForbiddenProps<T extends JsonObject>(

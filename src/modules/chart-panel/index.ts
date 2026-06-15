@@ -13,7 +13,7 @@ import type {
 } from "../../types/module.js";
 import { chartPanelCapability } from "./capability.js";
 
-const SUPPORTED_MAIN_COMPONENTS = ["PieChart"];
+const SUPPORTED_MAIN_COMPONENTS = ["PieChart", "ThreeDPieChart", "LineChart", "BarChart"];
 const DEFAULT_DECORATION_SVG =
   '<svg viewBox="0 0 180 72" xmlns="http://www.w3.org/2000/svg"><path d="M8 62H92l18-18h62" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 46h76" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><path d="M118 28h46" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".42"/><circle cx="94" cy="62" r="4" fill="currentColor"/><circle cx="172" cy="44" r="4" fill="currentColor"/></svg>';
 const TITLE_BADGE_SVG =
@@ -30,8 +30,10 @@ const DEFAULT_SIDE_LINK_SVG =
   '<svg viewBox="0 0 120 26" xmlns="http://www.w3.org/2000/svg"><path d="M4 13H44l12-7h28l10 7h22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".58"/><circle cx="56" cy="6" r="2.5" fill="currentColor" opacity=".7"/><circle cx="94" cy="13" r="2" fill="currentColor" opacity=".56"/></svg>';
 const TITLE_SAFE_HEIGHT = 72;
 const MAIN_CHART_TOP_OFFSET = 92;
+const MAIN_CHART_CARTESIAN_TOP_OFFSET = 64;
 const MAIN_CHART_SIDE_PADDING = 20;
 const MAIN_CHART_BOTTOM_PADDING = 96;
+const MAIN_CHART_CARTESIAN_BOTTOM_PADDING = 68;
 const SIDE_SUMMARY_GAP = 18;
 const SIDE_SUMMARY_MIN_WIDTH = 220;
 const SIDE_SUMMARY_MAX_WIDTH = 330;
@@ -536,15 +538,20 @@ function bottomConclusionTop(input: ModuleInput, sideLayout: SideSummaryLayout):
 function mainChartDefaultStyle(
   input: ModuleInput,
   reserveSideSummary: boolean,
+  isCartesianChart = false,
 ): JsonObject {
   const sideWidth = reserveSideSummary ? sideSummaryWidth(input) + SIDE_SUMMARY_GAP : 0;
+  const topOffset = isCartesianChart ? MAIN_CHART_CARTESIAN_TOP_OFFSET : MAIN_CHART_TOP_OFFSET;
+  const bottomPadding = isCartesianChart
+    ? MAIN_CHART_CARTESIAN_BOTTOM_PADDING
+    : MAIN_CHART_BOTTOM_PADDING;
 
   return {
     position: "absolute",
     left: input.style.left + MAIN_CHART_SIDE_PADDING,
-    top: input.style.top + MAIN_CHART_TOP_OFFSET,
+    top: input.style.top + topOffset,
     width: Math.max(input.style.width - MAIN_CHART_SIDE_PADDING * 2 - sideWidth, 80),
-    height: Math.max(input.style.height - MAIN_CHART_TOP_OFFSET - MAIN_CHART_BOTTOM_PADDING, 80),
+    height: Math.max(input.style.height - topOffset - bottomPadding, 80),
     zIndex: layerZIndex(input, MAIN_CHART_Z_OFFSET),
   };
 }
@@ -556,7 +563,7 @@ function createPieLayoutProfile(
   chartStyleOverride?: JsonObject,
 ): PieLayoutProfile {
   const chartStyle =
-    chartStyleOverride ?? mainChartDefaultStyle(input, reserveSideSummary);
+    chartStyleOverride ?? mainChartDefaultStyle(input, reserveSideSummary, false);
   const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
   const chartHeight = asFiniteNumber(chartStyle.height) ?? input.style.height;
   const dataCount = rows?.length ?? 0;
@@ -850,8 +857,16 @@ function ensureDefaultDecorationSlots(
   slots: ModuleSlotInput[],
   dataRows: JsonObject[] | undefined,
   chartStyleOverride?: JsonObject,
+  includeSideSummary = true,
+  isCartesianChart = false,
 ): ModuleSlotInput[] {
-  const defaults = createDefaultDecorationSlots(input, dataRows, chartStyleOverride);
+  const defaults = createDefaultDecorationSlots(
+    input,
+    dataRows,
+    chartStyleOverride,
+    includeSideSummary,
+    isCartesianChart,
+  );
   const hasSideStructure = slots.some((slot) =>
     /侧边|信息卡|摘要|容器|卡片|分割/.test(decorationSlotName(slot)),
   );
@@ -885,11 +900,38 @@ function createDefaultDecorationSlots(
   input: ModuleInput,
   dataRows: JsonObject[] | undefined,
   chartStyleOverride?: JsonObject,
+  includeSideSummary = true,
+  isCartesianChart = false,
 ): ModuleSlotInput[] {
   const theme = isJsonObject(input.theme) ? input.theme : {};
-  const sideLayout = createSideSummaryLayout(input, dataRows, 22);
   const chartStyle =
-    chartStyleOverride ?? mainChartDefaultStyle(input, Boolean(dataRows));
+    chartStyleOverride ?? mainChartDefaultStyle(input, Boolean(dataRows), isCartesianChart);
+
+  const bottomRuleSlot = createSlot("SvgDecoration", {
+    name: "底部结构线",
+    svgContent: themedSvgContent(DEFAULT_BOTTOM_RULE_SVG, theme),
+    svgFit: "fill",
+    opacity: 0.48,
+    style: {
+      position: "absolute",
+      left: input.style.left + 18,
+      top: bottomStructureTop(input),
+      width: Math.max(input.style.width - 36, 160),
+      height: 30,
+      backgroundColor: "rgba(0,0,0,0)",
+    },
+    glow: {
+      isActive: true,
+      color: "rgba(0,229,255,0.18)",
+      blur: 5,
+    },
+  });
+
+  if (!includeSideSummary) {
+    return [bottomRuleSlot];
+  }
+
+  const sideLayout = createSideSummaryLayout(input, dataRows, 22);
   const chartLeft = asFiniteNumber(chartStyle.left) ?? input.style.left;
   const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
   const chartLinkLeft = Math.max(
@@ -971,25 +1013,7 @@ function createDefaultDecorationSlots(
         blur: 4,
       },
     }),
-    createSlot("SvgDecoration", {
-      name: "底部结构线",
-      svgContent: themedSvgContent(DEFAULT_BOTTOM_RULE_SVG, theme),
-      svgFit: "fill",
-      opacity: 0.48,
-      style: {
-        position: "absolute",
-        left: input.style.left + 18,
-        top: bottomStructureTop(input),
-        width: Math.max(input.style.width - 36, 160),
-        height: 30,
-        backgroundColor: "rgba(0,0,0,0)",
-      },
-      glow: {
-        isActive: true,
-        color: "rgba(0,229,255,0.18)",
-        blur: 5,
-      },
-    }),
+    bottomRuleSlot,
   ];
 }
 
@@ -997,13 +1021,42 @@ function createDefaultAuxiliaryTextSlots(
   input: ModuleInput,
   dataRows: JsonObject[] | undefined,
   chartStyleOverride?: JsonObject,
+  isThreeDPie = false,
+  isCartesianChart = false,
 ): ModuleSlotInput[] {
   if (!dataRows || dataRows.length === 0) {
     return [];
   }
 
+  if (isCartesianChart) {
+    const theme = isJsonObject(input.theme) ? input.theme : {};
+    return [
+      createSlot("SingleText", {
+        name: "底部结论",
+        textContent: defaultConclusionText(input, dataRows),
+        opacity: 0.88,
+        style: {
+          position: "absolute",
+          left: input.style.left + 30,
+          top:
+            bottomStructureTop(input) -
+            BOTTOM_CONCLUSION_HEIGHT -
+            BOTTOM_CONCLUSION_STRUCTURE_GAP,
+          width: Math.max(input.style.width - 60, 120),
+          height: BOTTOM_CONCLUSION_HEIGHT,
+          fontSize: 14,
+          color: textColor(theme),
+          textAlign: "center",
+          backgroundColor: "rgba(0,0,0,0)",
+          fontWeight: "normal",
+          lineHeight: 1,
+        },
+      }),
+    ];
+  }
+
   const theme = isJsonObject(input.theme) ? input.theme : {};
-  const chartStyle = chartStyleOverride ?? mainChartDefaultStyle(input, true);
+  const chartStyle = chartStyleOverride ?? mainChartDefaultStyle(input, true, isCartesianChart);
   const layoutProfile = createPieLayoutProfile(input, dataRows, true, chartStyle);
   const chartLeft = asFiniteNumber(chartStyle.left) ?? input.style.left;
   const chartTop = asFiniteNumber(chartStyle.top) ?? input.style.top;
@@ -1087,42 +1140,48 @@ function createDefaultAuxiliaryTextSlots(
     },
   });
 
+  const centerTexts: ModuleSlotInput[] = isThreeDPie
+    ? []
+    : [
+        createSlot("SingleText", {
+          name: centerSummaryLabel(input, dataRows),
+          textContent: formatNumber(total),
+          style: {
+            position: "absolute",
+            left: chartCenterX - 70,
+            top: chartCenterY - 26,
+            width: 140,
+            height: singleLineHeight(layoutProfile.centerValueFontSize),
+            fontSize: layoutProfile.centerValueFontSize,
+            color: "#FFFFFF",
+            textAlign: "center",
+            backgroundColor: "rgba(0,0,0,0)",
+            fontWeight: "bold",
+            lineHeight: 1,
+          },
+        }),
+        createSlot("SingleText", {
+          name: riskLike ? `${centerSummaryLabel(input, dataRows)}说明` : "中心指标说明",
+          textContent: centerSummaryLabel(input, dataRows),
+          opacity: 0.82,
+          style: {
+            position: "absolute",
+            left: chartCenterX - 70,
+            top: chartCenterY + 18,
+            width: 140,
+            height: singleLineHeight(layoutProfile.centerLabelFontSize),
+            fontSize: layoutProfile.centerLabelFontSize,
+            color: textColor(theme),
+            textAlign: "center",
+            backgroundColor: "rgba(0,0,0,0)",
+            fontWeight: "normal",
+            lineHeight: 1,
+          },
+        }),
+      ];
+
   return [
-    createSlot("SingleText", {
-      name: centerSummaryLabel(input, dataRows),
-      textContent: formatNumber(total),
-      style: {
-        position: "absolute",
-        left: chartCenterX - 70,
-        top: chartCenterY - 26,
-        width: 140,
-        height: singleLineHeight(layoutProfile.centerValueFontSize),
-        fontSize: layoutProfile.centerValueFontSize,
-        color: "#FFFFFF",
-        textAlign: "center",
-        backgroundColor: "rgba(0,0,0,0)",
-        fontWeight: "bold",
-        lineHeight: 1,
-      },
-    }),
-    createSlot("SingleText", {
-      name: riskLike ? `${centerSummaryLabel(input, dataRows)}说明` : "中心指标说明",
-      textContent: centerSummaryLabel(input, dataRows),
-      opacity: 0.82,
-      style: {
-        position: "absolute",
-        left: chartCenterX - 70,
-        top: chartCenterY + 18,
-        width: 140,
-        height: singleLineHeight(layoutProfile.centerLabelFontSize),
-        fontSize: layoutProfile.centerLabelFontSize,
-        color: textColor(theme),
-        textAlign: "center",
-        backgroundColor: "rgba(0,0,0,0)",
-        fontWeight: "normal",
-        lineHeight: 1,
-      },
-    }),
+    ...centerTexts,
     sideHeader,
     ...sideMarkers,
     ...sideTexts,
@@ -1398,22 +1457,300 @@ function createMainChartProps(
     throw new Error(`unsupported mainChart componentName: ${slot.componentName}`);
   }
 
+  const isThreeDPie = slot.componentName === "ThreeDPieChart";
+  const isLineChart = slot.componentName === "LineChart";
+  const isBarChart = slot.componentName === "BarChart";
+  const isCartesianChart = isLineChart || isBarChart;
   const props = slotProps(slot);
   const theme = isJsonObject(input.theme) ? input.theme : {};
   const defaultColors = defaultPalette(theme);
   const hasExplicitChartData = Boolean(getChartDataRowsFromProps(props));
   const layoutRows = getChartDataRowsFromProps(props) ?? fallbackDataRows;
-  const defaultChartStyle = mainChartDefaultStyle(input, reserveSideSummary);
+  const defaultChartStyle = mainChartDefaultStyle(input, reserveSideSummary, isCartesianChart);
   const chartStyle = mergeStyle(defaultChartStyle, props.style);
+  const chartHeight = asFiniteNumber(chartStyle.height) ?? input.style.height;
+  const option = isJsonObject(props.option) ? props.option : {};
+  const legend = isJsonObject(option.legend) ? option.legend : {};
+  const tooltip = isJsonObject(option.tooltip) ? option.tooltip : {};
+
+  if (isCartesianChart) {
+    const inputXAxis = isJsonObject(option.xAxis) ? option.xAxis : {};
+    const inputYAxis = isJsonObject(option.yAxis) ? option.yAxis : {};
+    const inputGrid = isJsonObject(option.grid) ? option.grid : {};
+    const inputSeries = Array.isArray(option.series) ? option.series : [];
+    const defaultSeriesType = isLineChart ? "line" : "bar";
+
+    const chartData = isJsonObject(props.chartData) ? props.chartData : {};
+    const indicator = Array.isArray(chartData.indicator) ? chartData.indicator : [];
+    const firstIndicator = isJsonObject(indicator[0]) ? indicator[0] : {};
+    const indicatorFieldDataConfig = isJsonObject(firstIndicator.fieldDataConfig)
+      ? firstIndicator.fieldDataConfig
+      : {};
+    const indicatorDisplayName =
+      typeof indicatorFieldDataConfig.chartDisplayName === "string" &&
+      indicatorFieldDataConfig.chartDisplayName.trim() !== ""
+        ? indicatorFieldDataConfig.chartDisplayName
+        : typeof firstIndicator.fieldDisplayName === "string" &&
+            firstIndicator.fieldDisplayName.trim() !== ""
+          ? firstIndicator.fieldDisplayName
+          : typeof firstIndicator.fieldName === "string"
+            ? firstIndicator.fieldName
+            : "";
+
+    const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
+    const dataCount = layoutRows?.length ?? 1;
+    const plotWidth = Math.max(chartWidth - 30 - 40, 100);
+    const idealBarWidth = Math.min(Math.max(Math.round((plotWidth / dataCount) * 0.25), 12), 24);
+
+    const normalizedSeries = inputSeries.map((s) => {
+      if (!isJsonObject(s)) {
+        return s;
+      }
+      const inputName = typeof s.name === "string" && s.name.trim() !== "" ? s.name : indicatorDisplayName;
+      return {
+        ...s,
+        name: inputName,
+        type: defaultSeriesType,
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+      };
+    });
+
+    return {
+      ...props,
+      ...(!hasExplicitChartData && fallbackDataRows
+        ? {
+            chartData: {
+              constant: {
+                data: fallbackDataRows,
+              },
+            },
+          }
+        : {}),
+      componentName: slot.componentName,
+      logicalId: childLogicalId(input, "main_chart"),
+      parentLogicalId: input.logicalId,
+      name: typeof props.name === "string" ? props.name : "主图表",
+      entryAnimiation: entryAnimation(props, CHART_ENTRY_ANIMATION),
+      style: chartStyle,
+      option: {
+        backgroundColor: "transparent",
+        color: defaultColors,
+        ...option,
+        grid: {
+          left: 30,
+          top: chartHeight < 280 ? 40 : 56,
+          bottom: chartHeight < 280 ? 28 : 40,
+          right: 40,
+          ...inputGrid,
+        },
+        legend: {
+          show: true,
+          left: "center",
+          top: "top",
+          offsetX: 0,
+          offsetY: 0,
+          orient: "horizontal",
+          icon: "emptyCircle",
+          itemWidth: 18,
+          itemHeight: 12,
+          padding: [5, 12],
+          borderRadius: 12,
+          backgroundColor: "rgba(0, 229, 255, 0.055)",
+          borderColor: "rgba(0, 229, 255, 0.2)",
+          borderWidth: 1,
+          ...legend,
+          textStyle: {
+            color: textColor(theme),
+            fontSize: 12,
+            fontWeight: "normal",
+            fontStyle: "normal",
+            fontFamily: "serif",
+            ...(isJsonObject(legend.textStyle) ? legend.textStyle : {}),
+          },
+        },
+        tooltip: {
+          trigger: "axis",
+          show: true,
+          backgroundColor: "rgba(3,16,31,0.92)",
+          borderColor: "rgba(0,229,255,0.35)",
+          borderWidth: 1,
+          ...tooltip,
+          textStyle: {
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: "normal",
+            fontStyle: "normal",
+            fontFamily: "serif",
+            ...(isJsonObject(tooltip.textStyle) ? tooltip.textStyle : {}),
+          },
+        },
+        xAxis: {
+          type: "category",
+          show: true,
+          name: "",
+          axisTick: {
+            show: true,
+            inside: true,
+            length: 2,
+            lineStyle: {
+              width: 2,
+              type: "dotted",
+              color: "#fff",
+            },
+          },
+          axisLine: {
+            show: true,
+            inside: false,
+            lineStyle: {
+              color: "#fff",
+              width: 1,
+              type: "solid",
+            },
+          },
+          splitLine: {
+            show: false,
+            lineStyle: {
+              color: "#0696f9",
+              width: 3,
+              type: "solid",
+            },
+          },
+          axisLabel: {
+            show: true,
+            inside: false,
+            rotate: 0,
+            color: "#e6f7ff",
+            fontWeight: "normal",
+            fontFamily: "serif",
+            fontSize: 12,
+            fontStyle: "normal",
+            align: "center",
+            margin: 8,
+          },
+          ...inputXAxis,
+        },
+        yAxis: {
+          type: "value",
+          show: true,
+          name: "",
+          axisTick: {
+            show: false,
+            inside: true,
+            length: 10,
+            lineStyle: {
+              width: 3,
+              type: "solid",
+              color: "#fff",
+            },
+          },
+          axisLine: {
+            show: false,
+            inside: false,
+            lineStyle: {
+              color: "#0696f9",
+              width: 3,
+              type: "solid",
+            },
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              width: 1,
+              type: "dashed",
+              color: "#878C93",
+            },
+          },
+          axisLabel: {
+            show: true,
+            inside: false,
+            rotate: 0,
+            color: "#e6f7ff",
+            fontWeight: "normal",
+            fontFamily: "serif",
+            fontStyle: "normal",
+            align: "center",
+            formatter: "{value}",
+            fontSize: 14,
+            margin: 8,
+          },
+          ...inputYAxis,
+        },
+        series: normalizedSeries.length > 0 ? normalizedSeries : [
+          isLineChart
+            ? {
+                symbolSize: 0,
+                symbol: "emptyCircle",
+                showSymbol: false,
+                name: indicatorDisplayName,
+                mapName: "",
+                type: "line",
+                itemStyle: {
+                  color: "",
+                  borderWidth: 2,
+                  borderColor: "#666666",
+                  borderType: "solid",
+                  shadowBlur: 0,
+                  shadowColor: "#fff",
+                },
+                label: {
+                  show: false,
+                  position: "top",
+                  fontWeight: "bold",
+                  color: "#ffffff",
+                  fontSize: 12,
+                  fontStyle: "normal",
+                  fontFamily: "serif",
+                  rotate: 0,
+                },
+                lineStyle: {
+                  width: 3,
+                },
+              }
+            : {
+                name: indicatorDisplayName,
+                mapName: "",
+                type: "bar",
+                barWidth: idealBarWidth,
+                barGap: 0,
+                barCategoryGap: 0,
+                itemStyle: {
+                  borderWidth: 0,
+                  borderColor: "#666666",
+                  borderType: "solid",
+                  shadowBlur: 0,
+                  shadowColor: "#fff",
+                  color: "",
+                  borderRadius: 0,
+                },
+                label: {
+                  show: false,
+                  position: "top",
+                  fontWeight: "bold",
+                  color: "#ffffff",
+                  fontSize: 12,
+                  fontStyle: "normal",
+                  fontFamily: "serif",
+                  rotate: 0,
+                  formatter: "{c}",
+                },
+              },
+        ],
+      },
+    };
+  }
+
+  const inputOption = isJsonObject(props.option) ? props.option : {};
+  const inputLegend = isJsonObject(inputOption.legend) ? inputOption.legend : {};
+  const legendIsRight = inputLegend.left === "right" || (inputLegend.left === "center" && inputLegend.top === "center");
   const layoutProfile = createPieLayoutProfile(
     input,
     layoutRows,
     reserveSideSummary,
     chartStyle,
   );
-  const option = isJsonObject(props.option) ? props.option : {};
-  const legend = isJsonObject(option.legend) ? option.legend : {};
-  const tooltip = isJsonObject(option.tooltip) ? option.tooltip : {};
   const inputSeries = Array.isArray(option.series) ? option.series : [];
   const firstInputSeries = isJsonObject(inputSeries[0]) ? inputSeries[0] : {};
   const inputItemStyle = isJsonObject(firstInputSeries.itemStyle)
@@ -1432,6 +1769,135 @@ function createMainChartProps(
     ? firstInputSeries.labelLine
     : {};
 
+  const baseCenter = isThreeDPie
+    ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "48%"]
+    : layoutProfile.center;
+  const chartRadius = isThreeDPie
+    ? (firstInputSeries.radius as JsonValue | undefined) ?? ["72%", "96%"]
+    : layoutProfile.radius;
+
+  const chartCenter = ((): [string, string] => {
+    if (!isThreeDPie || !Array.isArray(baseCenter) || baseCenter.length < 2) {
+      return Array.isArray(baseCenter) && baseCenter.length >= 2
+        ? [String(baseCenter[0]), String(baseCenter[1])]
+        : ["50%", "48%"];
+    }
+    const cx = String(baseCenter[0]);
+    const cy = String(baseCenter[1]);
+    if (legendIsRight && cx === "50%") {
+      return ["42%", cy];
+    }
+    return [cx, cy];
+  })();
+
+  const baseOption: JsonObject = {
+    backgroundColor: "transparent",
+    color: defaultColors,
+    ...option,
+    legend: {
+      show: true,
+      left: "center",
+      top: "bottom",
+      offsetX: 0,
+      offsetY: layoutProfile.legendOffsetY,
+      orient: "horizontal",
+      icon: "roundRect",
+      itemWidth: layoutProfile.legendItemWidth,
+      itemHeight: layoutProfile.legendItemHeight,
+      itemGap: layoutProfile.legendItemGap,
+      padding: [5, 12],
+      borderRadius: 12,
+      backgroundColor: "rgba(0, 229, 255, 0.055)",
+      borderColor: "rgba(0, 229, 255, 0.2)",
+      borderWidth: 1,
+      ...legend,
+      textStyle: {
+        color: textColor(theme),
+        fontSize: layoutProfile.legendFontSize,
+        fontWeight: "normal",
+        fontStyle: "normal",
+        fontFamily: "serif",
+        ...(isJsonObject(legend.textStyle) ? legend.textStyle : {}),
+      },
+    },
+    tooltip: {
+      show: true,
+      backgroundColor: "rgba(3,16,31,0.92)",
+      borderColor: "rgba(0,229,255,0.35)",
+      borderWidth: 1,
+      ...tooltip,
+      textStyle: {
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: "normal",
+        fontStyle: "normal",
+        fontFamily: "serif",
+        ...(isJsonObject(tooltip.textStyle) ? tooltip.textStyle : {}),
+      },
+    },
+    series: [
+      {
+        ...firstInputSeries,
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        center: chartCenter,
+        radius: chartRadius,
+        avoidLabelOverlap: true,
+        minShowLabelAngle: 4,
+        selectedMode: false,
+        selectOffset: 0,
+        itemStyle: {
+          borderWidth: 2,
+          borderColor: "rgba(2, 10, 24, 0.95)",
+          borderType: "solid",
+          shadowBlur: 10,
+          shadowColor: "rgba(0,229,255,0.28)",
+          borderRadius: 0,
+          ...inputItemStyle,
+        },
+        emphasis: {
+          scale: false,
+          scaleSize: 0,
+          disabled: true,
+          ...inputEmphasis,
+        },
+        select: {
+          disabled: true,
+          ...inputSelect,
+        },
+        label: isThreeDPie
+          ? { show: false, ...inputLabel }
+          : lightweightChartLabel(inputLabel, reserveSideSummary, theme, layoutProfile),
+        labelLine: isThreeDPie
+          ? { show: false, ...inputLabelLine }
+          : lightweightChartLabelLine(inputLabelLine, layoutProfile),
+      },
+    ],
+  };
+
+  if (isThreeDPie) {
+    const inputThreeD = isJsonObject(option.threeDSettings) ? option.threeDSettings : {};
+    baseOption.threeDSettings = {
+      depth: 18,
+      topViewAngle: 63,
+      animationEnabled: true,
+      centerLabelVisible: true,
+      liftDistance: 14,
+      interactionTrigger: "hover",
+      projectionType: "perspective",
+      pixelRatio: 1.5,
+      cameraPosition: { x: 0, y: -2, z: 220 },
+      cameraRotation: { x: -4, y: 0, z: 0 },
+      outerRadiusScale: 0.82,
+      innerRadiusScale: 0.74,
+      centerYRatio: 0.48,
+      centerYOffset: 4,
+      ...inputThreeD,
+    };
+  }
+
   return {
     ...props,
     ...(!hasExplicitChartData && fallbackDataRows
@@ -1449,88 +1915,7 @@ function createMainChartProps(
     name: typeof props.name === "string" ? props.name : "主图表",
     entryAnimiation: entryAnimation(props, CHART_ENTRY_ANIMATION),
     style: chartStyle,
-    option: {
-      backgroundColor: "transparent",
-      color: defaultColors,
-      ...option,
-      legend: {
-        show: true,
-        left: "center",
-        top: "bottom",
-        offsetX: 0,
-        offsetY: layoutProfile.legendOffsetY,
-        orient: "horizontal",
-        icon: "roundRect",
-        itemWidth: layoutProfile.legendItemWidth,
-        itemHeight: layoutProfile.legendItemHeight,
-        itemGap: layoutProfile.legendItemGap,
-        padding: [5, 12],
-        borderRadius: 12,
-        backgroundColor: "rgba(0, 229, 255, 0.055)",
-        borderColor: "rgba(0, 229, 255, 0.2)",
-        borderWidth: 1,
-        ...legend,
-        textStyle: {
-          color: textColor(theme),
-          fontSize: layoutProfile.legendFontSize,
-          fontWeight: "normal",
-          fontStyle: "normal",
-          fontFamily: "serif",
-          ...(isJsonObject(legend.textStyle) ? legend.textStyle : {}),
-        },
-      },
-      tooltip: {
-        show: true,
-        backgroundColor: "rgba(3,16,31,0.92)",
-        borderColor: "rgba(0,229,255,0.35)",
-        borderWidth: 1,
-        ...tooltip,
-        textStyle: {
-          color: "#FFFFFF",
-          fontSize: 14,
-          fontWeight: "normal",
-          fontStyle: "normal",
-          fontFamily: "serif",
-          ...(isJsonObject(tooltip.textStyle) ? tooltip.textStyle : {}),
-        },
-      },
-      series: [
-        {
-          ...firstInputSeries,
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          center: layoutProfile.center,
-          radius: layoutProfile.radius,
-          avoidLabelOverlap: true,
-          minShowLabelAngle: 4,
-          selectedMode: false,
-          selectOffset: 0,
-          itemStyle: {
-            borderWidth: 2,
-            borderColor: "rgba(2, 10, 24, 0.95)",
-            borderType: "solid",
-            shadowBlur: 10,
-            shadowColor: "rgba(0,229,255,0.28)",
-            borderRadius: 0,
-            ...inputItemStyle,
-          },
-          emphasis: {
-            scale: false,
-            scaleSize: 0,
-            disabled: true,
-            ...inputEmphasis,
-          },
-          select: {
-            disabled: true,
-            ...inputSelect,
-          },
-          label: lightweightChartLabel(inputLabel, reserveSideSummary, theme, layoutProfile),
-          labelLine: lightweightChartLabelLine(inputLabelLine, layoutProfile),
-        },
-      ],
-    },
+    option: baseOption,
   };
 }
 
@@ -1668,11 +2053,15 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     throw new Error("missing required module slot: mainChart");
   }
 
+  const isThreeDPie = mainChartSlot.componentName === "ThreeDPieChart";
+  const isLineChart = mainChartSlot.componentName === "LineChart";
+  const isBarChart = mainChartSlot.componentName === "BarChart";
+  const isCartesianChart = isLineChart || isBarChart;
   const fallbackDataRows =
     getModuleDataRows(input) ??
     getChartDataRowsFromProps(slotProps(mainChartSlot)) ??
     deriveDataRowsFromAuxiliaryTexts(auxiliaryTextSlots);
-  const reserveDefaultSideSummary = auxiliaryTextSlots.length === 0 && Boolean(fallbackDataRows);
+  const reserveDefaultSideSummary = !isCartesianChart && auxiliaryTextSlots.length === 0 && Boolean(fallbackDataRows);
   const mainChartProps = createMainChartProps(
     input,
     mainChartSlot,
@@ -1683,12 +2072,12 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
   const effectiveBackgroundSlot = backgroundSlot ?? createDefaultBackgroundSlot();
   const effectiveDecorationSlots =
     decorationSlots.length > 0
-      ? ensureDefaultDecorationSlots(input, decorationSlots, fallbackDataRows, mainChartStyle)
-      : createDefaultDecorationSlots(input, fallbackDataRows, mainChartStyle);
+      ? ensureDefaultDecorationSlots(input, decorationSlots, fallbackDataRows, mainChartStyle, !isBarChart, isCartesianChart)
+      : createDefaultDecorationSlots(input, fallbackDataRows, mainChartStyle, !isBarChart, isCartesianChart);
   const effectiveAuxiliaryTextSlots =
     auxiliaryTextSlots.length > 0
       ? normalizeAuxiliaryTextSlots(input, auxiliaryTextSlots, fallbackDataRows)
-      : createDefaultAuxiliaryTextSlots(input, fallbackDataRows, mainChartStyle);
+      : createDefaultAuxiliaryTextSlots(input, fallbackDataRows, mainChartStyle, isThreeDPie, isCartesianChart);
 
   const componentProps: JsonObject[] = [];
 

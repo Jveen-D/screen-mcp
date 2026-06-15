@@ -174,6 +174,172 @@ function baseWritableProps(definition: ComponentDefinition): JsonObject[] {
   ];
 }
 
+function chartBaseWritableProps(): JsonObject[] {
+  return [
+    {
+      path: "option.color",
+      type: "array<string>",
+      description: "扇区颜色数组，MCP 按下标与默认色板合并。",
+    },
+    {
+      path: "chartData.constant.data",
+      type: "array<{name:string,type?:string,value:number}>",
+      description:
+        "常量数据行。AI 只允许填写 data 数组，每行使用 name、value，可选 type；MCP 会补齐 originalData、fieldList、dimension、indicator、sourceType 等完整 chartData 结构。",
+      itemShape: {
+        name: "分类名称，对应饼图扇区名称。",
+        type: "系列名称，可省略，默认使用“系列”。",
+        value: "分类数值，对应饼图扇区大小。",
+      },
+      example: [
+        { name: "重大风险", type: "系列", value: 34 },
+        { name: "较大风险", type: "系列", value: 78 },
+        { name: "一般风险", type: "系列", value: 156 },
+        { name: "低风险", type: "系列", value: 118 },
+      ],
+    },
+    {
+      path: "option.tooltip",
+      type: "object",
+      description: "提示框配置。",
+      children: [
+        {
+          path: "option.tooltip.show",
+          type: "boolean",
+          description: "是否显示提示框。",
+        },
+        {
+          path: "option.tooltip.backgroundColor",
+          type: "color",
+          description: "提示框背景色。",
+        },
+        {
+          path: "option.tooltip.textStyle",
+          type: "object",
+          description: "提示框文字样式。",
+          children: [
+            {
+              path: "option.tooltip.textStyle.color",
+              type: "color",
+              description: "文字颜色。",
+            },
+            {
+              path: "option.tooltip.textStyle.fontSize",
+              type: "number",
+              description: "字号。",
+            },
+            {
+              path: "option.tooltip.textStyle.fontWeight",
+              type: "enum",
+              values: ["normal", "bold", "bolder"],
+              description: "字重。",
+            },
+            {
+              path: "option.tooltip.textStyle.fontStyle",
+              type: "enum",
+              values: ["normal", "italic", "oblique"],
+              description: "字体样式。",
+            },
+            {
+              path: "option.tooltip.textStyle.fontFamily",
+              type: "string",
+              description: "字体。",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      path: "option.legend",
+      type: "object",
+      description:
+        "图例配置。legend.left 与 legend.top 必须成对选择合法位置，分别保存为字符串。",
+      positionRules: {
+        fields: ["left", "top"],
+        description:
+          "每一项的第一个值写入 legend.left，第二个值写入 legend.top，表示图例在容器的八个方位。",
+        options: [
+          ["left", "top"],
+          ["center", "top"],
+          ["right", "top"],
+          ["left", "center"],
+          ["right", "center"],
+          ["left", "bottom"],
+          ["center", "bottom"],
+          ["right", "bottom"],
+        ],
+      },
+      children: [
+        {
+          path: "option.legend.show",
+          type: "boolean",
+          description: "是否显示图例。",
+        },
+        {
+          path: "option.legend.left",
+          type: "enum",
+          values: ["left", "center", "right"],
+          description:
+            "图例水平位置，必须与 option.legend.top 组合成 positionRules.options 中的一项。",
+        },
+        {
+          path: "option.legend.top",
+          type: "enum",
+          values: ["top", "center", "bottom"],
+          description:
+            "图例垂直位置，必须与 option.legend.left 组合成 positionRules.options 中的一项。",
+        },
+        {
+          path: "option.legend.offsetX",
+          type: "number",
+          description:
+            "图例水平偏移，单位 px。正数向右，负数向左。用于在保持 legend.left/legend.top 语义位置的基础上微调图例，不要用它替代正确的图例方位。",
+        },
+        {
+          path: "option.legend.offsetY",
+          type: "number",
+          description:
+            "图例垂直偏移，单位 px。正数向下，负数向上。底部 legend 与外部 label 或底部装饰挤压时，通常使用 -4 到 -14 让 legend 轻微上移。",
+        },
+        {
+          path: "option.legend.textStyle",
+          type: "object",
+          description: "图例文字样式。",
+          children: [
+            {
+              path: "option.legend.textStyle.color",
+              type: "color",
+              description: "文字颜色。",
+            },
+            {
+              path: "option.legend.textStyle.fontSize",
+              type: "number",
+              description: "字号。",
+            },
+            {
+              path: "option.legend.textStyle.fontWeight",
+              type: "enum",
+              values: ["normal", "bold", "bolder"],
+              description: "字重。",
+            },
+            {
+              path: "option.legend.textStyle.fontStyle",
+              type: "enum",
+              values: ["normal", "italic", "oblique"],
+              description: "字体样式。",
+            },
+            {
+              path: "option.legend.textStyle.fontFamily",
+              type: "string",
+              description: "字体。",
+            },
+          ],
+        },
+      ],
+    },
+  ];
+}
+
 export function withBaseCapability(
   definition: ComponentDefinition,
 ): JsonObject {
@@ -254,6 +420,13 @@ export function withBaseCapability(
     capability.aiWritableProps,
     baseWritableProps(definition),
   );
+
+  if (definition.componentType === "chart") {
+    capability.aiWritableProps = appendUniqueByPath(
+      capability.aiWritableProps,
+      chartBaseWritableProps(),
+    );
+  }
 
   return capability;
 }

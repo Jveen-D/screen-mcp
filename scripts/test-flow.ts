@@ -65,6 +65,10 @@ assert.ok(
   components.some((component) => component.componentName === "SvgDecoration"),
   "list_components should include SvgDecoration",
 );
+assert.ok(
+  components.some((component) => component.componentName === "ThreeDPieChart"),
+  "list_components should include ThreeDPieChart",
+);
 
 const capability = getComponentCapability("PieChart");
 assert.ok(Array.isArray(capability.requiredProps), "capability has requiredProps");
@@ -227,6 +231,60 @@ assert.ok(
   pieForbiddenProps.some((item) => item.path === "option.dataset"),
   "PieChart should forbid option.dataset",
 );
+
+const threeDCapability = getComponentCapability("ThreeDPieChart");
+assert.ok(Array.isArray(threeDCapability.requiredProps), "ThreeDPieChart capability has requiredProps");
+assert.ok(
+  Array.isArray(threeDCapability.aiWritableProps),
+  "ThreeDPieChart capability has aiWritableProps",
+);
+assert.ok(
+  Array.isArray(threeDCapability.aiForbiddenProps),
+  "ThreeDPieChart capability has aiForbiddenProps",
+);
+assert.ok(Array.isArray(threeDCapability.examples), "ThreeDPieChart capability has examples");
+assert.equal(threeDCapability.componentType, "chart");
+assert.ok(threeDCapability.baseConfig, "ThreeDPieChart capability has baseConfig");
+const threeDWritableProps = threeDCapability.aiWritableProps as JsonObject[];
+assert.ok(
+  threeDWritableProps.some((item) => item.path === "option.threeDSettings"),
+  "ThreeDPieChart should expose threeDSettings",
+);
+assert.ok(
+  threeDWritableProps.some((item) => item.path === "option.series[0]"),
+  "ThreeDPieChart should expose series config",
+);
+assert.ok(
+  threeDWritableProps.some((item) => item.path === "option.color"),
+  "ThreeDPieChart should expose color via chart base props",
+);
+const threeDForbiddenProps = threeDCapability.aiForbiddenProps as JsonObject[];
+assert.ok(
+  threeDForbiddenProps.some((item) => item.path === "option.threeDSettings.cameraPosition"),
+  "ThreeDPieChart should forbid cameraPosition overrides",
+);
+
+const threeDExample = (threeDCapability.examples as JsonObject[])[0];
+const threeDAiProps = threeDExample?.props as JsonObject;
+const threeDSchema = generateComponentsSchema(threeDAiProps);
+assert.equal(threeDSchema.componentName, "ThreeDPieChart");
+const threeDProps = threeDSchema.props;
+const threeDOption = threeDProps.option as JsonObject;
+const threeDSeries = threeDOption.series as JsonObject[];
+const threeDFirstSeries = threeDSeries[0] as JsonObject;
+const threeDChartData = threeDProps.chartData as JsonObject;
+assert.equal(threeDChartData.sourceType, "constant");
+assert.equal(threeDFirstSeries.type, "pie");
+assert.deepEqual(threeDFirstSeries.radius, ["72%", "96%"]);
+assert.deepEqual(threeDFirstSeries.center, ["50%", "48%"]);
+assert.equal((threeDFirstSeries.label as JsonObject | undefined)?.show, false);
+assert.equal((threeDFirstSeries.labelLine as JsonObject | undefined)?.show, false);
+assert.ok(
+  threeDOption.threeDSettings !== null && typeof threeDOption.threeDSettings === "object" && !Array.isArray(threeDOption.threeDSettings),
+  "ThreeDPieChart schema should include threeDSettings",
+);
+assert.equal((threeDOption.threeDSettings as JsonObject).depth, 18);
+assert.equal((threeDOption.threeDSettings as JsonObject).topViewAngle, 63);
 
 const examples = capability.examples as JsonObject[];
 const firstExample = examples[0];
@@ -1858,6 +1916,57 @@ assert.deepEqual(
   "single-line-safe legend should enlarge the pie body enough to keep main visual weight",
 );
 
+// LineChart prompt test
+const lineChartPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "做个季度访问量趋势分析，第一季度访问量120，第二季度访问量200，第三季度访问量150，第四季度访问量280。用折线图展示。",
+  style: {
+    left: 120,
+    top: 120,
+    width: 840,
+    height: 520,
+  },
+});
+assert.equal(lineChartPromptPanel.componentName, "__Group__");
+assert.equal(lineChartPromptPanel.title, "季度访问量趋势分析");
+const lineChartPromptChart = lineChartPromptPanel.children.find(
+  (item) => item.componentName === "LineChart",
+);
+assert.ok(lineChartPromptChart, "line chart prompt should generate LineChart child");
+const lineChartPromptProps = lineChartPromptChart.props as JsonObject;
+const lineChartPromptOption = lineChartPromptProps.option as JsonObject;
+assert.equal(lineChartPromptOption.backgroundColor, "transparent");
+const lineChartPromptLegend = lineChartPromptOption.legend as JsonObject;
+assert.equal(lineChartPromptLegend.left, "center");
+assert.equal(lineChartPromptLegend.top, "top");
+assert.equal(lineChartPromptLegend.offsetY, 0);
+const lineChartPromptTooltip = lineChartPromptOption.tooltip as JsonObject;
+assert.equal(lineChartPromptTooltip.trigger, "axis");
+const lineChartPromptXAxis = lineChartPromptOption.xAxis as JsonObject;
+assert.equal(lineChartPromptXAxis.type, "category");
+const lineChartPromptYAxis = lineChartPromptOption.yAxis as JsonObject;
+assert.equal(lineChartPromptYAxis.type, "value");
+const lineChartPromptSeries = lineChartPromptOption.series as JsonObject[];
+assert.equal(lineChartPromptSeries.length, 1);
+const lineChartPromptFirstSeries = lineChartPromptSeries[0] as JsonObject;
+assert.equal(lineChartPromptFirstSeries.type, "line");
+assert.equal(lineChartPromptFirstSeries.smooth, false);
+assert.equal(lineChartPromptFirstSeries.symbol, "emptyCircle");
+assert.equal(lineChartPromptFirstSeries.symbolSize, 0);
+const lineChartPromptChartData = lineChartPromptProps.chartData as JsonObject;
+const lineChartPromptConstant = lineChartPromptChartData.constant as JsonObject;
+assert.deepEqual(lineChartPromptConstant.data, [
+  { name: "第一季度访问量", type: "系列", value: 120 },
+  { name: "第二季度访问量", type: "系列", value: 200 },
+  { name: "第三季度访问量", type: "系列", value: 150 },
+  { name: "第四季度访问量", type: "系列", value: 280 },
+]);
+assert.ok(
+  lineChartPromptPanel.children.some(
+    (item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题"),
+  ),
+  "line chart prompt should include title text",
+);
+
 const redComplaintPanel = generateScreenModuleFromPrompt({
   prompt:
     "做个门店投诉来源分析模块，产品问题38，物流延迟27，服务态度19，价格争议11，其他5，整体用红色科技风，并给我完整schema。",
@@ -2398,7 +2507,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-11.3-component-id-randomized",
+    "2026-06-12.7-barchart-barwidth",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -2737,8 +2846,314 @@ try {
     false,
     "prompt MCP tool should not call side summary a legend",
   );
+
+  // 3D prompt test
+  const prompt3DResult = await client.callTool({
+    name: "generate_screen_module_from_prompt",
+    arguments: {
+      prompt: "做一个3D风险等级分析，数据：高风险18，中风险37，低风险71。",
+      style: {
+        left: 120,
+        top: 120,
+        width: 840,
+        height: 520,
+      },
+    },
+  });
+  assert.equal(prompt3DResult.isError, undefined);
+  const toolPrompt3DTree = readToolJson(prompt3DResult);
+  assert.equal(toolPrompt3DTree.componentName, "__Group__");
+  assert.equal(toolPrompt3DTree.title, "风险等级分析");
+  const toolPrompt3DChart = toolPrompt3DTree.children.find(
+    (item: JsonObject) => item.componentName === "ThreeDPieChart",
+  ) as JsonObject | undefined;
+  assert.ok(toolPrompt3DChart, "3D prompt should generate ThreeDPieChart child");
+  const toolPrompt3DOption = (toolPrompt3DChart.props as JsonObject).option as JsonObject;
+  assert.ok(
+    toolPrompt3DOption.threeDSettings !== null && typeof toolPrompt3DOption.threeDSettings === "object" && !Array.isArray(toolPrompt3DOption.threeDSettings),
+    "3D prompt chart should have threeDSettings",
+  );
+  assert.equal(
+    toolPrompt3DTree.children.filter((item: JsonObject) => item.componentName === "SvgDecoration").length,
+    8,
+    "3D prompt panel should include 8 SvgDecoration components",
+  );
+  const toolPrompt3DTexts = toolPrompt3DTree.children
+    .filter((item: JsonObject) => item.componentName === "SingleText")
+    .map((item: JsonObject) => (item.props as JsonObject).textContent);
+  assert.ok(
+    toolPrompt3DTexts.includes("处置建议"),
+    "3D prompt should include side summary heading",
+  );
+
+  // LineChart prompt test via MCP tool
+  const promptLineResult = await client.callTool({
+    name: "generate_screen_module_from_prompt",
+    arguments: {
+      prompt: "做一个季度访问量趋势分析，第一季度访问量120，第二季度访问量200，第三季度访问量150，第四季度访问量280。用折线图展示。",
+      style: {
+        left: 120,
+        top: 120,
+        width: 840,
+        height: 520,
+      },
+    },
+  });
+  assert.equal(promptLineResult.isError, undefined);
+  const toolPromptLineTree = readToolJson(promptLineResult);
+  assert.equal(toolPromptLineTree.componentName, "__Group__");
+  assert.equal(toolPromptLineTree.title, "季度访问量趋势分析");
+  const toolPromptLineChart = toolPromptLineTree.children.find(
+    (item: JsonObject) => item.componentName === "LineChart",
+  ) as JsonObject | undefined;
+  assert.ok(toolPromptLineChart, "line chart prompt MCP tool should generate LineChart child");
+  const toolPromptLineChartProps = toolPromptLineChart.props as JsonObject;
+  const toolPromptLineOption = toolPromptLineChartProps.option as JsonObject;
+  assert.equal(toolPromptLineOption.backgroundColor, "transparent");
+  const toolPromptLineLegend = toolPromptLineOption.legend as JsonObject;
+  assert.equal(toolPromptLineLegend.left, "center");
+  assert.equal(toolPromptLineLegend.top, "top");
+  assert.equal(toolPromptLineLegend.offsetY, 0);
+  const toolPromptLineTooltip = toolPromptLineOption.tooltip as JsonObject;
+  assert.equal(toolPromptLineTooltip.trigger, "axis");
+  const toolPromptLineXAxis = toolPromptLineOption.xAxis as JsonObject;
+  assert.equal(toolPromptLineXAxis.type, "category");
+  const toolPromptLineYAxis = toolPromptLineOption.yAxis as JsonObject;
+  assert.equal(toolPromptLineYAxis.type, "value");
+  const toolPromptLineSeries = toolPromptLineOption.series as JsonObject[];
+  assert.equal(toolPromptLineSeries.length, 1);
+  const toolPromptLineFirstSeries = toolPromptLineSeries[0] as JsonObject;
+  assert.equal(toolPromptLineFirstSeries.type, "line");
+  assert.equal(toolPromptLineFirstSeries.smooth, false);
+  assert.equal(toolPromptLineFirstSeries.symbol, "emptyCircle");
+  assert.equal(toolPromptLineFirstSeries.symbolSize, 0);
+  const toolPromptLineChartData = toolPromptLineChartProps.chartData as JsonObject;
+  const toolPromptLineConstant = toolPromptLineChartData.constant as JsonObject;
+  assert.deepEqual(toolPromptLineConstant.data, [
+    { name: "第一季度访问量", type: "系列", value: 120 },
+    { name: "第二季度访问量", type: "系列", value: 200 },
+    { name: "第三季度访问量", type: "系列", value: 150 },
+    { name: "第四季度访问量", type: "系列", value: 280 },
+  ]);
+  assert.ok(
+    toolPromptLineTree.children.some(
+      (item: JsonObject) => item.componentName === "SingleText" && ((item.props as JsonObject).name as string | undefined)?.includes("标题"),
+    ),
+    "line chart prompt MCP tool should include title text",
+  );
 } finally {
   await client.close();
 }
+
+// ChartPanel + ThreeDPieChart integration
+const threeDPanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "risk_3d_panel",
+  parentLogicalId: "root",
+  title: "风险等级3D分析",
+  style: {
+    left: 48,
+    top: 96,
+    width: 520,
+    height: 360,
+    position: "absolute",
+  },
+  theme: {
+    primaryColor: "#00E5FF",
+    secondaryColor: "#7C4DFF",
+    accentColor: "#FFB300",
+    textColor: "#DFF8FF",
+  },
+  slots: {
+    mainChart: {
+      componentName: "ThreeDPieChart",
+      props: {
+        chartData: {
+          constant: {
+            data: [
+              { name: "重大风险", type: "风险", value: 12 },
+              { name: "较大风险", type: "风险", value: 28 },
+              { name: "一般风险", type: "风险", value: 56 },
+            ],
+          },
+        },
+        option: {
+          threeDSettings: {
+            depth: 24,
+            topViewAngle: 55,
+          },
+        },
+      },
+    },
+  },
+} satisfies JsonObject;
+
+const threeDModuleSchemas = generateModuleSchema(threeDPanelInput);
+assert.ok(
+  threeDModuleSchemas.some((item) => item.componentName === "ThreeDPieChart"),
+  "ChartPanel should support ThreeDPieChart as main chart",
+);
+const threeDMainChart = threeDModuleSchemas.find((item) => item.componentName === "ThreeDPieChart");
+const threeDMainChartOption = threeDMainChart?.props.option as JsonObject;
+assert.equal(threeDMainChartOption.backgroundColor, "transparent");
+assert.ok(
+  threeDMainChartOption.threeDSettings !== null && typeof threeDMainChartOption.threeDSettings === "object" && !Array.isArray(threeDMainChartOption.threeDSettings),
+  "ChartPanel ThreeDPieChart should have threeDSettings",
+);
+assert.equal((threeDMainChartOption.threeDSettings as JsonObject).depth, 24);
+assert.equal((threeDMainChartOption.threeDSettings as JsonObject).topViewAngle, 55);
+const threeDMainSeries = (threeDMainChartOption.series as JsonObject[])[0] as JsonObject;
+assert.equal((threeDMainSeries.label as JsonObject | undefined)?.show, false, "ChartPanel ThreeDPieChart label should default to false");
+assert.equal((threeDMainSeries.labelLine as JsonObject | undefined)?.show, false, "ChartPanel ThreeDPieChart labelLine should default to false");
+
+const threeDModuleTree = generateModuleTreeSchema(threeDPanelInput);
+assert.equal(threeDModuleTree.componentName, "__Group__");
+assert.ok(
+  threeDModuleTree.children.some((item) => item.componentName === "ThreeDPieChart"),
+  "ChartPanel tree should include ThreeDPieChart",
+);
+
+// Verify 3D panel includes full decorations (not just the chart)
+const threeDSvgDecorations = threeDModuleSchemas.filter((item) => item.componentName === "SvgDecoration");
+assert.ok(
+  threeDSvgDecorations.length >= 4,
+  `ChartPanel ThreeDPieChart should include at least 4 SvgDecoration components, got ${threeDSvgDecorations.length}`,
+);
+assert.ok(
+  threeDSvgDecorations.some((d) => (d.props.name as string | undefined)?.includes("侧边摘要容器")),
+  "3D panel should include side summary container decoration",
+);
+assert.ok(
+  threeDSvgDecorations.some((d) => (d.props.name as string | undefined)?.includes("底部结构线")),
+  "3D panel should include bottom structure line decoration",
+);
+assert.ok(
+  threeDModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题")),
+  "3D panel should include title text",
+);
+assert.ok(
+  threeDModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("底部结论")),
+  "3D panel should include bottom conclusion text",
+);
+
+// ── LineChart panel assertions ───────────────────────────────
+const lineChartPanelInput = {
+  moduleName: "ChartPanel",
+  logicalId: "sales_line_panel",
+  parentLogicalId: "root",
+  title: "季度销售趋势",
+  style: {
+    left: 48,
+    top: 96,
+    width: 520,
+    height: 360,
+    position: "absolute",
+  },
+  theme: {
+    primaryColor: "#00E5FF",
+    secondaryColor: "#7C4DFF",
+    accentColor: "#FFB300",
+    textColor: "#DFF8FF",
+  },
+  slots: {
+    mainChart: {
+      componentName: "LineChart",
+      props: {
+        chartData: {
+          constant: {
+            data: [
+              { name: "Q1", value: 120 },
+              { name: "Q2", value: 200 },
+              { name: "Q3", value: 150 },
+              { name: "Q4", value: 280 },
+            ],
+          },
+        },
+        option: {
+          grid: { left: 40, top: 50, bottom: 40, right: 30 },
+          tooltip: { formatter: "{b}<br/>销售额：{c} 万" },
+          xAxis: { type: "category", data: ["Q1", "Q2", "Q3", "Q4"] },
+          yAxis: { type: "value", name: "销售额(万)", min: 0, max: 300, nameTextStyle: { color: "#BDEEFF" } },
+          series: [
+            {
+              name: "2024",
+              smooth: true,
+              showSymbol: true,
+              symbol: "circle",
+              symbolSize: 6,
+              areaStyle: { opacity: 0.2 },
+              lineStyle: { width: 3, shadowBlur: 12, shadowColor: "rgba(34,211,238,0.72)" },
+              itemStyle: { color: "#051024", borderColor: "#22D3EE", borderWidth: 3, shadowBlur: 8, shadowColor: "rgba(34,211,238,0.75)" },
+              markPoint: { data: [{ type: "max" }, { type: "min" }] },
+              markLine: { silent: true, data: [{ type: "average" }] },
+            },
+          ],
+        },
+      },
+    },
+  },
+} satisfies JsonObject;
+
+const lineModuleSchemas = generateModuleSchema(lineChartPanelInput);
+assert.ok(
+  lineModuleSchemas.some((item) => item.componentName === "LineChart"),
+  "ChartPanel should support LineChart as main chart",
+);
+const lineMainChart = lineModuleSchemas.find((item) => item.componentName === "LineChart");
+const lineMainChartOption = lineMainChart?.props.option as JsonObject;
+assert.equal(lineMainChartOption.backgroundColor, "transparent");
+assert.equal((lineMainChartOption.tooltip as JsonObject).trigger, "axis", "LineChart tooltip trigger should default to axis");
+assert.equal((lineMainChartOption.legend as JsonObject).show, true, "LineChart legend should default to show");
+const lineMainSeries = (lineMainChartOption.series as JsonObject[])[0] as JsonObject;
+assert.equal(lineMainSeries.type, "line", "LineChart series type should be line");
+assert.equal(lineMainSeries.smooth, true, "LineChart should preserve smooth from input");
+assert.ok(
+  lineMainSeries.areaStyle !== null && typeof lineMainSeries.areaStyle === "object" && !Array.isArray(lineMainSeries.areaStyle),
+  "LineChart should preserve areaStyle from input",
+);
+assert.equal((lineMainSeries.lineStyle as JsonObject).width, 3, "LineChart should preserve lineStyle width");
+assert.equal(lineMainSeries.symbol, "circle", "LineChart should preserve symbol from input");
+assert.equal(lineMainSeries.symbolSize, 6, "LineChart should preserve symbolSize from input");
+const lineXAxis = lineMainChartOption.xAxis as JsonObject;
+assert.equal(lineXAxis.type, "category", "LineChart xAxis type should default to category");
+const lineChartDataConstant = (lineMainChart?.props.chartData as JsonObject)?.constant as JsonObject | undefined;
+assert.ok(Array.isArray(lineXAxis.data) || Array.isArray(lineChartDataConstant?.data), "LineChart should have xAxis data or chartData");
+const lineYAxis = lineMainChartOption.yAxis as JsonObject;
+assert.equal(lineYAxis.type, "value", "LineChart yAxis type should default to value");
+assert.equal((lineYAxis.name as string | undefined), "销售额(万)", "LineChart yAxis name should be preserved");
+assert.equal(lineYAxis.min, 0, "LineChart yAxis min should be preserved");
+assert.equal(lineYAxis.max, 300, "LineChart yAxis max should be preserved");
+assert.equal((lineYAxis.nameTextStyle as JsonObject)?.color, "#BDEEFF", "LineChart yAxis nameTextStyle should be preserved");
+assert.equal(lineMainSeries.showSymbol, true, "LineChart showSymbol should be preserved as boolean");
+assert.equal((lineMainSeries.itemStyle as JsonObject)?.color, "#051024", "LineChart itemStyle.color should be preserved");
+assert.equal((lineMainSeries.itemStyle as JsonObject)?.borderColor, "#22D3EE", "LineChart itemStyle.borderColor should be preserved");
+assert.equal((lineMainSeries.lineStyle as JsonObject)?.shadowBlur, 12, "LineChart lineStyle.shadowBlur should be preserved");
+assert.equal((lineMainSeries.lineStyle as JsonObject)?.shadowColor, "rgba(34,211,238,0.72)", "LineChart lineStyle.shadowColor should be preserved");
+assert.ok(
+  lineMainSeries.markPoint !== null && typeof lineMainSeries.markPoint === "object" && !Array.isArray(lineMainSeries.markPoint),
+  "LineChart markPoint should be preserved",
+);
+assert.ok(
+  lineMainSeries.markLine !== null && typeof lineMainSeries.markLine === "object" && !Array.isArray(lineMainSeries.markLine),
+  "LineChart markLine should be preserved",
+);
+assert.equal((lineMainChartOption.tooltip as JsonObject)?.formatter, "{b}<br/>销售额：{c} 万", "LineChart tooltip formatter should be preserved");
+const lineModuleTree = generateModuleTreeSchema(lineChartPanelInput);
+assert.equal(lineModuleTree.componentName, "__Group__");
+assert.ok(
+  lineModuleTree.children.some((item) => item.componentName === "LineChart"),
+  "ChartPanel tree should include LineChart",
+);
+
+// Verify LineChart panel includes full decorations
+const lineSvgDecorations = lineModuleSchemas.filter((item) => item.componentName === "SvgDecoration");
+assert.ok(
+  lineSvgDecorations.length >= 4,
+  `ChartPanel LineChart should include at least 4 SvgDecoration components, got ${lineSvgDecorations.length}`,
+);
+assert.ok(
+  lineModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题")),
+  "LineChart panel should include title text",
+);
 
 console.log("test-flow passed");

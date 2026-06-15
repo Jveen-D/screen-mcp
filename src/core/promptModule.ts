@@ -170,6 +170,56 @@ function inferTheme(prompt: string): JsonObject {
   };
 }
 
+function inferMainChartType(prompt: string): "PieChart" | "ThreeDPieChart" | "LineChart" | "BarChart" {
+  if (/3D|三维|立体|3d|3维/.test(prompt)) {
+    return "ThreeDPieChart";
+  }
+
+  if (/折线|趋势|时间序列|走势|曲线|line|线图/.test(prompt)) {
+    return "LineChart";
+  }
+
+  if (/柱状|条形|柱图|bar|bar chart/.test(prompt)) {
+    return "BarChart";
+  }
+
+  return "PieChart";
+}
+
+function inferThreeDSettings(prompt: string): JsonObject {
+  const base: JsonObject = {
+    animationEnabled: true,
+    centerLabelVisible: true,
+    interactionTrigger: "hover",
+    projectionType: "perspective",
+    pixelRatio: 1.5,
+  };
+
+  if (/厚|厚重|体量|大块|强立体/.test(prompt)) {
+    base.depth = 32;
+    base.liftDistance = 24;
+    base.topViewAngle = 58;
+  } else if (/轻|简洁|薄|清爽/.test(prompt)) {
+    base.depth = 12;
+    base.liftDistance = 10;
+    base.topViewAngle = 68;
+  } else {
+    base.depth = 18;
+    base.liftDistance = 14;
+    base.topViewAngle = 63;
+  }
+
+  if (/俯视|顶视|平面/.test(prompt)) {
+    base.topViewAngle = 72;
+  }
+
+  if (/平视|侧面/.test(prompt)) {
+    base.topViewAngle = 45;
+  }
+
+  return base;
+}
+
 export function buildScreenModuleInputFromPrompt(input: JsonObject): JsonObject {
   const promptValue = input.prompt;
   if (typeof promptValue !== "string" || promptValue.trim() === "") {
@@ -178,6 +228,109 @@ export function buildScreenModuleInputFromPrompt(input: JsonObject): JsonObject 
 
   const prompt = promptValue.trim();
   const dataItems = normalizeDataRows(input.dataItems) ?? extractDataRowsFromPrompt(prompt);
+  const mainChartType = inferMainChartType(prompt);
+  const isThreeDPie = mainChartType === "ThreeDPieChart";
+
+  const isLineChart = mainChartType === "LineChart";
+  const isBarChart = mainChartType === "BarChart";
+  const isCartesianChart = isLineChart || isBarChart;
+
+  const mainChartSlot: JsonObject = {
+    componentName: mainChartType,
+    props: {
+      option: {
+        backgroundColor: "transparent",
+        legend: {
+          left: "center",
+          top: isCartesianChart ? "top" : "bottom",
+          offsetX: 0,
+          offsetY: isCartesianChart ? 0 : -6,
+        },
+        ...(isThreeDPie
+          ? {
+              threeDSettings: inferThreeDSettings(prompt),
+              series: [
+                {
+                  label: {
+                    show: false,
+                  },
+                  labelLine: {
+                    show: false,
+                  },
+                },
+              ],
+            }
+          : isLineChart
+            ? {
+                tooltip: {
+                  trigger: "axis",
+                },
+                grid: {
+                  left: 30,
+                  top: 60,
+                  bottom: 42,
+                  right: 40,
+                },
+                xAxis: {
+                  type: "category",
+                },
+                yAxis: {
+                  type: "value",
+                },
+                series: [
+                  {
+                    type: "line",
+                    smooth: false,
+                    symbol: "emptyCircle",
+                    symbolSize: 0,
+                  },
+                ],
+              }
+            : isBarChart
+              ? {
+                  tooltip: {
+                    trigger: "axis",
+                    axisPointer: {
+                      type: "shadow",
+                    },
+                  },
+                  grid: {
+                    left: 30,
+                    top: 60,
+                    bottom: 42,
+                    right: 40,
+                  },
+                  xAxis: {
+                    type: "category",
+                  },
+                  yAxis: {
+                    type: "value",
+                  },
+                  series: [
+                    {
+                      type: "bar",
+                      barWidth: 12,
+                    },
+                  ],
+                }
+              : {
+                  series: [
+                    {
+                      label: {
+                        show: true,
+                        position: "outside",
+                        formatter: "{b}",
+                        fontWeight: "normal",
+                      },
+                      labelLine: {
+                        show: true,
+                      },
+                    },
+                  ],
+                }),
+      },
+    },
+  };
 
   return {
     moduleName: "ChartPanel",
@@ -191,33 +344,7 @@ export function buildScreenModuleInputFromPrompt(input: JsonObject): JsonObject 
     style: normalizeStyle(input.style),
     theme: isJsonObject(input.theme) ? input.theme : inferTheme(prompt),
     slots: {
-      mainChart: {
-        componentName: "PieChart",
-        props: {
-          option: {
-            backgroundColor: "transparent",
-            legend: {
-              left: "center",
-              top: "bottom",
-              offsetX: 0,
-              offsetY: -6,
-            },
-            series: [
-              {
-                label: {
-                  show: true,
-                  position: "outside",
-                  formatter: "{b}",
-                  fontWeight: "normal",
-                },
-                labelLine: {
-                  show: true,
-                },
-              },
-            ],
-          },
-        },
-      },
+      mainChart: mainChartSlot,
     },
   };
 }

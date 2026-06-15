@@ -66,7 +66,7 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function getPieChartDataRows(props: JsonObject): JsonValue[] | undefined {
+function getChartDataRows(props: JsonObject): JsonValue[] | undefined {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
     return undefined;
@@ -108,8 +108,8 @@ function applySingleTextLineBoxDefaults(props: JsonObject): JsonObject {
   return nextProps;
 }
 
-function applyPieChartDataRows(props: JsonObject, rows: JsonValue[] | undefined): void {
-  props.chartData = cloneJson(getComponentDefinition("PieChart").defaultProps.chartData);
+function applyChartDataRows(props: JsonObject, rows: JsonValue[] | undefined, componentName: string): void {
+  props.chartData = cloneJson(getComponentDefinition(componentName).defaultProps.chartData);
 
   if (!rows) {
     return;
@@ -132,6 +132,7 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
   const parentLogicalId = assertRequiredString(aiProps, "parentLogicalId");
 
   const definition = getComponentDefinition(componentName);
+  const isChartComponent = definition.componentType === "chart";
   const sanitizedAiProps = applySingleTextLineBoxDefaults(
     removeAiForbiddenProps(
       {
@@ -141,17 +142,15 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
           : uniqueSchemaId(logicalId),
         parentLogicalId: toSchemaId(parentLogicalId),
       },
-      { componentName },
+      { componentName, isChartComponent },
     ),
   );
-  const pieChartDataRows =
-    componentName === "PieChart" ? getPieChartDataRows(sanitizedAiProps) : undefined;
-  const mergeableAiProps =
-    componentName === "PieChart" ? removeChartData(sanitizedAiProps) : sanitizedAiProps;
+  const chartDataRows = isChartComponent ? getChartDataRows(sanitizedAiProps) : undefined;
+  const mergeableAiProps = isChartComponent ? removeChartData(sanitizedAiProps) : sanitizedAiProps;
   const mergedProps = deepMerge(definition.defaultProps, mergeableAiProps);
 
-  if (componentName === "PieChart") {
-    applyPieChartDataRows(mergedProps, pieChartDataRows);
+  if (isChartComponent) {
+    applyChartDataRows(mergedProps, chartDataRows, componentName);
   } else {
     mergedProps.chartData = cloneJson(definition.defaultProps.chartData);
   }

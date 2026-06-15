@@ -1,0 +1,134 @@
+export const legendPositionOptions = [
+    ["left", "top"],
+    ["center", "top"],
+    ["right", "top"],
+    ["left", "center"],
+    ["right", "center"],
+    ["left", "bottom"],
+    ["center", "bottom"],
+    ["right", "bottom"],
+];
+function isJsonObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function asString(value, fallback) {
+    return typeof value === "string" && value.trim() !== "" ? value : fallback;
+}
+function asNumber(value, fallback) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+    return fallback;
+}
+function asPercentString(value, fallback) {
+    if (typeof value === "string" && value.trim() !== "") {
+        return value.trim();
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return `${value}%`;
+    }
+    return fallback;
+}
+function normalizeStringPair(value, fallback) {
+    if (!Array.isArray(value)) {
+        return fallback;
+    }
+    return [
+        asPercentString(value[0], fallback[0]),
+        asPercentString(value[1], fallback[1]),
+    ];
+}
+function isValidLegendPosition(left, top) {
+    if (typeof left !== "string" || typeof top !== "string") {
+        return false;
+    }
+    return legendPositionOptions.some(([allowedLeft, allowedTop]) => left === allowedLeft && top === allowedTop);
+}
+function normalizePieSeries(option) {
+    const series = option.series;
+    if (!Array.isArray(series)) {
+        return;
+    }
+    for (const item of series) {
+        if (isJsonObject(item)) {
+            item.type = "pie";
+            item.left = 0;
+            item.top = 0;
+            item.right = 0;
+            item.bottom = 0;
+            item.center = normalizeStringPair(item.center, ["50%", "50%"]);
+            item.radius = normalizeStringPair(item.radius, ["0%", "60%"]);
+        }
+    }
+}
+function normalizePieChartData(props) {
+    const chartData = props.chartData;
+    if (!isJsonObject(chartData)) {
+        return;
+    }
+    const constant = chartData.constant;
+    if (!isJsonObject(constant) || !Array.isArray(constant.data)) {
+        chartData.sourceType = "constant";
+        return;
+    }
+    const normalizedData = constant.data
+        .filter(isJsonObject)
+        .map((item, index) => ({
+        name: asString(item.name, `类目${index + 1}`),
+        type: asString(item.type, "系列"),
+        value: asNumber(item.value, 0),
+    }));
+    if (normalizedData.length === 0) {
+        chartData.sourceType = "constant";
+        return;
+    }
+    chartData.sourceType = "constant";
+    chartData.constant = {
+        ...constant,
+        data: normalizedData,
+        originalData: normalizedData.map((item) => ({ ...item })),
+        fieldList: [
+            {
+                fieldName: "name",
+                fieldDisplayName: "name",
+                fieldType: "LONGTEXT",
+            },
+            {
+                fieldName: "type",
+                fieldDisplayName: "type",
+                fieldType: "LONGTEXT",
+            },
+            {
+                fieldName: "value",
+                fieldDisplayName: "value",
+                fieldType: "DECIMAL",
+            },
+        ],
+    };
+}
+export function normalizePieChartProps(props) {
+    normalizePieChartData(props);
+    const option = props.option;
+    if (!isJsonObject(option)) {
+        return props;
+    }
+    normalizePieSeries(option);
+    const legend = option.legend;
+    if (!isJsonObject(legend)) {
+        return props;
+    }
+    if (isValidLegendPosition(legend.left, legend.top)) {
+        legend.offsetX = asNumber(legend.offsetX, 0);
+        legend.offsetY = asNumber(legend.offsetY, 0);
+        return props;
+    }
+    legend.left = "center";
+    legend.top = "top";
+    legend.offsetX = asNumber(legend.offsetX, 0);
+    legend.offsetY = asNumber(legend.offsetY, 0);
+    return props;
+}

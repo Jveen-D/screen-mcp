@@ -20,7 +20,7 @@ import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-11.3-component-id-randomized";
+const RULES_VERSION = "2026-06-12.7-barchart-barwidth";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
