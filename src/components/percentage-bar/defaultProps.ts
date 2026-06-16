@@ -1,0 +1,148 @@
+import type { JsonObject } from "../../types/component.js";
+
+export const percentageBarDefaultProps: JsonObject = {
+  componentName: "PercentageBar",
+  name: "百分比条",
+  value: 65,
+  max: 100,
+  min: 0,
+  style: {
+    position: "absolute",
+    left: 400,
+    top: 400,
+    width: 820,
+    height: 220,
+    zIndex: 1,
+    backgroundColor: "rgba(0,0,0,0)",
+  },
+  rotate: 0,
+  opacity: 1,
+  entryAnimiation: {
+    isShow: false,
+    type: "",
+  },
+  datasource: {
+    sourceType: "constant",
+    fieldMode: "single",
+    constantDataType: "table",
+    constantTableColumns: [
+      { type: "number", key: "value" },
+      { type: "number", key: "max" },
+      { type: "number", key: "min" },
+    ],
+    constantData: [
+      {
+        _id: "default",
+        value: 65,
+        max: 100,
+        min: 0,
+      },
+    ],
+    fieldMappings: [
+      {
+        key: "value",
+        mapFields: [{ path: "value", deleted: false, label: "value" }],
+      },
+      {
+        key: "max",
+        mapFields: [{ path: "max", deleted: false, label: "max" }],
+      },
+      {
+        key: "min",
+        mapFields: [{ path: "min", deleted: false, label: "min" }],
+      },
+    ],
+  },
+  globalConfig: {
+    barHeight: 56,
+    radius: 28,
+    progressBarColor:
+      "linear-gradient(90deg, rgba(24,213,255,1) 0%, rgba(0,102,255,1) 100%)",
+    progressBarBackgroundColor: "rgba(255,255,255,0.1)",
+  },
+  animationSettings: {
+    isOpenAnimation: true,
+    duration: 1000,
+    isReverse: false,
+  },
+  tickStyle: {
+    segmentCount: 10,
+    extremeMin: true,
+    extremeMax: true,
+    dividerColor: "rgba(255,255,255,0.3)",
+    dividerSize: 2,
+    offsetX: 0,
+    offsetY: 8,
+    textStyle: {
+      fontFamily: "serif",
+      fontWeight: "normal",
+      fontSize: 12,
+      color: "#ffffff",
+    },
+    suffix: {
+      enable: true,
+      text: "%",
+      offsetX: 0,
+      offsetY: 0,
+      useCustomStyle: false,
+      textStyle: {
+        fontFamily: "serif",
+        fontWeight: "normal",
+        fontSize: 12,
+        color: "#ffffff",
+      },
+    },
+  },
+  ratio: {
+    displayMode: 0,
+    percentPrecision: 0,
+    valuePrecision: 0,
+    offsetX: 0,
+    offsetY: 0,
+    textStyle: {
+      fontFamily: "serif",
+      fontWeight: "bold",
+      fontSize: 32,
+      color: "#ffffff",
+    },
+    prefix: {
+      enable: false,
+      text: "",
+      offsetX: 0,
+      offsetY: 0,
+      useCustomStyle: false,
+      textStyle: {
+        fontFamily: "serif",
+        fontWeight: "normal",
+        fontSize: 14,
+        color: "#ffffff",
+      },
+    },
+    suffix: {
+      enable: true,
+      text: "%",
+      offsetX: 4,
+      offsetY: 0,
+      useCustomStyle: false,
+      textStyle: {
+        fontFamily: "serif",
+        fontWeight: "normal",
+        fontSize: 14,
+        color: "#ffffff",
+      },
+    },
+  },
+  iconStyle: {
+    iconWidth: 48,
+    iconHeight: 48,
+    X: 0,
+    Y: -8,
+    color: "#18D5FF",
+    backgroundColor: "rgba(0,0,0,0)",
+    borderRadius: 0,
+    rotate: 0,
+  },
+  headerIcon: null,
+  iconIsShow: true,
+  eventConfigures: [],
+};

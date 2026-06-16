@@ -69,6 +69,26 @@ assert.ok(
   components.some((component) => component.componentName === "ThreeDPieChart"),
   "list_components should include ThreeDPieChart",
 );
+assert.ok(
+  components.some((component) => component.componentName === "Indicator"),
+  "list_components should include Indicator",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Gauge"),
+  "list_components should include Gauge",
+);
+assert.ok(
+  components.some((component) => component.componentName === "CircularProgress"),
+  "list_components should include CircularProgress",
+);
+assert.ok(
+  components.some((component) => component.componentName === "PercentageBar"),
+  "list_components should include PercentageBar",
+);
+assert.ok(
+  components.some((component) => component.componentName === "SingleValueChart"),
+  "list_components should include SingleValueChart",
+);
 
 const capability = getComponentCapability("PieChart");
 assert.ok(Array.isArray(capability.requiredProps), "capability has requiredProps");
@@ -525,6 +545,134 @@ assert.equal(textDatasource.sourceType, "externalConstant");
 assert.equal(textConstantData[0]?.text, "销售渠道占比");
 const textStyle = textSchema.props.style as JsonObject;
 assert.equal(textStyle.lineHeight, 1.09);
+
+// Indicator: textValue should sync to chartData.constant.data[0].value
+const indicatorCapability = getComponentCapability("Indicator");
+assert.ok(Array.isArray(indicatorCapability.aiWritableProps), "Indicator capability has aiWritableProps");
+const indicatorSchema = generateComponentsSchema({
+  componentName: "Indicator",
+  logicalId: "indicator_test",
+  parentLogicalId: "sales_group",
+  name: "测试翻牌器",
+  textValue: 9876,
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 300,
+    height: 80,
+  },
+});
+assert.equal(indicatorSchema.componentName, "Indicator");
+const indicatorChartData = asChartObject(indicatorSchema.props.chartData);
+const indicatorConstant = asChartObject(indicatorChartData.constant);
+const indicatorConstantData = Array.isArray(indicatorConstant.data) ? indicatorConstant.data : [];
+assert.equal(asChartObject(indicatorConstantData[0]).value, 9876, "Indicator textValue should sync to chartData");
+const indicatorIndicator = Array.isArray(indicatorChartData.indicator) ? indicatorChartData.indicator : [];
+assert.equal(asChartObject(indicatorIndicator[0]).fieldName, "value", "Indicator indicator fieldName should be value");
+
+// Gauge: value should sync to datasource.constantData[0].value
+const gaugeCapability = getComponentCapability("Gauge");
+assert.ok(Array.isArray(gaugeCapability.aiWritableProps), "Gauge capability has aiWritableProps");
+const gaugeSchema = generateComponentsSchema({
+  componentName: "Gauge",
+  logicalId: "gauge_test",
+  parentLogicalId: "sales_group",
+  name: "测试仪表盘",
+  value: 65,
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 400,
+    height: 360,
+  },
+});
+assert.equal(gaugeSchema.componentName, "Gauge");
+const gaugeDatasource = asChartObject(gaugeSchema.props.datasource);
+const gaugeConstantData = Array.isArray(gaugeDatasource.constantData) ? gaugeDatasource.constantData : [];
+assert.equal(asChartObject(gaugeConstantData[0]).value, 65, "Gauge value should sync to datasource");
+assert.equal(gaugeDatasource.sourceType, "constant", "Gauge datasource sourceType should be constant");
+
+// CircularProgress: data should sync to datasource.constantData
+const circularProgressCapability = getComponentCapability("CircularProgress");
+assert.ok(Array.isArray(circularProgressCapability.aiWritableProps), "CircularProgress capability has aiWritableProps");
+const circularProgressSchema = generateComponentsSchema({
+  componentName: "CircularProgress",
+  logicalId: "circular_progress_test",
+  parentLogicalId: "sales_group",
+  name: "测试环形进度图",
+  data: [
+    { name: "A", value: 30 },
+    { name: "B", value: 70 },
+  ],
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 500,
+    height: 300,
+  },
+});
+assert.equal(circularProgressSchema.componentName, "CircularProgress");
+const circularProgressDatasource = asChartObject(circularProgressSchema.props.datasource);
+const circularProgressConstantData = Array.isArray(circularProgressDatasource.constantData) ? circularProgressDatasource.constantData : [];
+assert.equal(circularProgressConstantData.length, 2, "CircularProgress data should sync to datasource");
+assert.equal(asChartObject(circularProgressConstantData[0]).name, "A", "CircularProgress first series name should be A");
+assert.equal(asChartObject(circularProgressConstantData[1]).value, 70, "CircularProgress second series value should be 70");
+
+// PercentageBar: value/max/min should sync to datasource.constantData[0]
+const percentageBarCapability = getComponentCapability("PercentageBar");
+assert.ok(Array.isArray(percentageBarCapability.aiWritableProps), "PercentageBar capability has aiWritableProps");
+const percentageBarSchema = generateComponentsSchema({
+  componentName: "PercentageBar",
+  logicalId: "percentage_bar_test",
+  parentLogicalId: "sales_group",
+  name: "测试百分比条",
+  value: 75,
+  max: 200,
+  min: 0,
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 800,
+    height: 240,
+  },
+});
+assert.equal(percentageBarSchema.componentName, "PercentageBar");
+const percentageBarDatasource = asChartObject(percentageBarSchema.props.datasource);
+const percentageBarConstantData = Array.isArray(percentageBarDatasource.constantData) ? percentageBarDatasource.constantData : [];
+assert.equal(asChartObject(percentageBarConstantData[0]).value, 75, "PercentageBar value should sync to datasource");
+assert.equal(asChartObject(percentageBarConstantData[0]).max, 200, "PercentageBar max should sync to datasource");
+assert.equal(asChartObject(percentageBarConstantData[0]).min, 0, "PercentageBar min should sync to datasource");
+
+// SingleValueChart: percentValue should sync to chartData.constant.data[0]["百分比"]
+const singleValueChartCapability = getComponentCapability("SingleValueChart");
+assert.ok(Array.isArray(singleValueChartCapability.aiWritableProps), "SingleValueChart capability has aiWritableProps");
+const singleValueChartSchema = generateComponentsSchema({
+  componentName: "SingleValueChart",
+  logicalId: "single_value_chart_test",
+  parentLogicalId: "sales_group",
+  name: "测试单值占比图",
+  percentValue: 88.8,
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 232,
+    height: 196,
+  },
+});
+assert.equal(singleValueChartSchema.componentName, "SingleValueChart");
+const singleValueChartChartData = asChartObject(singleValueChartSchema.props.chartData);
+const singleValueChartConstant = asChartObject(singleValueChartChartData.constant);
+const singleValueChartConstantData = Array.isArray(singleValueChartConstant.data) ? singleValueChartConstant.data : [];
+assert.equal(
+  Number(asChartObject(singleValueChartConstantData[0])["百分比"]),
+  88.8,
+  "SingleValueChart percentValue should sync to chartData",
+);
 
 const defaultLineBoxTextSchema = generateComponentsSchema({
   componentName: "SingleText",

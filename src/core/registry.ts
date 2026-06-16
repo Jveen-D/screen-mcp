@@ -11,8 +11,15 @@ import { roseChartDefinition } from "../components/rose-chart/index.js";
 import { scatterChartDefinition } from "../components/scatter-chart/index.js";
 import { singleImageDefinition } from "../components/single-image/index.js";
 import { singleTextDefinition } from "../components/single-text/index.js";
+import { multiTextDefinition } from "../components/multi-text/index.js";
+import { dynamicTextDefinition } from "../components/dynamic-text/index.js";
 import { svgDecorationDefinition } from "../components/svg-decoration/index.js";
 import { threeDPieChartDefinition } from "../components/three-d-pie-chart/index.js";
+import { indicatorDefinition } from "../components/indicator/index.js";
+import { gaugeDefinition } from "../components/gauge/index.js";
+import { circularProgressDefinition } from "../components/circular-progress/index.js";
+import { percentageBarDefinition } from "../components/percentage-bar/index.js";
+import { singleValueChartDefinition } from "../components/single-value-chart/index.js";
 import { withBaseCapability } from "./baseCapability.js";
 import type { ComponentDefinition } from "../types/component.js";
 
@@ -31,7 +38,14 @@ const definitions = [
   scatterChartDefinition,
   singleImageDefinition,
   singleTextDefinition,
+  multiTextDefinition,
+  dynamicTextDefinition,
   svgDecorationDefinition,
+  indicatorDefinition,
+  gaugeDefinition,
+  circularProgressDefinition,
+  percentageBarDefinition,
+  singleValueChartDefinition,
 ] satisfies ComponentDefinition[];
 
 export function listComponents() {
