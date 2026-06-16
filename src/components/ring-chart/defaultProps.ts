@@ -1,0 +1,237 @@
+import type { JsonObject } from "../../types/component.js";
+
+export const ringChartDefaultProps: JsonObject = {
+  componentName: "RingChart",
+  rotate: 0,
+  chartData: {
+    isPolling: false,
+    indicator: [
+      {
+        fieldDataConfig: {
+          calculateType: "SUM",
+          format: {
+            numberFormat: "numerical",
+            Millimeter: false,
+            accuracy: 2,
+            dataFix: {
+              preFix: "",
+              auFix: "",
+            },
+          },
+          chartDisplayName: "value",
+        },
+        fieldName: "value",
+        fieldDisplayName: "value",
+        fieldType: "DECIMAL",
+      },
+    ],
+    constant: {
+      data: [
+        { name: "类目1", type: "系列", value: 101 },
+        { name: "类目2", type: "系列", value: 71 },
+        { name: "类目3", type: "系列", value: 121 },
+        { name: "类目4", type: "系列", value: 95 },
+        { name: "类目5", type: "系列", value: 141 },
+        { name: "类目6", type: "系列", value: 96 },
+      ],
+      originalData: [
+        { name: "类目1", type: "系列", value: 101 },
+        { name: "类目2", type: "系列", value: 71 },
+        { name: "类目3", type: "系列", value: 121 },
+        { name: "类目4", type: "系列", value: 95 },
+        { name: "类目5", type: "系列", value: 141 },
+        { name: "类目6", type: "系列", value: 96 },
+      ],
+      fieldList: [
+        {
+          fieldName: "name",
+          fieldDisplayName: "name",
+          fieldType: "LONGTEXT",
+        },
+        {
+          fieldName: "type",
+          fieldDisplayName: "type",
+          fieldType: "LONGTEXT",
+        },
+        {
+          fieldName: "value",
+          fieldDisplayName: "value",
+          fieldType: "DECIMAL",
+        },
+      ],
+    },
+    form: {
+      formPermType: "All",
+      formUuid: "",
+      formName: "",
+    },
+    sourceType: "constant",
+    api: {
+      headers: [],
+      processFunction: "function handleResponse (response) { return response }",
+      requestBody: "",
+      requestParam: [],
+      fieldList: [],
+      apiUuid: "",
+    },
+    polling: 3,
+    dimension: [
+      {
+        fieldDataConfig: {
+          calculateType: "COUNT",
+          chartDisplayName: "name",
+        },
+        fieldName: "name",
+        fieldDisplayName: "name",
+        fieldType: "LONGTEXT",
+      },
+    ],
+  },
+  eventConfigures: [],
+  advanced: true,
+  entryAnimiation: {
+    type: "",
+    isShow: false,
+  },
+  name: "Ring Chart",
+  style: {
+    top: 72,
+    left: 669,
+    width: 400,
+    position: "absolute",
+    height: 226,
+    zIndex: 500,
+  },
+  opacity: 1,
+  option: {
+    backgroundColor: "#003552cf",
+    color: [
+      "#5470c6",
+      "#fac858",
+      "#ee6666",
+      "#73c0de",
+      "#3ba272",
+      "#fc8452",
+      "#9a60b4",
+      "#ea7ccc",
+    ],
+    animiation: {
+      show: false,
+      type: "",
+    },
+    legend: {
+      top: "top",
+      orient: "horizontal",
+      left: "center",
+      offsetX: 0,
+      offsetY: 0,
+      itemHeight: 12,
+      show: true,
+      icon: "circle",
+      itemWidth: 18,
+      textStyle: {
+        fontFamily: "serif",
+        color: "#ffffff",
+        fontSize: 11,
+        fontStyle: "italic",
+        fontWeight: "bold",
+      },
+    },
+    series: [
+      {
+        hoverAnimation: false,
+        left: 0,
+        center: ["50%", "50%"],
+        name: "",
+        mapName: "",
+        emphasis: {
+          label: {
+            show: true,
+          },
+          scale: true,
+          scaleSize: 18,
+          itemStyle: {
+            opacity: 1,
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: "rgba(0, 0, 0, 0.5)",
+          },
+        },
+        itemStyle: {
+          borderType: "solid",
+          borderColor: "#666666",
+          borderRadius: 0,
+          shadowBlur: 0,
+          borderWidth: 0,
+          shadowColor: "#fff",
+        },
+        label: {
+          formatter: "{b}\n{d}%",
+          fontFamily: "serif",
+          color: "#ffffff",
+          show: false,
+          fontSize: 14,
+          position: "center",
+          fontStyle: "normal",
+          fontWeight: "bold",
+        },
+        labelLine: {
+          length2: 40,
+          show: true,
+          length: 22,
+        },
+        type: "pie",
+        radius: ["30%", "45%"],
+      },
+    ],
+    tooltip: {
+      backgroundColor: "#333",
+      show: true,
+      axisPointer: {
+        label: {
+          show: false,
+        },
+        type: "shadow",
+      },
+      textStyle: {
+        fontFamily: "serif",
+        color: "#fff",
+        fontSize: 14,
+        fontStyle: "normal",
+        fontWeight: "normal",
+      },
+    },
+  },
+  decorator: {
+    innerRing: {
+      isActive: false,
+      innerRadius: 0.2,
+      outerRadius: 0.23,
+      opacity: 0.5,
+      animateSpeed: 0.8,
+      animateDirection: "clockwise",
+    },
+    outerRing: {
+      isActive: false,
+      arcWidth: 0.15,
+      opacity: 0.2,
+    },
+  },
+  rotatingAnimation: {
+    isActive: false,
+    height: 2,
+    opacity: 1,
+    duration: 5,
+    selectMode: "none",
+    isHover: false,
+  },
+  borderGap: 0,
+  ringText: {
+    isActive: false,
+    fontSize: 14,
+    fontFamily: "Microsoft YaHei",
+    fontWeight: "normal",
+    color: "#fff",
+    distance: 10,
+  },
+};

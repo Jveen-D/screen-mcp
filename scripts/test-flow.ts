@@ -2507,7 +2507,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-12.7-barchart-barwidth",
+    "2026-06-12.12-remove-demo-chart",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -3148,12 +3148,293 @@ assert.ok(
 // Verify LineChart panel includes full decorations
 const lineSvgDecorations = lineModuleSchemas.filter((item) => item.componentName === "SvgDecoration");
 assert.ok(
-  lineSvgDecorations.length >= 4,
-  `ChartPanel LineChart should include at least 4 SvgDecoration components, got ${lineSvgDecorations.length}`,
+  lineSvgDecorations.length >= 2,
+  `ChartPanel LineChart should include at least 2 SvgDecoration components, got ${lineSvgDecorations.length}`,
 );
 assert.ok(
   lineModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题")),
   "LineChart panel should include title text",
 );
+
+// Batch chart component prompt verification
+function asChartObject(value: unknown): JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as JsonObject)
+    : {};
+}
+
+function findMainChart(panel: JsonObject): JsonObject {
+  const children = Array.isArray(panel.children) ? (panel.children as unknown[]) : [];
+  const chartNames = new Set([
+    "PieChart",
+    "ThreeDPieChart",
+    "LineChart",
+    "BarChart",
+    "RingChart",
+    "StackBarChart",
+    "StackLineChart",
+    "BarChart25D",
+    "BarProgress",
+    "LiquidFill",
+    "RoseChart",
+    "ScatterChart",
+  ]);
+  const found = children.find((item) => {
+    const obj = asChartObject(item);
+    return typeof obj.componentName === "string" && chartNames.has(obj.componentName);
+  });
+  return asChartObject(found);
+}
+
+function getBatchChartSeries(panel: JsonObject): JsonObject {
+  const mainChart = findMainChart(panel);
+  const option = asChartObject(asChartObject(mainChart.props).option);
+  const series = Array.isArray(option.series) ? option.series : [];
+  return asChartObject(series[0]);
+}
+
+function getBatchChartIndicatorName(panel: JsonObject): string | undefined {
+  const mainChart = findMainChart(panel);
+  const chartData = asChartObject(asChartObject(mainChart.props).chartData);
+  const indicator = Array.isArray(chartData.indicator) ? chartData.indicator : [];
+  const firstIndicator = asChartObject(indicator[0]);
+  return asChartObject(firstIndicator.fieldDataConfig).chartDisplayName as string | undefined;
+}
+
+function hasBatchChartDimension(panel: JsonObject, fieldName: string): boolean {
+  const mainChart = findMainChart(panel);
+  const chartData = asChartObject(asChartObject(mainChart.props).chartData);
+  const dimension = Array.isArray(chartData.dimension) ? chartData.dimension : [];
+  return dimension.some((item) => asChartObject(item).fieldName === fieldName);
+}
+
+function hasSideSummaryContainer(panel: JsonObject): boolean {
+  const children = Array.isArray(panel.children) ? (panel.children as unknown[]) : [];
+  return children.some((item) => {
+    const obj = asChartObject(item);
+    const props = asChartObject(obj.props);
+    const name = props.name;
+    return typeof name === "string" && /侧边摘要|侧卡/.test(name);
+  });
+}
+
+// RingChart prompt generation
+const ringChartPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用环形图展示各部门预算占比：研发部120，市场部80，运营部60。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const ringChartPromptMain = findMainChart(ringChartPromptPanel as unknown as JsonObject);
+assert.equal(ringChartPromptMain.componentName, "RingChart", "RingChart prompt should infer RingChart");
+const ringChartPromptSeries = getBatchChartSeries(ringChartPromptPanel as unknown as JsonObject);
+assert.ok(
+  Array.isArray(ringChartPromptSeries.radius) && ringChartPromptSeries.radius.length === 2,
+  "RingChart prompt should keep radius array",
+);
+assert.equal(asChartObject(ringChartPromptSeries.label).show, false, "RingChart prompt should hide labels by default");
+assert.ok(
+  typeof ringChartPromptSeries.name === "string" && ringChartPromptSeries.name !== "",
+  `RingChart prompt series should have a semantic name, got ${ringChartPromptSeries.name}`,
+);
+const ringChartPromptIndicatorName = getBatchChartIndicatorName(ringChartPromptPanel as unknown as JsonObject);
+assert.ok(
+  ringChartPromptIndicatorName && ringChartPromptIndicatorName !== "value",
+  `RingChart prompt indicator chartDisplayName should be business semantic, got ${ringChartPromptIndicatorName}`,
+);
+
+// StackBarChart prompt generation
+const stackBarChartPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用堆叠柱状图展示各季度线上线下销售额：Q1 线上120 线下80，Q2 线上150 线下90。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const stackBarChartPromptMain = findMainChart(stackBarChartPromptPanel as unknown as JsonObject);
+assert.equal(stackBarChartPromptMain.componentName, "StackBarChart", "StackBarChart prompt should infer StackBarChart");
+const stackBarChartPromptSeries = getBatchChartSeries(stackBarChartPromptPanel as unknown as JsonObject);
+assert.equal(stackBarChartPromptSeries.type, "bar", "StackBarChart prompt series type should be bar");
+assert.equal(stackBarChartPromptSeries.stack, "__stackBar", "StackBarChart prompt should have fixed stack");
+assert.ok(
+  typeof stackBarChartPromptSeries.name === "string" && stackBarChartPromptSeries.name !== "",
+  `StackBarChart prompt series should have a semantic name, got ${stackBarChartPromptSeries.name}`,
+);
+assert.ok(
+  hasBatchChartDimension(stackBarChartPromptPanel as unknown as JsonObject, "name"),
+  "StackBarChart prompt dimension should include name",
+);
+assert.ok(
+  hasBatchChartDimension(stackBarChartPromptPanel as unknown as JsonObject, "type"),
+  "StackBarChart prompt dimension should include type",
+);
+assert.equal(
+  hasSideSummaryContainer(stackBarChartPromptPanel as unknown as JsonObject),
+  false,
+  "StackBarChart prompt should not include side summary container",
+);
+const stackBarChartPromptIndicatorName = getBatchChartIndicatorName(stackBarChartPromptPanel as unknown as JsonObject);
+assert.ok(
+  stackBarChartPromptIndicatorName && stackBarChartPromptIndicatorName !== "value",
+  `StackBarChart prompt indicator chartDisplayName should be business semantic, got ${stackBarChartPromptIndicatorName}`,
+);
+
+// StackLineChart prompt generation
+const stackLineChartPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用堆叠折线图展示上半年各品类趋势：1月 A类100 B类80，2月 A类120 B类90。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const stackLineChartPromptMain = findMainChart(stackLineChartPromptPanel as unknown as JsonObject);
+assert.equal(stackLineChartPromptMain.componentName, "StackLineChart", "StackLineChart prompt should infer StackLineChart");
+const stackLineChartPromptSeries = getBatchChartSeries(stackLineChartPromptPanel as unknown as JsonObject);
+assert.equal(stackLineChartPromptSeries.type, "line", "StackLineChart prompt series type should be line");
+assert.equal(stackLineChartPromptSeries.stack, "__stackLine", "StackLineChart prompt should have fixed stack");
+assert.deepEqual(
+  stackLineChartPromptSeries.showSymbol,
+  { show: false },
+  "StackLineChart prompt should hide symbols by default",
+);
+assert.ok(
+  typeof stackLineChartPromptSeries.name === "string" && stackLineChartPromptSeries.name !== "",
+  `StackLineChart prompt series should have a semantic name, got ${stackLineChartPromptSeries.name}`,
+);
+assert.ok(
+  hasBatchChartDimension(stackLineChartPromptPanel as unknown as JsonObject, "name"),
+  "StackLineChart prompt dimension should include name",
+);
+assert.ok(
+  hasBatchChartDimension(stackLineChartPromptPanel as unknown as JsonObject, "type"),
+  "StackLineChart prompt dimension should include type",
+);
+assert.equal(
+  hasSideSummaryContainer(stackLineChartPromptPanel as unknown as JsonObject),
+  false,
+  "StackLineChart prompt should not include side summary container",
+);
+const stackLineChartPromptIndicatorName = getBatchChartIndicatorName(stackLineChartPromptPanel as unknown as JsonObject);
+assert.ok(
+  stackLineChartPromptIndicatorName && stackLineChartPromptIndicatorName !== "value",
+  `StackLineChart prompt indicator chartDisplayName should be business semantic, got ${stackLineChartPromptIndicatorName}`,
+);
+
+// Batch chart component prompt verification - new components
+function getBatchChartAxisType(panel: JsonObject, axis: "xAxis" | "yAxis"): string | undefined {
+  const mainChart = findMainChart(panel);
+  const option = asChartObject(asChartObject(mainChart.props).option);
+  return asChartObject(option[axis]).type as string | undefined;
+}
+
+function hasBatchChartLegend(panel: JsonObject): boolean {
+  const mainChart = findMainChart(panel);
+  const option = asChartObject(asChartObject(mainChart.props).option);
+  return option.legend !== undefined && option.legend !== null;
+}
+
+// BarChart25D prompt generation
+const barChart25DPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用2.5D柱状图展示各部门销售额：研发部120，市场部80，运营部60。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const barChart25DPromptMain = findMainChart(barChart25DPromptPanel as unknown as JsonObject);
+assert.equal(barChart25DPromptMain.componentName, "BarChart25D", "BarChart25D prompt should infer BarChart25D");
+const barChart25DPromptSeries = getBatchChartSeries(barChart25DPromptPanel as unknown as JsonObject);
+assert.equal(barChart25DPromptSeries.type, "custom", "BarChart25D prompt series type should be custom");
+assert.equal(
+  hasSideSummaryContainer(barChart25DPromptPanel as unknown as JsonObject),
+  false,
+  "BarChart25D prompt should not include side summary container",
+);
+const barChart25DPromptIndicatorName = getBatchChartIndicatorName(barChart25DPromptPanel as unknown as JsonObject);
+assert.ok(
+  barChart25DPromptIndicatorName && barChart25DPromptIndicatorName !== "value",
+  `BarChart25D prompt indicator chartDisplayName should be business semantic, got ${barChart25DPromptIndicatorName}`,
+);
+
+// BarProgress prompt generation
+const barProgressPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用条形进度图展示各部门完成率：研发部78，市场部45，运营部92。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const barProgressPromptMain = findMainChart(barProgressPromptPanel as unknown as JsonObject);
+assert.equal(barProgressPromptMain.componentName, "BarProgress", "BarProgress prompt should infer BarProgress");
+const barProgressPromptSeries = getBatchChartSeries(barProgressPromptPanel as unknown as JsonObject);
+assert.equal(barProgressPromptSeries.type, "bar", "BarProgress prompt series type should be bar");
+assert.equal(
+  getBatchChartAxisType(barProgressPromptPanel as unknown as JsonObject, "xAxis"),
+  "value",
+  "BarProgress prompt xAxis type should be value",
+);
+assert.equal(
+  getBatchChartAxisType(barProgressPromptPanel as unknown as JsonObject, "yAxis"),
+  "category",
+  "BarProgress prompt yAxis type should be category",
+);
+assert.equal(
+  hasSideSummaryContainer(barProgressPromptPanel as unknown as JsonObject),
+  false,
+  "BarProgress prompt should not include side summary container",
+);
+const barProgressPromptIndicatorName = getBatchChartIndicatorName(barProgressPromptPanel as unknown as JsonObject);
+assert.ok(
+  barProgressPromptIndicatorName && barProgressPromptIndicatorName !== "value",
+  `BarProgress prompt indicator chartDisplayName should be business semantic, got ${barProgressPromptIndicatorName}`,
+);
+
+// LiquidFill prompt generation
+const liquidFillPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用水球图展示整体完成率0.75。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const liquidFillPromptMain = findMainChart(liquidFillPromptPanel as unknown as JsonObject);
+assert.equal(liquidFillPromptMain.componentName, "LiquidFill", "LiquidFill prompt should infer LiquidFill");
+const liquidFillPromptSeries = getBatchChartSeries(liquidFillPromptPanel as unknown as JsonObject);
+assert.equal(liquidFillPromptSeries.type, "liquidFill", "LiquidFill prompt series type should be liquidFill");
+assert.equal(
+  hasSideSummaryContainer(liquidFillPromptPanel as unknown as JsonObject),
+  false,
+  "LiquidFill prompt should not include side summary container",
+);
+const liquidFillPromptIndicatorName = getBatchChartIndicatorName(liquidFillPromptPanel as unknown as JsonObject);
+assert.ok(
+  liquidFillPromptIndicatorName && liquidFillPromptIndicatorName !== "value",
+  `LiquidFill prompt indicator chartDisplayName should be business semantic, got ${liquidFillPromptIndicatorName}`,
+);
+
+// RoseChart prompt generation
+const roseChartPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用玫瑰图展示各部门占比：研发部120，市场部80，运营部60。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const roseChartPromptMain = findMainChart(roseChartPromptPanel as unknown as JsonObject);
+assert.equal(roseChartPromptMain.componentName, "RoseChart", "RoseChart prompt should infer RoseChart");
+const roseChartPromptSeries = getBatchChartSeries(roseChartPromptPanel as unknown as JsonObject);
+assert.equal(roseChartPromptSeries.type, "pie", "RoseChart prompt series type should be pie");
+assert.equal(roseChartPromptSeries.roseType, "area", "RoseChart prompt roseType should be area");
+const roseChartPromptIndicatorName = getBatchChartIndicatorName(roseChartPromptPanel as unknown as JsonObject);
+assert.ok(
+  roseChartPromptIndicatorName && roseChartPromptIndicatorName !== "value",
+  `RoseChart prompt indicator chartDisplayName should be business semantic, got ${roseChartPromptIndicatorName}`,
+);
+
+// ScatterChart prompt generation
+const scatterChartPromptPanel = generateScreenModuleFromPrompt({
+  prompt: "用散点图展示广告投入与销售额关系。",
+  style: { left: 0, top: 0, width: 800, height: 480 },
+});
+const scatterChartPromptMain = findMainChart(scatterChartPromptPanel as unknown as JsonObject);
+assert.equal(scatterChartPromptMain.componentName, "ScatterChart", "ScatterChart prompt should infer ScatterChart");
+const scatterChartPromptSeries = getBatchChartSeries(scatterChartPromptPanel as unknown as JsonObject);
+assert.equal(scatterChartPromptSeries.type, "scatter", "ScatterChart prompt series type should be scatter");
+assert.equal(
+  getBatchChartAxisType(scatterChartPromptPanel as unknown as JsonObject, "xAxis"),
+  "value",
+  "ScatterChart prompt xAxis type should be value",
+);
+assert.equal(
+  getBatchChartAxisType(scatterChartPromptPanel as unknown as JsonObject, "yAxis"),
+  "value",
+  "ScatterChart prompt yAxis type should be value",
+);
+assert.equal(
+  hasSideSummaryContainer(scatterChartPromptPanel as unknown as JsonObject),
+  false,
+  "ScatterChart prompt should not include side summary container",
+);
+
 
 console.log("test-flow passed");

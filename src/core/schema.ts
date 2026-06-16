@@ -80,6 +80,35 @@ function getChartDataRows(props: JsonObject): JsonValue[] | undefined {
   return cloneJson(constant.data);
 }
 
+function getChartDataIndicatorDisplayName(props: JsonObject): string | undefined {
+  const chartData = props.chartData;
+  if (!isJsonObject(chartData)) {
+    return undefined;
+  }
+
+  const indicator = chartData.indicator;
+  if (!Array.isArray(indicator)) {
+    return undefined;
+  }
+
+  const firstIndicator = indicator[0];
+  if (!isJsonObject(firstIndicator)) {
+    return undefined;
+  }
+
+  const fieldDataConfig = firstIndicator.fieldDataConfig;
+  if (!isJsonObject(fieldDataConfig)) {
+    return undefined;
+  }
+
+  const chartDisplayName = fieldDataConfig.chartDisplayName;
+  if (typeof chartDisplayName !== "string" || chartDisplayName.trim() === "") {
+    return undefined;
+  }
+
+  return chartDisplayName;
+}
+
 function removeChartData(props: JsonObject): JsonObject {
   const nextProps = cloneJson(props);
   delete nextProps.chartData;
@@ -108,8 +137,32 @@ function applySingleTextLineBoxDefaults(props: JsonObject): JsonObject {
   return nextProps;
 }
 
-function applyChartDataRows(props: JsonObject, rows: JsonValue[] | undefined, componentName: string): void {
+function applyChartDataRows(
+  props: JsonObject,
+  rows: JsonValue[] | undefined,
+  componentName: string,
+  indicatorDisplayName?: string,
+): void {
   props.chartData = cloneJson(getComponentDefinition(componentName).defaultProps.chartData);
+
+  if (indicatorDisplayName) {
+    const chartData = props.chartData;
+    if (isJsonObject(chartData)) {
+      const indicator = chartData.indicator;
+      if (Array.isArray(indicator)) {
+        const firstIndicator = indicator[0];
+        if (isJsonObject(firstIndicator)) {
+          const fieldDataConfig = isJsonObject(firstIndicator.fieldDataConfig)
+            ? firstIndicator.fieldDataConfig
+            : {};
+          firstIndicator.fieldDataConfig = {
+            ...fieldDataConfig,
+            chartDisplayName: indicatorDisplayName,
+          };
+        }
+      }
+    }
+  }
 
   if (!rows) {
     return;
@@ -146,11 +199,14 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
     ),
   );
   const chartDataRows = isChartComponent ? getChartDataRows(sanitizedAiProps) : undefined;
+  const indicatorDisplayName = isChartComponent
+    ? getChartDataIndicatorDisplayName(sanitizedAiProps)
+    : undefined;
   const mergeableAiProps = isChartComponent ? removeChartData(sanitizedAiProps) : sanitizedAiProps;
   const mergedProps = deepMerge(definition.defaultProps, mergeableAiProps);
 
   if (isChartComponent) {
-    applyChartDataRows(mergedProps, chartDataRows, componentName);
+    applyChartDataRows(mergedProps, chartDataRows, componentName, indicatorDisplayName);
   } else {
     mergedProps.chartData = cloneJson(definition.defaultProps.chartData);
   }

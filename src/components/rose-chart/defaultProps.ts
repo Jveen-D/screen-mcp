@@ -1,0 +1,192 @@
+import type { JsonObject } from "../../types/component.js";
+
+export const roseChartDefaultProps: JsonObject = {
+  componentName: "RoseChart",
+  rotate: 0,
+  chartData: {
+    isPolling: false,
+    indicator: [
+      {
+        fieldDataConfig: {
+          calculateType: "SUM",
+          format: {
+            numberFormat: "numerical",
+            Millimeter: false,
+            accuracy: 2,
+            dataFix: {
+              preFix: "",
+              auFix: "",
+            },
+          },
+          chartDisplayName: "value",
+        },
+        fieldName: "value",
+        fieldDisplayName: "value",
+        fieldType: "DECIMAL",
+      },
+    ],
+    constant: {
+      data: [
+        { name: "结构", value: 68 },
+        { name: "机电", value: 55 },
+        { name: "幕墙", value: 47 },
+        { name: "装修", value: 39 },
+        { name: "景观", value: 31 },
+        { name: "消防", value: 24 },
+        { name: "弱电", value: 18 },
+        { name: "暖通", value: 12 },
+      ],
+      originalData: [
+        { name: "结构", value: 68 },
+        { name: "机电", value: 55 },
+        { name: "幕墙", value: 47 },
+        { name: "装修", value: 39 },
+        { name: "景观", value: 31 },
+        { name: "消防", value: 24 },
+        { name: "弱电", value: 18 },
+        { name: "暖通", value: 12 },
+      ],
+      fieldList: [
+        {
+          fieldName: "name",
+          fieldDisplayName: "name",
+          fieldType: "LONGTEXT",
+        },
+        {
+          fieldName: "value",
+          fieldDisplayName: "value",
+          fieldType: "DECIMAL",
+        },
+      ],
+    },
+    form: {
+      formPermType: "All",
+      formUuid: "",
+      formName: "",
+    },
+    sourceType: "constant",
+    api: {
+      headers: [],
+      processFunction: "function handleResponse (response) { return response }",
+      requestBody: "",
+      requestParam: [],
+      fieldList: [],
+      apiUuid: "",
+    },
+    polling: 3,
+    dimension: [
+      {
+        fieldDataConfig: {
+          calculateType: "COUNT",
+          chartDisplayName: "name",
+        },
+        fieldName: "name",
+        fieldDisplayName: "name",
+        fieldType: "LONGTEXT",
+      },
+    ],
+  },
+  eventConfigures: [],
+  advanced: true,
+  entryAnimiation: {
+    type: "",
+    isShow: false,
+  },
+  name: "玫瑰图",
+  style: {
+    top: 400,
+    left: 400,
+    width: 800,
+    position: "absolute",
+    height: 500,
+    zIndex: 1,
+  },
+  opacity: 1,
+  option: {
+    backgroundColor: "transparent",
+    color: [
+      "#4E79A7",
+      "#F28E2B",
+      "#E15759",
+      "#76B7B2",
+      "#59A14F",
+      "#EDC948",
+      "#B07AA1",
+      "#FF9DA7",
+    ],
+    animiation: {
+      show: false,
+      type: "",
+    },
+    legend: {
+      top: "top",
+      orient: "horizontal",
+      left: "center",
+      offsetX: 0,
+      offsetY: 0,
+      itemHeight: 12,
+      show: true,
+      icon: "circle",
+      itemWidth: 18,
+      textStyle: {
+        fontFamily: "serif",
+        color: "#ffffff",
+        fontSize: 11,
+        fontStyle: "italic",
+        fontWeight: "bold",
+      },
+    },
+    series: [
+      {
+        hoverAnimation: false,
+        left: 10,
+        center: ["50%", "50%"],
+        name: "",
+        mapName: "",
+        roseType: "area",
+        itemStyle: {
+          borderType: "solid",
+          borderColor: "#fff",
+          borderRadius: 8,
+          shadowBlur: 10,
+          borderWidth: 2,
+          shadowColor: "#fff",
+        },
+        label: {
+          formatter: "{b}: {d}%",
+          fontFamily: "serif",
+          color: "#fff",
+          show: true,
+          fontSize: 12,
+          position: "outside",
+          fontStyle: "normal",
+          fontWeight: "bold",
+        },
+        labelLine: {
+          length2: 20,
+          show: true,
+          length: 10,
+        },
+        type: "pie",
+        radius: ["0%", "75%"],
+      },
+    ],
+    tooltip: {
+      backgroundColor: "#285773",
+      show: true,
+      axisPointer: {
+        label: {
+          show: false,
+        },
+        type: "shadow",
+      },
+      textStyle: {
+        fontFamily: "Arial",
+        color: "#fff",
+        fontSize: 14,
+        fontStyle: "normal",
+        fontWeight: "normal",
+      },
+    },
+  },
+};

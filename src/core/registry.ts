@@ -1,6 +1,14 @@
 import { pieChartDefinition } from "../components/pie-chart/index.js";
 import { lineChartDefinition } from "../components/line-chart/index.js";
 import { barChartDefinition } from "../components/bar-chart/index.js";
+import { ringChartDefinition } from "../components/ring-chart/index.js";
+import { stackBarChartDefinition } from "../components/stack-bar-chart/index.js";
+import { stackLineChartDefinition } from "../components/stack-line-chart/index.js";
+import { barChart25DDefinition } from "../components/bar-chart-25d/index.js";
+import { barProgressDefinition } from "../components/bar-progress/index.js";
+import { liquidFillDefinition } from "../components/liquid-fill/index.js";
+import { roseChartDefinition } from "../components/rose-chart/index.js";
+import { scatterChartDefinition } from "../components/scatter-chart/index.js";
 import { singleImageDefinition } from "../components/single-image/index.js";
 import { singleTextDefinition } from "../components/single-text/index.js";
 import { svgDecorationDefinition } from "../components/svg-decoration/index.js";
@@ -13,6 +21,14 @@ const definitions = [
   threeDPieChartDefinition,
   lineChartDefinition,
   barChartDefinition,
+  ringChartDefinition,
+  stackBarChartDefinition,
+  stackLineChartDefinition,
+  barChart25DDefinition,
+  barProgressDefinition,
+  liquidFillDefinition,
+  roseChartDefinition,
+  scatterChartDefinition,
   singleImageDefinition,
   singleTextDefinition,
   svgDecorationDefinition,

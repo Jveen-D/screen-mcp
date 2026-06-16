@@ -170,9 +170,51 @@ function inferTheme(prompt: string): JsonObject {
   };
 }
 
-function inferMainChartType(prompt: string): "PieChart" | "ThreeDPieChart" | "LineChart" | "BarChart" {
-  if (/3D|三维|立体|3d|3维/.test(prompt)) {
+function inferMainChartType(
+  prompt: string,
+):
+  | "PieChart"
+  | "ThreeDPieChart"
+  | "LineChart"
+  | "BarChart"
+  | "RingChart"
+  | "StackBarChart"
+  | "StackLineChart"
+  | "BarChart25D"
+  | "BarProgress"
+  | "LiquidFill"
+  | "RoseChart"
+  | "ScatterChart" {
+  if (/3D|三维|立体|3d|3维/.test(prompt) && !/2\.5D|25D|2\.5维|2\.5维/.test(prompt)) {
     return "ThreeDPieChart";
+  }
+
+  if (/堆叠折线|堆积折线|堆叠趋势|堆积趋势/.test(prompt)) {
+    return "StackLineChart";
+  }
+
+  if (/堆叠柱状|堆积柱状|堆叠条形|堆积条形/.test(prompt)) {
+    return "StackBarChart";
+  }
+
+  if (/2\.5D|25D|2\.5维|2\.5维|立体柱状|立体柱图|立体条形/.test(prompt)) {
+    return "BarChart25D";
+  }
+
+  if (/散点|气泡|scatter|bubble/.test(prompt)) {
+    return "ScatterChart";
+  }
+
+  if (/玫瑰|南丁格尔|rose chart|rose/.test(prompt)) {
+    return "RoseChart";
+  }
+
+  if (/水球|水波|液体填充|liquid fill|liquidFill/.test(prompt)) {
+    return "LiquidFill";
+  }
+
+  if (/进度条|条形进度|进度图|完成率/.test(prompt)) {
+    return "BarProgress";
   }
 
   if (/折线|趋势|时间序列|走势|曲线|line|线图/.test(prompt)) {
@@ -181,6 +223,10 @@ function inferMainChartType(prompt: string): "PieChart" | "ThreeDPieChart" | "Li
 
   if (/柱状|条形|柱图|bar|bar chart/.test(prompt)) {
     return "BarChart";
+  }
+
+  if (/环形| donut |甜甜圈|圈图/.test(prompt)) {
+    return "RingChart";
   }
 
   return "PieChart";
@@ -230,10 +276,247 @@ export function buildScreenModuleInputFromPrompt(input: JsonObject): JsonObject 
   const dataItems = normalizeDataRows(input.dataItems) ?? extractDataRowsFromPrompt(prompt);
   const mainChartType = inferMainChartType(prompt);
   const isThreeDPie = mainChartType === "ThreeDPieChart";
-
+  const isRingChart = mainChartType === "RingChart";
   const isLineChart = mainChartType === "LineChart";
   const isBarChart = mainChartType === "BarChart";
-  const isCartesianChart = isLineChart || isBarChart;
+  const isStackBarChart = mainChartType === "StackBarChart";
+  const isStackLineChart = mainChartType === "StackLineChart";
+  const isBarChart25D = mainChartType === "BarChart25D";
+  const isBarProgress = mainChartType === "BarProgress";
+  const isLiquidFill = mainChartType === "LiquidFill";
+  const isRoseChart = mainChartType === "RoseChart";
+  const isScatterChart = mainChartType === "ScatterChart";
+  const isCartesianChart =
+    isLineChart ||
+    isBarChart ||
+    isStackBarChart ||
+    isStackLineChart ||
+    isBarChart25D ||
+    isBarProgress ||
+    isScatterChart;
+  const isStackChart = isStackBarChart || isStackLineChart;
+  const isPieLikeChart =
+    mainChartType === "PieChart" || isThreeDPie || isRingChart || isRoseChart;
+
+  const cartesianBaseOption = {
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "shadow",
+      },
+    },
+    grid: {
+      left: 30,
+      top: 60,
+      bottom: 42,
+      right: 40,
+    },
+    xAxis: {
+      type: "category",
+    },
+    yAxis: {
+      type: "value",
+    },
+  };
+
+  let chartSpecificOption: JsonObject;
+
+  if (isThreeDPie) {
+    chartSpecificOption = {
+      threeDSettings: inferThreeDSettings(prompt),
+      series: [
+        {
+          label: {
+            show: false,
+          },
+          labelLine: {
+            show: false,
+          },
+        },
+      ],
+    };
+  } else if (isStackLineChart) {
+    chartSpecificOption = {
+      ...cartesianBaseOption,
+      series: [
+        {
+          type: "line",
+          stack: "__stackLine",
+          smooth: false,
+          symbol: "emptyCircle",
+          showSymbol: { show: false },
+          areaStyle: false,
+        },
+      ],
+    };
+  } else if (isLineChart) {
+    chartSpecificOption = {
+      ...cartesianBaseOption,
+      series: [
+        {
+          type: "line",
+          smooth: false,
+          symbol: "emptyCircle",
+          symbolSize: 0,
+        },
+      ],
+    };
+  } else if (isStackBarChart) {
+    chartSpecificOption = {
+      ...cartesianBaseOption,
+      series: [
+        {
+          type: "bar",
+          stack: "__stackBar",
+          barWidth: 12,
+        },
+      ],
+    };
+  } else if (isBarChart) {
+    chartSpecificOption = {
+      ...cartesianBaseOption,
+      series: [
+        {
+          type: "bar",
+          barWidth: 12,
+        },
+      ],
+    };
+  } else if (isBarChart25D) {
+    chartSpecificOption = {
+      ...cartesianBaseOption,
+      tooltip: {
+        trigger: "item",
+        axisPointer: {
+          type: "none",
+        },
+      },
+      series: [
+        {
+          type: "custom",
+          barWidth: 18,
+        },
+      ],
+    };
+  } else if (isScatterChart) {
+    chartSpecificOption = {
+      ...cartesianBaseOption,
+      tooltip: {
+        trigger: "item",
+      },
+      xAxis: {
+        type: "value",
+      },
+      yAxis: {
+        type: "value",
+      },
+      series: [
+        {
+          type: "scatter",
+          symbolSize: 15,
+        },
+      ],
+    };
+  } else if (isBarProgress) {
+    chartSpecificOption = {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: {
+          type: "shadow",
+        },
+      },
+      grid: {
+        left: 30,
+        top: 24,
+        bottom: 16,
+        right: 40,
+      },
+      xAxis: {
+        type: "value",
+        axisLabel: {
+          show: false,
+        },
+      },
+      yAxis: {
+        type: "category",
+        inverse: true,
+      },
+      series: [
+        {
+          type: "bar",
+          barWidth: 12,
+          showBackground: true,
+          label: {
+            show: true,
+            position: "right",
+          },
+        },
+      ],
+    };
+  } else if (isRoseChart) {
+    chartSpecificOption = {
+      series: [
+        {
+          type: "pie",
+          roseType: "area",
+          radius: ["0%", "70%"],
+          label: {
+            show: true,
+            position: "outside",
+            formatter: "{b}: {d}%",
+          },
+          labelLine: {
+            show: true,
+          },
+        },
+      ],
+    };
+  } else if (isLiquidFill) {
+    chartSpecificOption = {
+      series: [
+        {
+          type: "liquidFill",
+          radius: "90%",
+          label: {
+            show: true,
+            position: "inside",
+            formatter: "{c}",
+          },
+        },
+      ],
+    };
+  } else if (isRingChart) {
+    chartSpecificOption = {
+      series: [
+        {
+          radius: ["30%", "45%"],
+          label: {
+            show: false,
+            position: "center",
+          },
+          labelLine: {
+            show: false,
+          },
+        },
+      ],
+    };
+  } else {
+    chartSpecificOption = {
+      series: [
+        {
+          label: {
+            show: true,
+            position: "outside",
+            formatter: "{b}",
+            fontWeight: "normal",
+          },
+          labelLine: {
+            show: true,
+          },
+        },
+      ],
+    };
+  }
 
   const mainChartSlot: JsonObject = {
     componentName: mainChartType,
@@ -246,88 +529,7 @@ export function buildScreenModuleInputFromPrompt(input: JsonObject): JsonObject 
           offsetX: 0,
           offsetY: isCartesianChart ? 0 : -6,
         },
-        ...(isThreeDPie
-          ? {
-              threeDSettings: inferThreeDSettings(prompt),
-              series: [
-                {
-                  label: {
-                    show: false,
-                  },
-                  labelLine: {
-                    show: false,
-                  },
-                },
-              ],
-            }
-          : isLineChart
-            ? {
-                tooltip: {
-                  trigger: "axis",
-                },
-                grid: {
-                  left: 30,
-                  top: 60,
-                  bottom: 42,
-                  right: 40,
-                },
-                xAxis: {
-                  type: "category",
-                },
-                yAxis: {
-                  type: "value",
-                },
-                series: [
-                  {
-                    type: "line",
-                    smooth: false,
-                    symbol: "emptyCircle",
-                    symbolSize: 0,
-                  },
-                ],
-              }
-            : isBarChart
-              ? {
-                  tooltip: {
-                    trigger: "axis",
-                    axisPointer: {
-                      type: "shadow",
-                    },
-                  },
-                  grid: {
-                    left: 30,
-                    top: 60,
-                    bottom: 42,
-                    right: 40,
-                  },
-                  xAxis: {
-                    type: "category",
-                  },
-                  yAxis: {
-                    type: "value",
-                  },
-                  series: [
-                    {
-                      type: "bar",
-                      barWidth: 12,
-                    },
-                  ],
-                }
-              : {
-                  series: [
-                    {
-                      label: {
-                        show: true,
-                        position: "outside",
-                        formatter: "{b}",
-                        fontWeight: "normal",
-                      },
-                      labelLine: {
-                        show: true,
-                      },
-                    },
-                  ],
-                }),
+        ...chartSpecificOption,
       },
     },
   };

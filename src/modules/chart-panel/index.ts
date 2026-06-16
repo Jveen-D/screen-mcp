@@ -13,7 +13,20 @@ import type {
 } from "../../types/module.js";
 import { chartPanelCapability } from "./capability.js";
 
-const SUPPORTED_MAIN_COMPONENTS = ["PieChart", "ThreeDPieChart", "LineChart", "BarChart"];
+const SUPPORTED_MAIN_COMPONENTS = [
+  "PieChart",
+  "ThreeDPieChart",
+  "LineChart",
+  "BarChart",
+  "RingChart",
+  "StackBarChart",
+  "StackLineChart",
+  "BarChart25D",
+  "BarProgress",
+  "LiquidFill",
+  "RoseChart",
+  "ScatterChart",
+];
 const DEFAULT_DECORATION_SVG =
   '<svg viewBox="0 0 180 72" xmlns="http://www.w3.org/2000/svg"><path d="M8 62H92l18-18h62" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 46h76" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><path d="M118 28h46" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".42"/><circle cx="94" cy="62" r="4" fill="currentColor"/><circle cx="172" cy="44" r="4" fill="currentColor"/></svg>';
 const TITLE_BADGE_SVG =
@@ -94,6 +107,26 @@ type SideSummaryLayout = {
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function inferIndicatorNameFromTitle(title: string): string {
+  if (/销售额|销售金额|营收/.test(title)) return "销售额";
+  if (/销售量|销量/.test(title)) return "销量";
+  if (/客户数|客户量|用户数|用户量/.test(title)) return "客户数";
+  if (/订单数|订单量/.test(title)) return "订单数";
+  if (/完成量|完成额|完成值/.test(title)) return "完成量";
+  if (/绩效|业绩|KPI/.test(title)) return "绩效";
+  if (/投诉|告警|预警|异常/.test(title)) return "数量";
+  if (/占比|构成|分布/.test(title)) return "占比";
+  if (/趋势|走势|变化/.test(title)) return "数值";
+
+  // 兜底：取标题中最后 2–4 个业务名词，或截取前 6 个字
+  const cleanTitle = title.replace(/^(.*?[：:])/, "").trim();
+  if (cleanTitle.length >= 2 && cleanTitle.length <= 6) {
+    return cleanTitle;
+  }
+
+  return "";
 }
 
 function assertString(value: JsonValue | undefined, fieldName: string): string {
@@ -1416,13 +1449,15 @@ function lightweightChartLabel(
     reserveSideSummary &&
     (formatter === "" || /\\n|\{c\}|\{d\}/.test(formatter));
 
+  const shouldShow =
+    typeof inputLabel.show === "boolean" ? inputLabel.show : true;
+
   return {
     position: "outside",
     formatter: reserveSideSummary ? "{b}" : "{b}: {c}",
     fontSize: layoutProfile.labelFontSize,
     fontWeight: reserveSideSummary ? "normal" : "bold",
     color: textColor(theme),
-    show: true,
     ...inputLabel,
     ...(shouldLighten
       ? {
@@ -1431,7 +1466,7 @@ function lightweightChartLabel(
           fontWeight: "normal",
         }
       : {}),
-    ...(reserveSideSummary ? { show: true } : {}),
+    show: shouldShow,
   };
 }
 
@@ -1460,7 +1495,28 @@ function createMainChartProps(
   const isThreeDPie = slot.componentName === "ThreeDPieChart";
   const isLineChart = slot.componentName === "LineChart";
   const isBarChart = slot.componentName === "BarChart";
-  const isCartesianChart = isLineChart || isBarChart;
+  const isRingChart = slot.componentName === "RingChart";
+  const isStackBarChart = slot.componentName === "StackBarChart";
+  const isStackLineChart = slot.componentName === "StackLineChart";
+  const isBarChart25D = slot.componentName === "BarChart25D";
+  const isBarProgress = slot.componentName === "BarProgress";
+  const isLiquidFill = slot.componentName === "LiquidFill";
+  const isRoseChart = slot.componentName === "RoseChart";
+  const isScatterChart = slot.componentName === "ScatterChart";
+  const isCartesianChart =
+    isLineChart ||
+    isBarChart ||
+    isStackBarChart ||
+    isStackLineChart ||
+    isBarChart25D ||
+    isBarProgress ||
+    isScatterChart;
+  const isStackChart = isStackBarChart || isStackLineChart;
+  const isPieLikeChart =
+    slot.componentName === "PieChart" ||
+    isThreeDPie ||
+    isRingChart ||
+    isRoseChart;
   const props = slotProps(slot);
   const theme = isJsonObject(input.theme) ? input.theme : {};
   const defaultColors = defaultPalette(theme);
@@ -1473,29 +1529,104 @@ function createMainChartProps(
   const legend = isJsonObject(option.legend) ? option.legend : {};
   const tooltip = isJsonObject(option.tooltip) ? option.tooltip : {};
 
+  const chartData = isJsonObject(props.chartData) ? props.chartData : {};
+  const indicator = Array.isArray(chartData.indicator) ? chartData.indicator : [];
+  const firstIndicator = isJsonObject(indicator[0]) ? indicator[0] : {};
+  const indicatorFieldDataConfig = isJsonObject(firstIndicator.fieldDataConfig)
+    ? firstIndicator.fieldDataConfig
+    : {};
+  const rawIndicatorDisplayName =
+    typeof indicatorFieldDataConfig.chartDisplayName === "string" &&
+    indicatorFieldDataConfig.chartDisplayName.trim() !== ""
+      ? indicatorFieldDataConfig.chartDisplayName
+      : typeof firstIndicator.fieldDisplayName === "string" &&
+          firstIndicator.fieldDisplayName.trim() !== ""
+        ? firstIndicator.fieldDisplayName
+        : typeof firstIndicator.fieldName === "string"
+          ? firstIndicator.fieldName
+          : "";
+
+  const moduleTitle = typeof input.title === "string" ? input.title.trim() : "";
+  const indicatorDisplayName =
+    rawIndicatorDisplayName && rawIndicatorDisplayName !== "value"
+      ? rawIndicatorDisplayName
+      : inferIndicatorNameFromTitle(moduleTitle) || "数值";
+
+  const outputChartData: JsonObject = isJsonObject(props.chartData)
+    ? { ...props.chartData }
+    : {};
+  const outputIndicator: JsonObject[] = Array.isArray(outputChartData.indicator)
+    ? outputChartData.indicator.filter(isJsonObject)
+    : [];
+  if (outputIndicator.length === 0) {
+    outputIndicator.push({});
+  }
+  const outputFirstIndicator: JsonObject = isJsonObject(outputIndicator[0])
+    ? { ...outputIndicator[0] }
+    : {};
+  const outputFieldDataConfig: JsonObject = isJsonObject(outputFirstIndicator.fieldDataConfig)
+    ? { ...outputFirstIndicator.fieldDataConfig }
+    : {};
+  outputFieldDataConfig.chartDisplayName = indicatorDisplayName;
+  outputFirstIndicator.fieldDataConfig = outputFieldDataConfig;
+  if (
+    typeof outputFirstIndicator.fieldDisplayName !== "string" ||
+    outputFirstIndicator.fieldDisplayName.trim() === "" ||
+    outputFirstIndicator.fieldDisplayName === "value"
+  ) {
+    outputFirstIndicator.fieldDisplayName = indicatorDisplayName;
+  }
+  if (
+    typeof outputFirstIndicator.fieldName !== "string" ||
+    outputFirstIndicator.fieldName.trim() === ""
+  ) {
+    outputFirstIndicator.fieldName = "value";
+  }
+  outputIndicator[0] = outputFirstIndicator;
+  outputChartData.indicator = outputIndicator;
+
+  if (isStackChart) {
+    const outputDimension: JsonObject[] = Array.isArray(outputChartData.dimension)
+      ? outputChartData.dimension.filter(isJsonObject)
+      : [];
+    const hasName = outputDimension.some((d) => d.fieldName === "name");
+    const hasType = outputDimension.some((d) => d.fieldName === "type");
+    if (!hasName) {
+      outputDimension.push({
+        fieldDataConfig: { calculateType: "COUNT", chartDisplayName: "name" },
+        fieldName: "name",
+        fieldDisplayName: "name",
+        fieldType: "LONGTEXT",
+      });
+    }
+    if (!hasType) {
+      outputDimension.push({
+        fieldDataConfig: { calculateType: "COUNT", chartDisplayName: "type" },
+        fieldName: "type",
+        fieldDisplayName: "type",
+        fieldType: "LONGTEXT",
+      });
+    }
+    outputChartData.dimension = outputDimension;
+  }
+
   if (isCartesianChart) {
     const inputXAxis = isJsonObject(option.xAxis) ? option.xAxis : {};
     const inputYAxis = isJsonObject(option.yAxis) ? option.yAxis : {};
     const inputGrid = isJsonObject(option.grid) ? option.grid : {};
     const inputSeries = Array.isArray(option.series) ? option.series : [];
-    const defaultSeriesType = isLineChart ? "line" : "bar";
-
-    const chartData = isJsonObject(props.chartData) ? props.chartData : {};
-    const indicator = Array.isArray(chartData.indicator) ? chartData.indicator : [];
-    const firstIndicator = isJsonObject(indicator[0]) ? indicator[0] : {};
-    const indicatorFieldDataConfig = isJsonObject(firstIndicator.fieldDataConfig)
-      ? firstIndicator.fieldDataConfig
-      : {};
-    const indicatorDisplayName =
-      typeof indicatorFieldDataConfig.chartDisplayName === "string" &&
-      indicatorFieldDataConfig.chartDisplayName.trim() !== ""
-        ? indicatorFieldDataConfig.chartDisplayName
-        : typeof firstIndicator.fieldDisplayName === "string" &&
-            firstIndicator.fieldDisplayName.trim() !== ""
-          ? firstIndicator.fieldDisplayName
-          : typeof firstIndicator.fieldName === "string"
-            ? firstIndicator.fieldName
-            : "";
+    const defaultSeriesType = isScatterChart
+      ? "scatter"
+      : isBarChart25D
+        ? "custom"
+        : isLineChart || isStackLineChart
+          ? "line"
+          : "bar";
+    const defaultStackName = isStackBarChart
+      ? "__stackBar"
+      : isStackLineChart
+        ? "__stackLine"
+        : undefined;
 
     const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
     const dataCount = layoutRows?.length ?? 1;
@@ -1507,7 +1638,7 @@ function createMainChartProps(
         return s;
       }
       const inputName = typeof s.name === "string" && s.name.trim() !== "" ? s.name : indicatorDisplayName;
-      return {
+      const normalized: JsonObject = {
         ...s,
         name: inputName,
         type: defaultSeriesType,
@@ -1516,19 +1647,117 @@ function createMainChartProps(
         right: 0,
         bottom: 0,
       };
+      if (defaultStackName) {
+        normalized.stack = defaultStackName;
+      }
+      return normalized;
     });
+
+    const baseBarSeries = {
+      name: indicatorDisplayName,
+      mapName: "",
+      type: "bar",
+      barWidth: idealBarWidth,
+      barGap: 0,
+      barCategoryGap: 0,
+      itemStyle: {
+        borderWidth: 0,
+        borderColor: "#666666",
+        borderType: "solid",
+        shadowBlur: 0,
+        shadowColor: "#fff",
+        color: "",
+        borderRadius: 0,
+      },
+      label: {
+        show: false,
+        position: "top",
+        fontWeight: "bold",
+        color: "#ffffff",
+        fontSize: 12,
+        fontStyle: "normal",
+        fontFamily: "serif",
+        rotate: 0,
+        formatter: "{c}",
+      },
+    };
+
+    const baseLineSeries = {
+      symbolSize: 0,
+      symbol: "emptyCircle",
+      showSymbol: false,
+      name: indicatorDisplayName,
+      mapName: "",
+      type: "line",
+      itemStyle: {
+        color: "",
+        borderWidth: 2,
+        borderColor: "#666666",
+        borderType: "solid",
+        shadowBlur: 0,
+        shadowColor: "#fff",
+      },
+      label: {
+        show: false,
+        position: "top",
+        fontWeight: "bold",
+        color: "#ffffff",
+        fontSize: 12,
+        fontStyle: "normal",
+        fontFamily: "serif",
+        rotate: 0,
+      },
+      lineStyle: {
+        width: 3,
+      },
+    };
+
+    const defaultSeries = isStackBarChart
+      ? [{ ...baseBarSeries, stack: "__stackBar", label: { ...baseBarSeries.label, show: true } }]
+      : isStackLineChart
+        ? [
+            {
+              ...baseLineSeries,
+              stack: "__stackLine",
+              showSymbol: { show: false },
+              areaStyle: false,
+            },
+          ]
+        : isLineChart
+          ? [baseLineSeries]
+          : isScatterChart
+            ? [
+                {
+                  name: indicatorDisplayName,
+                  type: "scatter",
+                  symbolSize: 15,
+                  itemStyle: {
+                    opacity: 0.8,
+                  },
+                },
+              ]
+            : isBarChart25D
+              ? [{ ...baseBarSeries, type: "custom", barWidth: 18 }]
+              : [baseBarSeries];
+
+    const effectiveFallbackRows =
+      !hasExplicitChartData && fallbackDataRows
+        ? isScatterChart
+          ? fallbackDataRows.every(
+              (row) =>
+                isJsonObject(row) &&
+                (typeof row.x === "number" || typeof row.y === "number"),
+            )
+            ? fallbackDataRows
+            : undefined
+          : fallbackDataRows
+        : undefined;
 
     return {
       ...props,
-      ...(!hasExplicitChartData && fallbackDataRows
-        ? {
-            chartData: {
-              constant: {
-                data: fallbackDataRows,
-              },
-            },
-          }
-        : {}),
+      chartData: effectiveFallbackRows
+        ? { ...outputChartData, constant: { data: effectiveFallbackRows } }
+        : outputChartData,
       componentName: slot.componentName,
       logicalId: childLogicalId(input, "main_chart"),
       parentLogicalId: input.logicalId,
@@ -1541,8 +1770,8 @@ function createMainChartProps(
         ...option,
         grid: {
           left: 30,
-          top: chartHeight < 280 ? 40 : 56,
-          bottom: chartHeight < 280 ? 28 : 40,
+          top: isBarProgress ? 24 : (chartHeight < 280 ? 40 : 56),
+          bottom: isBarProgress ? 16 : (chartHeight < 280 ? 28 : 40),
           right: 40,
           ...inputGrid,
         },
@@ -1572,7 +1801,7 @@ function createMainChartProps(
           },
         },
         tooltip: {
-          trigger: "axis",
+          trigger: isBarChart25D || isScatterChart ? "item" : "axis",
           show: true,
           backgroundColor: "rgba(3,16,31,0.92)",
           borderColor: "rgba(0,229,255,0.35)",
@@ -1588,9 +1817,10 @@ function createMainChartProps(
           },
         },
         xAxis: {
-          type: "category",
+          type: isBarProgress ? "value" : "category",
           show: true,
           name: "",
+          nameLocation: "center",
           axisTick: {
             show: true,
             inside: true,
@@ -1633,9 +1863,10 @@ function createMainChartProps(
           ...inputXAxis,
         },
         yAxis: {
-          type: "value",
+          type: isBarProgress ? "category" : "value",
           show: true,
           name: "",
+          ...(isBarProgress ? { inverse: true } : {}),
           axisTick: {
             show: false,
             inside: true,
@@ -1678,66 +1909,7 @@ function createMainChartProps(
           },
           ...inputYAxis,
         },
-        series: normalizedSeries.length > 0 ? normalizedSeries : [
-          isLineChart
-            ? {
-                symbolSize: 0,
-                symbol: "emptyCircle",
-                showSymbol: false,
-                name: indicatorDisplayName,
-                mapName: "",
-                type: "line",
-                itemStyle: {
-                  color: "",
-                  borderWidth: 2,
-                  borderColor: "#666666",
-                  borderType: "solid",
-                  shadowBlur: 0,
-                  shadowColor: "#fff",
-                },
-                label: {
-                  show: false,
-                  position: "top",
-                  fontWeight: "bold",
-                  color: "#ffffff",
-                  fontSize: 12,
-                  fontStyle: "normal",
-                  fontFamily: "serif",
-                  rotate: 0,
-                },
-                lineStyle: {
-                  width: 3,
-                },
-              }
-            : {
-                name: indicatorDisplayName,
-                mapName: "",
-                type: "bar",
-                barWidth: idealBarWidth,
-                barGap: 0,
-                barCategoryGap: 0,
-                itemStyle: {
-                  borderWidth: 0,
-                  borderColor: "#666666",
-                  borderType: "solid",
-                  shadowBlur: 0,
-                  shadowColor: "#fff",
-                  color: "",
-                  borderRadius: 0,
-                },
-                label: {
-                  show: false,
-                  position: "top",
-                  fontWeight: "bold",
-                  color: "#ffffff",
-                  fontSize: 12,
-                  fontStyle: "normal",
-                  fontFamily: "serif",
-                  rotate: 0,
-                  formatter: "{c}",
-                },
-              },
-        ],
+        series: normalizedSeries.length > 0 ? normalizedSeries : defaultSeries,
       },
     };
   }
@@ -1771,10 +1943,14 @@ function createMainChartProps(
 
   const baseCenter = isThreeDPie
     ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "48%"]
-    : layoutProfile.center;
+    : isLiquidFill
+      ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "50%"]
+      : layoutProfile.center;
   const chartRadius = isThreeDPie
     ? (firstInputSeries.radius as JsonValue | undefined) ?? ["72%", "96%"]
-    : layoutProfile.radius;
+    : isLiquidFill
+      ? (firstInputSeries.radius as JsonValue | undefined) ?? "90%"
+      : layoutProfile.radius;
 
   const chartCenter = ((): [string, string] => {
     if (!isThreeDPie || !Array.isArray(baseCenter) || baseCenter.length < 2) {
@@ -1836,44 +2012,58 @@ function createMainChartProps(
       },
     },
     series: [
-      {
-        ...firstInputSeries,
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-        center: chartCenter,
-        radius: chartRadius,
-        avoidLabelOverlap: true,
-        minShowLabelAngle: 4,
-        selectedMode: false,
-        selectOffset: 0,
-        itemStyle: {
-          borderWidth: 2,
-          borderColor: "rgba(2, 10, 24, 0.95)",
-          borderType: "solid",
-          shadowBlur: 10,
-          shadowColor: "rgba(0,229,255,0.28)",
-          borderRadius: 0,
-          ...inputItemStyle,
-        },
-        emphasis: {
-          scale: false,
-          scaleSize: 0,
-          disabled: true,
-          ...inputEmphasis,
-        },
-        select: {
-          disabled: true,
-          ...inputSelect,
-        },
-        label: isThreeDPie
-          ? { show: false, ...inputLabel }
-          : lightweightChartLabel(inputLabel, reserveSideSummary, theme, layoutProfile),
-        labelLine: isThreeDPie
-          ? { show: false, ...inputLabelLine }
-          : lightweightChartLabelLine(inputLabelLine, layoutProfile),
-      },
+      isLiquidFill
+        ? {
+            ...firstInputSeries,
+            name:
+              typeof firstInputSeries.name === "string" && firstInputSeries.name.trim() !== ""
+                ? firstInputSeries.name
+                : indicatorDisplayName,
+            center: chartCenter,
+            radius: chartRadius,
+          }
+        : {
+            ...firstInputSeries,
+            name:
+              typeof firstInputSeries.name === "string" && firstInputSeries.name.trim() !== ""
+                ? firstInputSeries.name
+                : indicatorDisplayName,
+            left: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            center: chartCenter,
+            radius: chartRadius,
+            avoidLabelOverlap: true,
+            minShowLabelAngle: 4,
+            selectedMode: false,
+            selectOffset: 0,
+            itemStyle: {
+              borderWidth: 2,
+              borderColor: "rgba(2, 10, 24, 0.95)",
+              borderType: "solid",
+              shadowBlur: 10,
+              shadowColor: "rgba(0,229,255,0.28)",
+              borderRadius: 0,
+              ...inputItemStyle,
+            },
+            emphasis: {
+              scale: false,
+              scaleSize: 0,
+              disabled: true,
+              ...inputEmphasis,
+            },
+            select: {
+              disabled: true,
+              ...inputSelect,
+            },
+            label: isThreeDPie
+              ? { show: false, ...inputLabel }
+              : lightweightChartLabel(inputLabel, reserveSideSummary, theme, layoutProfile),
+            labelLine: isThreeDPie
+              ? { show: false, ...inputLabelLine }
+              : lightweightChartLabelLine(inputLabelLine, layoutProfile),
+          },
     ],
   };
 
@@ -1900,15 +2090,9 @@ function createMainChartProps(
 
   return {
     ...props,
-    ...(!hasExplicitChartData && fallbackDataRows
-      ? {
-          chartData: {
-            constant: {
-              data: fallbackDataRows,
-            },
-          },
-        }
-      : {}),
+    chartData: !hasExplicitChartData && fallbackDataRows
+      ? { ...outputChartData, constant: { data: fallbackDataRows } }
+      : outputChartData,
     componentName: slot.componentName,
     logicalId: childLogicalId(input, "main_chart"),
     parentLogicalId: input.logicalId,
@@ -2056,12 +2240,30 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
   const isThreeDPie = mainChartSlot.componentName === "ThreeDPieChart";
   const isLineChart = mainChartSlot.componentName === "LineChart";
   const isBarChart = mainChartSlot.componentName === "BarChart";
-  const isCartesianChart = isLineChart || isBarChart;
+  const isStackBarChart = mainChartSlot.componentName === "StackBarChart";
+  const isStackLineChart = mainChartSlot.componentName === "StackLineChart";
+  const isBarChart25D = mainChartSlot.componentName === "BarChart25D";
+  const isBarProgress = mainChartSlot.componentName === "BarProgress";
+  const isLiquidFill = mainChartSlot.componentName === "LiquidFill";
+  const isRoseChart = mainChartSlot.componentName === "RoseChart";
+  const isScatterChart = mainChartSlot.componentName === "ScatterChart";
+  const isCartesianChart =
+    isLineChart ||
+    isBarChart ||
+    isStackBarChart ||
+    isStackLineChart ||
+    isBarChart25D ||
+    isBarProgress ||
+    isScatterChart;
   const fallbackDataRows =
     getModuleDataRows(input) ??
     getChartDataRowsFromProps(slotProps(mainChartSlot)) ??
     deriveDataRowsFromAuxiliaryTexts(auxiliaryTextSlots);
-  const reserveDefaultSideSummary = !isCartesianChart && auxiliaryTextSlots.length === 0 && Boolean(fallbackDataRows);
+  const reserveDefaultSideSummary =
+    !isCartesianChart &&
+    !isLiquidFill &&
+    auxiliaryTextSlots.length === 0 &&
+    Boolean(fallbackDataRows);
   const mainChartProps = createMainChartProps(
     input,
     mainChartSlot,
@@ -2070,14 +2272,21 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
   );
   const mainChartStyle = isJsonObject(mainChartProps.style) ? mainChartProps.style : undefined;
   const effectiveBackgroundSlot = backgroundSlot ?? createDefaultBackgroundSlot();
+  const includeSideSummary = !isCartesianChart && !isLiquidFill;
   const effectiveDecorationSlots =
     decorationSlots.length > 0
-      ? ensureDefaultDecorationSlots(input, decorationSlots, fallbackDataRows, mainChartStyle, !isBarChart, isCartesianChart)
-      : createDefaultDecorationSlots(input, fallbackDataRows, mainChartStyle, !isBarChart, isCartesianChart);
+      ? ensureDefaultDecorationSlots(input, decorationSlots, fallbackDataRows, mainChartStyle, includeSideSummary, isCartesianChart)
+      : createDefaultDecorationSlots(input, fallbackDataRows, mainChartStyle, includeSideSummary, isCartesianChart);
   const effectiveAuxiliaryTextSlots =
     auxiliaryTextSlots.length > 0
       ? normalizeAuxiliaryTextSlots(input, auxiliaryTextSlots, fallbackDataRows)
-      : createDefaultAuxiliaryTextSlots(input, fallbackDataRows, mainChartStyle, isThreeDPie, isCartesianChart);
+      : createDefaultAuxiliaryTextSlots(
+          input,
+          fallbackDataRows,
+          mainChartStyle,
+          isThreeDPie,
+          isCartesianChart || isLiquidFill,
+        );
 
   const componentProps: JsonObject[] = [];
 
