@@ -20,6 +20,12 @@ import { gaugeDefinition } from "../components/gauge/index.js";
 import { circularProgressDefinition } from "../components/circular-progress/index.js";
 import { percentageBarDefinition } from "../components/percentage-bar/index.js";
 import { singleValueChartDefinition } from "../components/single-value-chart/index.js";
+import { baseTableDefinition } from "../components/base-table/index.js";
+import { scrollListDefinition } from "../components/scroll-list/index.js";
+import { funnelChartDefinition } from "../components/funnel-chart/index.js";
+import { radarChartDefinition } from "../components/radar-chart/index.js";
+import { heatMapDefinition } from "../components/heat-map/index.js";
+import { pictorialBarChartDefinition } from "../components/pictorial-bar-chart/index.js";
 import { withBaseCapability } from "./baseCapability.js";
 import type { ComponentDefinition } from "../types/component.js";
 
@@ -46,6 +52,12 @@ const definitions = [
   circularProgressDefinition,
   percentageBarDefinition,
   singleValueChartDefinition,
+  baseTableDefinition,
+  scrollListDefinition,
+  funnelChartDefinition,
+  radarChartDefinition,
+  heatMapDefinition,
+  pictorialBarChartDefinition,
 ] satisfies ComponentDefinition[];
 
 export function listComponents() {

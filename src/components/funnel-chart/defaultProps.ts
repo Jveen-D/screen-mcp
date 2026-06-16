@@ -1,0 +1,107 @@
+import type { JsonObject } from "../../types/component.js";
+
+export const funnelChartDefaultProps: JsonObject = {
+  componentName: "FunnelChart",
+  name: "漏斗图",
+  style: {
+    position: "absolute",
+    top: 300,
+    left: 300,
+    width: 500,
+    height: 300,
+    zIndex: 100,
+    backgroundColor: "transparent",
+  },
+  rotate: 0,
+  opacity: 1,
+  entryAnimiation: {
+    isShow: false,
+    type: "",
+  },
+  datasource: {
+    sourceType: "constant",
+    fieldMode: "multiple",
+    constantDataType: "table",
+    constantTableColumns: [
+      { type: "string", key: "name" },
+      { type: "number", key: "value" },
+    ],
+    fieldMappings: [
+      {
+        key: "name",
+        mapFields: [{ path: "name", label: "name", deleted: false }],
+      },
+      {
+        key: "value",
+        mapFields: [{ path: "value", label: "value", deleted: false }],
+      },
+    ],
+    constantData: [
+      { name: "访问", value: 60 },
+      { name: "咨询", value: 40 },
+      { name: "订单", value: 20 },
+      { name: "点击", value: 80 },
+      { name: "展现", value: 100 },
+    ],
+  },
+  sort: "descending",
+  legendConfig: {
+    show: true,
+    position: {
+      top: "bottom",
+      left: "center",
+    },
+    orient: "horizontal",
+    icon: "circle",
+    titleFontStyle: {
+      fontFamily: "Microsoft YaHei",
+      fontSize: 12,
+      color: "#ffffff",
+      fontWeight: "normal",
+      fontStyle: "normal",
+    },
+    valueFontStyle: {
+      fontFamily: "Microsoft YaHei",
+      fontSize: 10,
+      color: "rgba(255,255,255,0.75)",
+      fontWeight: "normal",
+      fontStyle: "normal",
+    },
+  },
+  labelConfig: {
+    show: true,
+    position: "inside",
+    formatter: "{b}: {c}",
+    fontFamily: "Microsoft YaHei",
+    fontSize: 12,
+    color: "#ffffff",
+    fontWeight: "normal",
+    fontStyle: "normal",
+  },
+  centralLabelConfig: {
+    show: false,
+    formatter: "合计\n{c}",
+    fontFamily: "Microsoft YaHei",
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontStyle: "normal",
+  },
+  borderConfig: {
+    show: true,
+    borderColor: "rgba(255,255,255,0.3)",
+    borderWidth: 1,
+    borderType: "solid",
+  },
+  tooltipConfig: {
+    show: true,
+    backgroundColor: "rgba(3,16,31,0.92)",
+    fontFamily: "Microsoft YaHei",
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "normal",
+    fontStyle: "normal",
+  },
+  customSeriesConfigs: [],
+  eventConfigures: [],
+};
