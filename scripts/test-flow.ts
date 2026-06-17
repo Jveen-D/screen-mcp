@@ -882,6 +882,85 @@ assert.equal(asChartObject(pictorialBarChartConstantData[0]).s, "系列一", "Pi
 assert.equal(asChartObject(pictorialBarChartConstantData[0]).x, "A", "PictorialBarChart type should map to x");
 assert.equal(asChartObject(pictorialBarChartConstantData[0]).y, 120, "PictorialBarChart value should map to y");
 
+// NavMenu: menuData.items should normalize to menuData.originalData
+const navMenuCapability = getComponentCapability("NavMenu");
+assert.ok(Array.isArray(navMenuCapability.aiWritableProps), "NavMenu capability has aiWritableProps");
+const navMenuSchema = generateComponentsSchema({
+  componentName: "NavMenu",
+  logicalId: "nav_menu_test",
+  parentLogicalId: "menu_group",
+  name: "测试导航菜单",
+  menuData: {
+    items: [
+      { id: "1", name: "菜单1" },
+      { id: "2", name: "菜单2", children: [{ id: "3", name: "菜单2-1" }] },
+    ],
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 280,
+    height: 600,
+  },
+});
+assert.equal(navMenuSchema.componentName, "NavMenu");
+const navMenuData = asChartObject(navMenuSchema.props.menuData);
+const navMenuOriginalData = Array.isArray(navMenuData.originalData) ? navMenuData.originalData : [];
+assert.equal(navMenuOriginalData.length, 2, "NavMenu items should sync to originalData");
+assert.equal(asChartObject(navMenuOriginalData[0]).name, "菜单1", "NavMenu first item name should sync");
+assert.equal(navMenuData.originType, "static", "NavMenu originType should be static");
+
+// TabMenu: menuData.items should normalize to menuData.originalData with selectTabId
+const tabMenuCapability = getComponentCapability("TabMenu");
+assert.ok(Array.isArray(tabMenuCapability.aiWritableProps), "TabMenu capability has aiWritableProps");
+const tabMenuSchema = generateComponentsSchema({
+  componentName: "TabMenu",
+  logicalId: "tab_menu_test",
+  parentLogicalId: "menu_group",
+  name: "测试Tab列表",
+  menuData: {
+    items: [
+      { id: "1", name: "Tab1" },
+      { id: "2", name: "Tab2" },
+    ],
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 600,
+    height: 60,
+  },
+});
+assert.equal(tabMenuSchema.componentName, "TabMenu");
+const tabMenuData = asChartObject(tabMenuSchema.props.menuData);
+const tabMenuOriginalData = Array.isArray(tabMenuData.originalData) ? tabMenuData.originalData : [];
+assert.equal(tabMenuOriginalData.length, 2, "TabMenu items should sync to originalData");
+assert.equal(tabMenuData.selectTabId, "1", "TabMenu selectTabId should default to first item");
+
+// Input: defaultValue should be preserved
+const inputCapability = getComponentCapability("Input");
+assert.ok(Array.isArray(inputCapability.aiWritableProps), "Input capability has aiWritableProps");
+const inputSchema = generateComponentsSchema({
+  componentName: "Input",
+  logicalId: "input_test",
+  parentLogicalId: "form_group",
+  name: "测试输入框",
+  placeholder: "请输入名称",
+  defaultValue: "示例",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 200,
+    height: 40,
+  },
+});
+assert.equal(inputSchema.componentName, "Input");
+assert.equal(inputSchema.props.placeholder, "请输入名称", "Input placeholder should sync");
+assert.equal(inputSchema.props.defaultValue, "示例", "Input defaultValue should sync");
+
 const defaultLineBoxTextSchema = generateComponentsSchema({
   componentName: "SingleText",
   logicalId: "single_line_label",

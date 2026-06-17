@@ -26,6 +26,9 @@ import { funnelChartDefinition } from "../components/funnel-chart/index.js";
 import { radarChartDefinition } from "../components/radar-chart/index.js";
 import { heatMapDefinition } from "../components/heat-map/index.js";
 import { pictorialBarChartDefinition } from "../components/pictorial-bar-chart/index.js";
+import { navMenuDefinition } from "../components/nav-menu/index.js";
+import { tabMenuDefinition } from "../components/tab-menu/index.js";
+import { inputDefinition } from "../components/input/index.js";
 import { withBaseCapability } from "./baseCapability.js";
 import type { ComponentDefinition } from "../types/component.js";
 
@@ -58,6 +61,9 @@ const definitions = [
   radarChartDefinition,
   heatMapDefinition,
   pictorialBarChartDefinition,
+  navMenuDefinition,
+  tabMenuDefinition,
+  inputDefinition,
 ] satisfies ComponentDefinition[];
 
 export function listComponents() {
