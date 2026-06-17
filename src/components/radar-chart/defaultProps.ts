@@ -132,7 +132,7 @@ export const radarChartDefaultProps: JsonObject = {
     fontStyle: "normal",
   },
   valueLabelConf: {
-    show: false,
+    show: true,
     color: "#ffffff",
     fontSize: 11,
     fontFamily: "Microsoft YaHei",

@@ -398,7 +398,7 @@ export const radarChartCapability: JsonObject = {
         {
           path: "valueLabelConf.show",
           type: "boolean",
-          description: "是否显示数值标签。默认 false。",
+          description: "是否显示数值标签。默认 true。",
         },
         {
           path: "valueLabelConf.color",

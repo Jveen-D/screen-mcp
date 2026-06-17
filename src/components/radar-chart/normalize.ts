@@ -131,7 +131,7 @@ const DEFAULT_TOOLTIP_CONF: JsonObject = {
 };
 
 const DEFAULT_VALUE_LABEL_CONF: JsonObject = {
-  show: false,
+  show: true,
   color: "#ffffff",
   fontSize: 11,
   fontFamily: "Microsoft YaHei",
