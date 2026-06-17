@@ -1,0 +1,200 @@
+{
+    "businessElementId": "liquidFill_task_completion_f887ebf7",
+    "parentBusinessElementId": "Group",
+    "businessType": "DASHBOARD",
+    "componentName": "LiquidFill",
+    "indexNum": 1,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+        "componentName": "LiquidFill",
+        "rotate": 0,
+        "chartData": {
+            "isPolling": false,
+            "indicator": [
+                {
+                    "fieldDataConfig": {
+                        "calculateType": "SUM",
+                        "format": {
+                            "numberFormat": "numerical",
+                            "Millimeter": false,
+                            "accuracy": 2,
+                            "dataFix": {
+                                "preFix": "",
+                                "auFix": ""
+                            }
+                        },
+                        "chartDisplayName": "value"
+                    },
+                    "fieldName": "value",
+                    "fieldDisplayName": "value",
+                    "fieldType": "DECIMAL"
+                }
+            ],
+            "constant": {
+                "data": [
+                    {
+                        "name": "整体任务完成率",
+                        "value": 0.82
+                    }
+                ],
+                "originalData": [
+                    {
+                        "name": "整体任务完成率",
+                        "value": 0.82
+                    }
+                ],
+                "fieldList": [
+                    {
+                        "fieldName": "name",
+                        "fieldDisplayName": "name",
+                        "fieldType": "LONGTEXT"
+                    },
+                    {
+                        "fieldName": "value",
+                        "fieldDisplayName": "value",
+                        "fieldType": "DECIMAL"
+                    }
+                ]
+            },
+            "form": {
+                "formPermType": "All",
+                "formUuid": "",
+                "formName": ""
+            },
+            "sourceType": "constant",
+            "api": {
+                "headers": [],
+                "processFunction": "function handleResponse (response) { return response }",
+                "requestBody": "",
+                "requestParam": [],
+                "fieldList": [],
+                "apiUuid": ""
+            },
+            "polling": 3,
+            "dimension": [
+                {
+                    "fieldDataConfig": {
+                        "calculateType": "COUNT",
+                        "chartDisplayName": "name"
+                    },
+                    "fieldName": "name",
+                    "fieldDisplayName": "name",
+                    "fieldType": "LONGTEXT"
+                }
+            ]
+        },
+        "eventConfigures": [],
+        "advanced": true,
+        "entryAnimiation": {
+            "type": "animate__zoomIn",
+            "isShow": true
+        },
+        "name": "整体任务完成率",
+        "style": {
+            "top": "0",
+            "left": "0",
+            "width": "400",
+            "position": "absolute",
+            "height": "400",
+            "zIndex": 500
+        },
+        "opacity": 1,
+        "option": {
+            "backgroundColor": "transparent",
+            "color": [
+                "#00d4aa",
+                "#00b4d8",
+                "#0077b6",
+                "#f5a623",
+                "#b8e986",
+                "#f8e71c",
+                "#ee6666",
+                "#9013fe"
+            ],
+            "tooltip": {
+                "show": true,
+                "backgroundColor": "#0000007f",
+                "borderColor": "rgba(0,0,0,0)",
+                "borderWidth": 2,
+                "textStyle": {
+                    "color": "#fff",
+                    "fontStyle": "normal",
+                    "fontSize": 20,
+                    "fontWeight": "normal",
+                    "fontFamily": "serif"
+                }
+            },
+            "series": [
+                {
+                    "__seriesType": "__default",
+                    "type": "liquidFill",
+                    "name": "",
+                    "mapName": "",
+                    "data": [
+                        {
+                            "name": "整体任务完成率",
+                            "value": 0.82,
+                            "itemStyle": {
+                                "color": "#00d4aa"
+                            }
+                        }
+                    ],
+                    "radius": "80%",
+                    "direction": "right",
+                    "amplitude": 8,
+                    "waveAnimation": true,
+                    "animationDuration": 0,
+                    "animationDurationUpdate": 0,
+                    "itemStyle": {
+                        "borderWidth": 0,
+                        "borderColor": "#16d4fed2",
+                        "borderType": "solid",
+                        "shadowBlur": 10,
+                        "shadowColor": "rgba(0,212,170,0.3)",
+                        "borderRadius": 0,
+                        "opacity": 0.8
+                    },
+                    "label": {
+                        "show": true,
+                        "position": "inside",
+                        "fontSize": 36,
+                        "fontFamily": "Microsoft YaHei",
+                        "color": "#ffffff",
+                        "insideColor": "#16ecfa",
+                        "fontWeight": "bold",
+                        "fontStyle": "normal",
+                        "formatter": "{value}%"
+                    },
+                    "backgroundStyle": {
+                        "show": true,
+                        "borderWidth": 2,
+                        "borderColor": "rgba(0,212,170,0.3)",
+                        "color": "rgba(0,180,216,0.1)",
+                        "opacity": 1
+                    },
+                    "outline": {
+                        "show": true,
+                        "borderDistance": 4,
+                        "itemStyle": {
+                            "borderWidth": 3,
+                            "borderColor": "rgba(0,212,170,0.5)",
+                            "opacity": 0.4,
+                            "shadowBlur": 15,
+                            "shadowColor": "rgba(0,212,170,0.2)"
+                        }
+                    }
+                }
+            ]
+        },
+        "logicalId": "liquidFill_task_completion_f887ebf7",
+        "parentLogicalId": "Group"
+    },
+    "displayName": "水球图",
+    "hiddenFlag": {
+        "type": "literal",
+        "value": false
+    },
+    "lockedFlag": false,
+    "groupFlag": false
+}

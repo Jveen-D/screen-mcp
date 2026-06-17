@@ -1,0 +1,528 @@
+{
+    "id": "region_revenue_25d_final",
+    "componentName": "__Group__",
+    "structVersion": "0.0.0",
+    "props": {},
+    "title": "各区域营收对比",
+    "isHidden": false,
+    "isLocked": false,
+    "isGroup": true,
+    "children": [
+        {
+            "id": "region_revenue_25d_final_title",
+            "componentName": "SingleText",
+            "structVersion": "0.0.2",
+            "props": {
+                "componentName": "SingleText",
+                "textContent": "各区域营收对比",
+                "name": "模块标题",
+                "logicalId": "region_revenue_25d_final_title",
+                "parentLogicalId": "region_revenue_25d_final",
+                "style": {
+                    "width": 512,
+                    "height": 22,
+                    "position": "absolute",
+                    "left": 72,
+                    "top": 114,
+                    "fontFamily": "-apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif",
+                    "fontSize": 22,
+                    "color": "#DFF8FF",
+                    "textAlign": "left",
+                    "backgroundColor": "rgba(0,0,0,0)",
+                    "fontStyle": "normal",
+                    "fontWeight": "bold",
+                    "letterSpacing": 2,
+                    "lineHeight": 1,
+                    "zIndex": 18
+                },
+                "rotate": 0,
+                "opacity": 1,
+                "entryAnimiation": {
+                    "isShow": true,
+                    "type": "animate__fadeInLeft"
+                }
+            },
+            "title": "模块标题",
+            "isHidden": false,
+            "isLocked": false,
+            "isGroup": false
+        },
+        {
+            "id": "region_revenue_25d_final_title_badge",
+            "componentName": "SvgDecoration",
+            "structVersion": "0.0.2",
+            "props": {
+                "componentName": "SvgDecoration",
+                "name": "标题承托",
+                "logicalId": "region_revenue_25d_final_title_badge",
+                "parentLogicalId": "region_revenue_25d_final",
+                "style": {
+                    "width": 220,
+                    "height": 52,
+                    "position": "absolute",
+                    "left": 56,
+                    "top": 100,
+                    "backgroundColor": "rgba(0,0,0,0)",
+                    "zIndex": 16
+                },
+                "rotate": 0,
+                "opacity": 0.72,
+                "entryAnimiation": {
+                    "isShow": true,
+                    "type": "animate__fadeInLeft"
+                },
+                "svgSource": "custom",
+                "svgContent": "<svg viewBox=\"0 0 220 52\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M14 40H108l16-14h54\" fill=\"none\" stroke=\"#00E5FF\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\".68\"/><path d=\"M2 10V42\" fill=\"none\" stroke=\"#00E5FF\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\".68\"/><circle cx=\"10\" cy=\"8\" r=\"3.5\" fill=\"#FF4D4F\" opacity=\".85\"/><circle cx=\"22\" cy=\"44\" r=\"2.5\" fill=\"#00E5FF\" opacity=\".72\"/></svg>",
+                "svgFit": "fill",
+                "primaryColor": "#00E5FF",
+                "glow": {
+                    "isActive": true,
+                    "color": "rgba(0,229,255,0.2)",
+                    "blur": 6
+                }
+            },
+            "title": "标题承托",
+            "isHidden": false,
+            "isLocked": false,
+            "isGroup": false
+        },
+        {
+            "id": "region_revenue_25d_final_conclusion",
+            "componentName": "SingleText",
+            "structVersion": "0.0.2",
+            "props": {
+                "componentName": "SingleText",
+                "textContent": "华东区营收 360 领先，西北区 120 需重点关注",
+                "name": "底部结论",
+                "logicalId": "region_revenue_25d_final_conclusion",
+                "parentLogicalId": "region_revenue_25d_final",
+                "style": {
+                    "width": 500,
+                    "height": 14,
+                    "position": "absolute",
+                    "left": 78,
+                    "top": 406,
+                    "fontFamily": "-apple-system, \"Noto Sans\", \"Helvetica Neue\", Helvetica, \"Nimbus Sans L\", Arial, \"Liberation Sans\", \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans CJK SC\", \"Source Han Sans SC\", \"Source Han Sans CN\", \"Microsoft YaHei\", \"Wenquanyi Micro Hei\", \"WenQuanYi Zen Hei\", \"ST Heiti\", SimHei, \"WenQuanYi Zen Hei Sharp\", sans-serif",
+                    "fontSize": 14,
+                    "color": "#DFF8FF",
+                    "textAlign": "center",
+                    "backgroundColor": "rgba(0,0,0,0)",
+                    "fontStyle": "normal",
+                    "fontWeight": "normal",
+                    "letterSpacing": 0,
+                    "lineHeight": 1,
+                    "zIndex": 18
+                },
+                "rotate": 0,
+                "opacity": 0.88,
+                "entryAnimiation": {
+                    "isShow": true,
+                    "type": "animate__fadeInLeft"
+                }
+            },
+            "title": "底部结论",
+            "isHidden": false,
+            "isLocked": false,
+            "isGroup": false
+        },
+        {
+            "id": "region_revenue_25d_final_decoration_1",
+            "componentName": "SvgDecoration",
+            "structVersion": "0.0.2",
+            "props": {
+                "componentName": "SvgDecoration",
+                "name": "底部结构线",
+                "logicalId": "region_revenue_25d_final_decoration_1",
+                "parentLogicalId": "region_revenue_25d_final",
+                "style": {
+                    "width": 524,
+                    "height": 30,
+                    "position": "absolute",
+                    "left": 66,
+                    "top": 432,
+                    "backgroundColor": "rgba(0,0,0,0)",
+                    "zIndex": 14
+                },
+                "rotate": 0,
+                "opacity": 0.48,
+                "entryAnimiation": {
+                    "isShow": true,
+                    "type": "animate__fadeInLeft"
+                },
+                "svgSource": "custom",
+                "svgContent": "<svg viewBox=\"0 0 720 56\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 24H270l20 14h140l20-14h262\" fill=\"none\" stroke=\"#00E5FF\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\".72\"/><path d=\"M86 38H244M476 38H634\" fill=\"none\" stroke=\"#00E5FF\" stroke-width=\"1\" stroke-linecap=\"round\" opacity=\".32\"/><circle cx=\"290\" cy=\"38\" r=\"3.5\" fill=\"#00E5FF\" opacity=\".75\"/><circle cx=\"430\" cy=\"38\" r=\"3.5\" fill=\"#00E5FF\" opacity=\".75\"/></svg>",
+                "svgFit": "fill",
+                "primaryColor": "#00E5FF",
+                "glow": {
+                    "isActive": true,
+                    "color": "rgba(0,229,255,0.18)",
+                    "blur": 5
+                }
+            },
+            "title": "底部结构线",
+            "isHidden": false,
+            "isLocked": false,
+            "isGroup": false
+        },
+        {
+            "id": "region_revenue_25d_final_main_chart",
+            "componentName": "BarChart25D",
+            "structVersion": "0.0.2",
+            "props": {
+                "componentName": "BarChart25D",
+                "name": "区域营收2.5D柱状图",
+                "logicalId": "region_revenue_25d_final_main_chart",
+                "parentLogicalId": "region_revenue_25d_final",
+                "rotate": 0,
+                "style": {
+                    "top": 160,
+                    "left": 68,
+                    "width": 520,
+                    "position": "absolute",
+                    "height": 248,
+                    "zIndex": 12
+                },
+                "opacity": 1,
+                "entryAnimiation": {
+                    "type": "animate__zoomIn",
+                    "isShow": true
+                },
+                "chartData": {
+                    "sourceType": "constant",
+                    "isPolling": false,
+                    "polling": 3,
+                    "dimension": [
+                        {
+                            "fieldDataConfig": {
+                                "calculateType": "COUNT",
+                                "chartDisplayName": "区域"
+                            },
+                            "fieldName": "name",
+                            "fieldDisplayName": "name",
+                            "fieldType": "LONGTEXT"
+                        },
+                        {
+                            "fieldDataConfig": {
+                                "calculateType": "COUNT",
+                                "chartDisplayName": "系列"
+                            },
+                            "fieldName": "type",
+                            "fieldDisplayName": "type",
+                            "fieldType": "LONGTEXT"
+                        }
+                    ],
+                    "indicator": [
+                        {
+                            "fieldDataConfig": {
+                                "calculateType": "SUM",
+                                "format": {
+                                    "numberFormat": "numerical",
+                                    "Millimeter": false,
+                                    "accuracy": 2,
+                                    "dataFix": {
+                                        "preFix": "",
+                                        "auFix": ""
+                                    }
+                                },
+                                "chartDisplayName": "营收（万元）"
+                            },
+                            "fieldName": "value",
+                            "fieldDisplayName": "value",
+                            "fieldType": "DECIMAL"
+                        }
+                    ],
+                    "constant": {
+                        "data": [
+                            {
+                                "name": "华北区",
+                                "type": "营收",
+                                "value": 240
+                            },
+                            {
+                                "name": "华东区",
+                                "type": "营收",
+                                "value": 360
+                            },
+                            {
+                                "name": "华南区",
+                                "type": "营收",
+                                "value": 310
+                            },
+                            {
+                                "name": "西南区",
+                                "type": "营收",
+                                "value": 180
+                            },
+                            {
+                                "name": "西北区",
+                                "type": "营收",
+                                "value": 120
+                            }
+                        ],
+                        "originalData": [
+                            {
+                                "name": "华北区",
+                                "type": "营收",
+                                "value": 240
+                            },
+                            {
+                                "name": "华东区",
+                                "type": "营收",
+                                "value": 360
+                            },
+                            {
+                                "name": "华南区",
+                                "type": "营收",
+                                "value": 310
+                            },
+                            {
+                                "name": "西南区",
+                                "type": "营收",
+                                "value": 180
+                            },
+                            {
+                                "name": "西北区",
+                                "type": "营收",
+                                "value": 120
+                            }
+                        ],
+                        "fieldList": [
+                            {
+                                "fieldName": "name",
+                                "fieldDisplayName": "name",
+                                "fieldType": "LONGTEXT"
+                            },
+                            {
+                                "fieldName": "type",
+                                "fieldDisplayName": "type",
+                                "fieldType": "LONGTEXT"
+                            },
+                            {
+                                "fieldName": "value",
+                                "fieldDisplayName": "value",
+                                "fieldType": "DECIMAL"
+                            }
+                        ]
+                    },
+                    "form": {
+                        "formPermType": "All",
+                        "formUuid": "",
+                        "formName": ""
+                    },
+                    "api": {
+                        "headers": [],
+                        "processFunction": "function handleResponse (response) { return response }",
+                        "requestBody": "",
+                        "requestParam": [],
+                        "fieldList": [],
+                        "apiUuid": ""
+                    }
+                },
+                "option": {
+                    "backgroundColor": "transparent",
+                    "color": [
+                        "#00E5FF",
+                        "#7C4DFF",
+                        "#FFB300",
+                        "#00C853",
+                        "#FF4D4F"
+                    ],
+                    "tooltip": {
+                        "trigger": "item",
+                        "show": true,
+                        "backgroundColor": "rgba(3,16,31,0.92)",
+                        "borderColor": "rgba(0,229,255,0.35)",
+                        "borderWidth": 1,
+                        "textStyle": {
+                            "color": "#FFFFFF",
+                            "fontWeight": "normal",
+                            "fontSize": 14,
+                            "fontStyle": "normal",
+                            "fontFamily": "serif"
+                        },
+                        "axisPointer": {
+                            "type": "none"
+                        }
+                    },
+                    "grid": {
+                        "left": 40,
+                        "top": 56,
+                        "right": 30,
+                        "bottom": 42
+                    },
+                    "legend": {
+                        "show": true,
+                        "left": "center",
+                        "top": "top",
+                        "orient": "horizontal",
+                        "itemWidth": 18,
+                        "itemHeight": 12,
+                        "textStyle": {
+                            "color": "#DFF8FF",
+                            "fontSize": 12,
+                            "fontWeight": "normal",
+                            "fontFamily": "serif",
+                            "fontStyle": "normal"
+                        },
+                        "icon": "emptyCircle",
+                        "offsetX": 0,
+                        "offsetY": 0,
+                        "padding": [
+                            5,
+                            12
+                        ],
+                        "borderRadius": 12,
+                        "backgroundColor": "rgba(0, 229, 255, 0.055)",
+                        "borderColor": "rgba(0, 229, 255, 0.2)",
+                        "borderWidth": 1
+                    },
+                    "xAxis": {
+                        "type": "category",
+                        "show": true,
+                        "axisTick": {
+                            "show": true,
+                            "inside": true,
+                            "length": 2,
+                            "lineStyle": {
+                                "width": 2,
+                                "type": "dotted",
+                                "color": "#fff"
+                            }
+                        },
+                        "axisLine": {
+                            "show": true,
+                            "lineStyle": {
+                                "color": "#fff",
+                                "width": 1,
+                                "type": "solid"
+                            }
+                        },
+                        "splitLine": {
+                            "show": false
+                        },
+                        "axisLabel": {
+                            "show": true,
+                            "rotate": 0,
+                            "color": "#e6f7ff",
+                            "fontWeight": "normal",
+                            "fontFamily": "serif",
+                            "fontSize": 12,
+                            "fontStyle": "normal",
+                            "align": "center",
+                            "margin": 8
+                        }
+                    },
+                    "yAxis": {
+                        "type": "value",
+                        "show": true,
+                        "axisTick": {
+                            "show": false
+                        },
+                        "axisLine": {
+                            "show": false
+                        },
+                        "splitLine": {
+                            "show": true,
+                            "lineStyle": {
+                                "width": 1,
+                                "type": "dashed",
+                                "color": "rgba(0,229,255,0.15)"
+                            }
+                        },
+                        "axisLabel": {
+                            "show": true,
+                            "rotate": 0,
+                            "color": "#e6f7ff",
+                            "fontWeight": "normal",
+                            "fontFamily": "serif",
+                            "fontStyle": "normal",
+                            "align": "center",
+                            "formatter": "{value}",
+                            "fontSize": 12,
+                            "margin": 8
+                        }
+                    },
+                    "series": [
+                        {
+                            "__seriesType": "__default",
+                            "name": "营收",
+                            "mapName": "",
+                            "type": "custom",
+                            "barWidth": 18,
+                            "itemStyle": {
+                                "borderWidth": 0,
+                                "borderColor": "#666666",
+                                "borderType": "solid",
+                                "shadowBlur": 0,
+                                "shadowColor": "#fff",
+                                "color": "",
+                                "borderRadius": 0
+                            },
+                            "label": {
+                                "show": true,
+                                "position": "top",
+                                "fontWeight": "bold",
+                                "color": "#ffffff",
+                                "fontSize": 12,
+                                "fontStyle": "normal",
+                                "fontFamily": "serif",
+                                "rotate": 0,
+                                "formatter": "{c}"
+                            },
+                            "left": 0,
+                            "top": 0,
+                            "right": 0,
+                            "bottom": 0
+                        }
+                    ]
+                },
+                "eventConfigures": [],
+                "advanced": true
+            },
+            "title": "主图表",
+            "isHidden": false,
+            "isLocked": false,
+            "isGroup": false
+        },
+        {
+            "id": "region_revenue_25d_final_background",
+            "componentName": "SingleImage",
+            "structVersion": "0.0.2",
+            "props": {
+                "componentName": "SingleImage",
+                "name": "模块背景",
+                "logicalId": "region_revenue_25d_final_background",
+                "parentLogicalId": "region_revenue_25d_final",
+                "style": {
+                    "position": "absolute",
+                    "left": 48,
+                    "top": 96,
+                    "width": 560,
+                    "height": 380,
+                    "backgroundColor": "rgba(4,16,32,0.96)",
+                    "borderStyle": "solid",
+                    "borderRadius": 0,
+                    "borderWidth": 0,
+                    "borderColor": "rgba(0,0,0,0)",
+                    "zIndex": 10
+                },
+                "rotate": 0,
+                "opacity": 1,
+                "entryAnimiation": {
+                    "isShow": false,
+                    "type": ""
+                },
+                "imageUseMode": "upload",
+                "imageSrc": "",
+                "imageBase64": "",
+                "imageShowType": "noRepeat",
+                "svgSource": "custom",
+                "svgContent": "<svg viewBox=\"0 0 800 480\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"bg\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#061A2E\"/><stop offset=\".58\" stop-color=\"#03101F\"/><stop offset=\"1\" stop-color=\"#020813\"/></linearGradient><pattern id=\"grid\" width=\"48\" height=\"48\" patternUnits=\"userSpaceOnUse\"><path d=\"M48 0H0v48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\".16\"/></pattern><radialGradient id=\"glow\" cx=\".5\" cy=\".42\" r=\".58\"><stop offset=\"0\" stop-color=\"currentColor\" stop-opacity=\".12\"/><stop offset=\".45\" stop-color=\"currentColor\" stop-opacity=\".04\"/><stop offset=\"1\" stop-color=\"currentColor\" stop-opacity=\"0\"/></radialGradient></defs><rect width=\"800\" height=\"480\" fill=\"url(#bg)\"/><rect width=\"800\" height=\"480\" fill=\"url(#grid)\"/><rect width=\"800\" height=\"480\" fill=\"url(#glow)\"/><path d=\"M1 1H799V479H1Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" opacity=\".42\"/></svg>"
+            },
+            "title": "模块背景",
+            "isHidden": false,
+            "isLocked": false,
+            "isGroup": false
+        }
+    ]
+}

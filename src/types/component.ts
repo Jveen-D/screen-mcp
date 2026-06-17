@@ -39,6 +39,7 @@ export interface ComponentSchema {
   };
   lockedFlag: false;
   groupFlag: false;
+  children?: ComponentSchema[];
 }
 
 export interface EditorComponentNode {

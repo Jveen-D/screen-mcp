@@ -1,0 +1,65 @@
+import type { JsonObject } from "../../types/component.js";
+import { buildSelectDataConfig } from "../form-utils.js";
+
+export const radioGroupDefaultProps: JsonObject = {
+  componentName: "RadioGroup",
+  name: "单选组",
+  title: "单选组",
+  direction: "horizontal",
+  optionSpacing: 16,
+  defaultSelectedType: "index",
+  defaultSelectedIndex: 1,
+  dotSize: 8,
+  radioSize: 16,
+  colorPrimary: "rgba(230,245,255,0.2862)",
+  buttonStyle: "outline",
+  optionStyle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 16,
+    dotColor: "#ffffff",
+    colorPrimary: "#ffffff",
+    fontFamily:
+      '-apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, "WenQuanYi Zen Hei Sharp", sans-serif',
+    fontWeight: "normal",
+    fontStyle: "normal",
+    letterSpacing: 0,
+    lineHeight: 1.5,
+  },
+  selectedStyle: {
+    color: "rgba(255,255,255,1)",
+    fontSize: 16,
+    dotColor: "#ffffff",
+    fontFamily:
+      '-apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, "WenQuanYi Zen Hei Sharp", sans-serif',
+    fontWeight: "normal",
+    fontStyle: "normal",
+    letterSpacing: 0,
+    lineHeight: 1.5,
+  },
+  dataConfig: buildSelectDataConfig(undefined),
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 324.8795180722891,
+    height: 86.87951807228913,
+    zIndex: 10,
+    fontFamily:
+      '-apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, "WenQuanYi Zen Hei Sharp", sans-serif',
+    fontSize: 16,
+    color: "rgba(255,255,255,1)",
+    textAlign: "left",
+    backgroundColor: "transparent",
+    fontStyle: "normal",
+    fontWeight: "normal",
+    letterSpacing: 0,
+    lineHeight: 1,
+  },
+  rotate: 0,
+  opacity: 1,
+  eventConfigures: [],
+  entryAnimiation: {
+    isShow: false,
+    type: "",
+  },
+};

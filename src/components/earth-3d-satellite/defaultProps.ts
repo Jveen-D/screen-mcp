@@ -1,0 +1,31 @@
+import type { JsonObject } from "../../types/component.js";
+
+export const earth3dSatelliteDefaultProps: JsonObject = {
+  componentName: "Earth3D-Satellite",
+  name: "卫星",
+  title: "卫星",
+  earth3DId: "",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+    zIndex: 508,
+  },
+  rotate: 0,
+  opacity: 1,
+  entryAnimiation: { isShow: false, type: "" },
+  satelliteColor: "rgba(61,183,248,1)",
+  satelliteOpacity: 0.5,
+  satelliteXRotation: 90,
+  satelliteYRotation: 0,
+  satelliteZRotation: 0,
+  orbitColor: "rgba(61,183,248,1)",
+  orbitOpacity: 1,
+  orbitRadius: 950,
+  orbitXRotation: 30,
+  orbitYRotation: 10,
+  orbitZRotation: 0,
+  eventConfigures: [],
+};

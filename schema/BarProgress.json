@@ -1,0 +1,367 @@
+{
+    "businessElementId": "bar_progress_dept_annual_73ab5e8a",
+    "parentBusinessElementId": "Group",
+    "businessType": "DASHBOARD",
+    "componentName": "BarProgress",
+    "indexNum": 1,
+    "structVersion": "0.0.2",
+    "rootFlag": false,
+    "props": {
+        "componentName": "BarProgress",
+        "rotate": 0,
+        "chartData": {
+            "isPolling": false,
+            "indicator": [
+                {
+                    "fieldDataConfig": {
+                        "calculateType": "SUM",
+                        "format": {
+                            "numberFormat": "numerical",
+                            "Millimeter": false,
+                            "accuracy": 2,
+                            "dataFix": {
+                                "preFix": "",
+                                "auFix": ""
+                            }
+                        },
+                        "chartDisplayName": "完成率"
+                    },
+                    "fieldName": "value",
+                    "fieldDisplayName": "value",
+                    "fieldType": "DECIMAL"
+                }
+            ],
+            "constant": {
+                "data": [
+                    {
+                        "name": "销售部",
+                        "type": "完成率",
+                        "value": 92
+                    },
+                    {
+                        "name": "生产部",
+                        "type": "完成率",
+                        "value": 78
+                    },
+                    {
+                        "name": "采购部",
+                        "type": "完成率",
+                        "value": 65
+                    },
+                    {
+                        "name": "质控部",
+                        "type": "完成率",
+                        "value": 88
+                    },
+                    {
+                        "name": "物流部",
+                        "type": "完成率",
+                        "value": 71
+                    }
+                ],
+                "originalData": [
+                    {
+                        "name": "销售部",
+                        "type": "完成率",
+                        "value": 92
+                    },
+                    {
+                        "name": "生产部",
+                        "type": "完成率",
+                        "value": 78
+                    },
+                    {
+                        "name": "采购部",
+                        "type": "完成率",
+                        "value": 65
+                    },
+                    {
+                        "name": "质控部",
+                        "type": "完成率",
+                        "value": 88
+                    },
+                    {
+                        "name": "物流部",
+                        "type": "完成率",
+                        "value": 71
+                    }
+                ],
+                "fieldList": [
+                    {
+                        "fieldName": "name",
+                        "fieldDisplayName": "name",
+                        "fieldType": "LONGTEXT"
+                    },
+                    {
+                        "fieldName": "type",
+                        "fieldDisplayName": "type",
+                        "fieldType": "LONGTEXT"
+                    },
+                    {
+                        "fieldName": "value",
+                        "fieldDisplayName": "value",
+                        "fieldType": "DECIMAL"
+                    }
+                ]
+            },
+            "form": {
+                "formPermType": "All",
+                "formUuid": "",
+                "formName": ""
+            },
+            "sourceType": "constant",
+            "api": {
+                "headers": [],
+                "processFunction": "function handleResponse (response) { return response }",
+                "requestBody": "",
+                "requestParam": [],
+                "fieldList": [],
+                "apiUuid": ""
+            },
+            "polling": 3,
+            "dimension": [
+                {
+                    "fieldDataConfig": {
+                        "calculateType": "COUNT",
+                        "chartDisplayName": "name"
+                    },
+                    "fieldName": "name",
+                    "fieldDisplayName": "name",
+                    "fieldType": "LONGTEXT"
+                }
+            ]
+        },
+        "eventConfigures": [],
+        "advanced": true,
+        "entryAnimiation": {
+            "type": "animate__fadeInLeft",
+            "isShow": true
+        },
+        "name": "各部门年度目标完成率",
+        "style": {
+            "top": "160",
+            "left": "80",
+            "width": "520",
+            "position": "absolute",
+            "height": "320",
+            "zIndex": "1"
+        },
+        "opacity": 1,
+        "option": {
+            "backgroundColor": "transparent",
+            "color": [
+                "#00E5FF",
+                "#5470c6",
+                "#fac858",
+                "#ee6666",
+                "#73c0de",
+                "#3ba272",
+                "#fc8452",
+                "#9a60b4",
+                "#ea7ccc"
+            ],
+            "animiation": {
+                "show": false,
+                "type": ""
+            },
+            "tooltip": {
+                "trigger": "axis",
+                "show": true,
+                "backgroundColor": "rgba(3,16,31,0.92)",
+                "borderColor": "rgba(0,229,255,0.35)",
+                "borderWidth": 1,
+                "textStyle": {
+                    "color": "#FFFFFF",
+                    "fontWeight": "normal",
+                    "fontSize": 14,
+                    "fontStyle": "normal",
+                    "fontFamily": "serif"
+                },
+                "axisPointer": {
+                    "type": "shadow",
+                    "label": {
+                        "show": false
+                    }
+                }
+            },
+            "grid": {
+                "left": 80,
+                "top": 48,
+                "bottom": 32,
+                "right": 60
+            },
+            "legend": {
+                "show": true,
+                "left": "right",
+                "top": "top",
+                "orient": "horizontal",
+                "itemWidth": 18,
+                "itemHeight": 12,
+                "textStyle": {
+                    "color": "#BFEFFF",
+                    "fontSize": 12,
+                    "fontWeight": "normal",
+                    "fontFamily": "serif",
+                    "fontStyle": "normal"
+                },
+                "icon": "circle",
+                "offsetX": 0,
+                "offsetY": 0
+            },
+            "xAxis": {
+                "type": "value",
+                "show": true,
+                "name": "完成率(%)",
+                "position": "bottom",
+                "axisTick": {
+                    "show": false,
+                    "inside": false,
+                    "length": 2,
+                    "lineStyle": {
+                        "width": 2,
+                        "type": "solid",
+                        "color": "#e6f7ff"
+                    }
+                },
+                "axisLine": {
+                    "show": true,
+                    "inside": false,
+                    "lineStyle": {
+                        "color": "rgba(0,229,255,0.3)",
+                        "width": 1,
+                        "type": "solid"
+                    }
+                },
+                "splitLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": "rgba(0,229,255,0.12)",
+                        "width": 0.5,
+                        "type": "dashed"
+                    }
+                },
+                "axisLabel": {
+                    "show": false,
+                    "inside": false,
+                    "rotate": 0,
+                    "formatter": "{value}",
+                    "color": "#e6f7ff",
+                    "fontWeight": "normal",
+                    "fontFamily": "serif",
+                    "fontSize": 12,
+                    "fontStyle": "normal",
+                    "align": "center",
+                    "margin": 8
+                }
+            },
+            "yAxis": {
+                "type": "category",
+                "show": true,
+                "inverse": true,
+                "position": "left",
+                "name": "",
+                "nameLocation": "center",
+                "nameRotate": 90,
+                "nameTextStyle": {
+                    "align": "center",
+                    "padding": [
+                        33,
+                        0,
+                        33,
+                        0
+                    ],
+                    "color": "#62a6e7"
+                },
+                "axisTick": {
+                    "show": false,
+                    "inside": true,
+                    "length": 10,
+                    "lineStyle": {
+                        "width": 1,
+                        "type": "solid",
+                        "color": "#fff"
+                    }
+                },
+                "axisLine": {
+                    "show": true,
+                    "inside": false,
+                    "lineStyle": {
+                        "color": "rgba(0,229,255,0.3)",
+                        "width": 1,
+                        "type": "solid"
+                    }
+                },
+                "splitLine": {
+                    "show": false,
+                    "lineStyle": {
+                        "width": 0.5,
+                        "type": "dashed",
+                        "color": "#ffffff3c"
+                    }
+                },
+                "axisLabel": {
+                    "show": true,
+                    "inside": false,
+                    "rotate": 0,
+                    "color": "#BFEFFF",
+                    "fontWeight": "bold",
+                    "fontFamily": "serif",
+                    "fontStyle": "normal",
+                    "align": "center",
+                    "fontSize": 12,
+                    "margin": 12
+                }
+            },
+            "series": [
+                {
+                    "__seriesType": "__default",
+                    "name": "",
+                    "mapName": "",
+                    "type": "bar",
+                    "barWidth": 14,
+                    "showBackground": true,
+                    "backgroundStyle": {
+                        "color": "rgba(0,229,255,0.12)",
+                        "borderColor": "#000",
+                        "borderWidth": 0,
+                        "borderRadius": 7,
+                        "opacity": 0.5
+                    },
+                    "itemStyle": {
+                        "borderWidth": 0,
+                        "borderColor": "#ffffffcc",
+                        "borderType": "solid",
+                        "shadowBlur": 0,
+                        "shadowColor": "#e7ebed",
+                        "color": "#00E5FF",
+                        "borderRadius": 7
+                    },
+                    "label": {
+                        "show": true,
+                        "position": "right",
+                        "fontWeight": "normal",
+                        "color": "#FFFFFF",
+                        "fontSize": 12,
+                        "fontStyle": "normal",
+                        "fontFamily": "serif",
+                        "rotate": 0,
+                        "formatter": "{c}%"
+                    },
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                }
+            ]
+        },
+        "logicalId": "bar_progress_dept_annual_73ab5e8a",
+        "parentLogicalId": "Group"
+    },
+    "displayName": "条形进度图",
+    "hiddenFlag": {
+        "type": "literal",
+        "value": false
+    },
+    "lockedFlag": false,
+    "groupFlag": false
+}

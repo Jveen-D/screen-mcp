@@ -113,6 +113,94 @@ assert.ok(
   components.some((component) => component.componentName === "PictorialBarChart"),
   "list_components should include PictorialBarChart",
 );
+assert.ok(
+  components.some((component) => component.componentName === "Select"),
+  "list_components should include Select",
+);
+assert.ok(
+  components.some((component) => component.componentName === "RadioGroup"),
+  "list_components should include RadioGroup",
+);
+assert.ok(
+  components.some((component) => component.componentName === "DatePicker"),
+  "list_components should include DatePicker",
+);
+assert.ok(
+  components.some((component) => component.componentName === "DateRangePicker"),
+  "list_components should include DateRangePicker",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Weather"),
+  "list_components should include Weather",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Date"),
+  "list_components should include Date",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Video"),
+  "list_components should include Video",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Audio"),
+  "list_components should include Audio",
+);
+assert.ok(
+  components.some((component) => component.componentName === "IFrame"),
+  "list_components should include IFrame",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Swiper"),
+  "list_components should include Swiper",
+);
+assert.ok(
+  components.some((component) => component.componentName === "optionButton"),
+  "list_components should include optionButton",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Earth3D"),
+  "list_components should include Earth3D",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Earth3D-Pointer"),
+  "list_components should include Earth3D-Pointer",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Earth3D-Satellite"),
+  "list_components should include Earth3D-Satellite",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Earth3D-SpeedLight"),
+  "list_components should include Earth3D-SpeedLight",
+);
+assert.ok(
+  components.some((component) => component.componentName === "Earth3D-TextAround"),
+  "list_components should include Earth3D-TextAround",
+);
+assert.ok(
+  components.some((component) => component.componentName === "GaodeMap"),
+  "list_components should include GaodeMap",
+);
+assert.ok(
+  components.some((component) => component.componentName === "GaodeMap-FlyLine"),
+  "list_components should include GaodeMap-FlyLine",
+);
+assert.ok(
+  components.some((component) => component.componentName === "GaodeMap-HeatMap"),
+  "list_components should include GaodeMap-HeatMap",
+);
+assert.ok(
+  components.some((component) => component.componentName === "GaodeMap-InfoPannel"),
+  "list_components should include GaodeMap-InfoPannel",
+);
+assert.ok(
+  components.some((component) => component.componentName === "GaodeMap-Marker"),
+  "list_components should include GaodeMap-Marker",
+);
+assert.ok(
+  components.some((component) => component.componentName === "GaodeMap-Polygon"),
+  "list_components should include GaodeMap-Polygon",
+);
 
 const capability = getComponentCapability("PieChart");
 assert.ok(Array.isArray(capability.requiredProps), "capability has requiredProps");
@@ -960,6 +1048,284 @@ const inputSchema = generateComponentsSchema({
 assert.equal(inputSchema.componentName, "Input");
 assert.equal(inputSchema.props.placeholder, "请输入名称", "Input placeholder should sync");
 assert.equal(inputSchema.props.defaultValue, "示例", "Input defaultValue should sync");
+
+// Select: options should normalize to dataConfig.constant.data
+const selectCapability = getComponentCapability("Select");
+assert.ok(Array.isArray(selectCapability.aiWritableProps), "Select capability has aiWritableProps");
+const selectSchema = generateComponentsSchema({
+  componentName: "Select",
+  logicalId: "select_test",
+  parentLogicalId: "form_group",
+  name: "测试下拉选择",
+  options: [
+    { label: "全部", value: "all" },
+    { label: "运行中", value: "running" },
+  ],
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 200,
+    height: 40,
+  },
+});
+assert.equal(selectSchema.componentName, "Select");
+const selectDataConfig = asChartObject(selectSchema.props.dataConfig);
+const selectConstant = asChartObject(selectDataConfig.constant);
+const selectConstantData = Array.isArray(selectConstant.data) ? selectConstant.data : [];
+assert.equal(selectConstantData.length, 2, "Select options should sync to dataConfig");
+assert.equal(asChartObject(selectConstantData[0]).name, "全部", "Select first option label should sync");
+assert.equal(asChartObject(selectConstantData[0]).value, "all", "Select first option value should sync");
+const selectDimension = Array.isArray(selectDataConfig.dimension) ? selectDataConfig.dimension : [];
+const selectIndicator = Array.isArray(selectDataConfig.indicator) ? selectDataConfig.indicator : [];
+assert.equal(asChartObject(selectDimension[0]).fieldName, "name", "Select dimension should be name");
+assert.equal(asChartObject(selectIndicator[0]).fieldName, "value", "Select indicator should be value");
+
+// RadioGroup: options should normalize to dataConfig.constant.data
+const radioGroupCapability = getComponentCapability("RadioGroup");
+assert.ok(Array.isArray(radioGroupCapability.aiWritableProps), "RadioGroup capability has aiWritableProps");
+const radioGroupSchema = generateComponentsSchema({
+  componentName: "RadioGroup",
+  logicalId: "radio_group_test",
+  parentLogicalId: "form_group",
+  name: "测试单选组",
+  options: [
+    { label: "日", value: "day" },
+    { label: "周", value: "week" },
+  ],
+  direction: "horizontal",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 300,
+    height: 40,
+  },
+});
+assert.equal(radioGroupSchema.componentName, "RadioGroup");
+const radioGroupDataConfig = asChartObject(radioGroupSchema.props.dataConfig);
+const radioGroupConstant = asChartObject(radioGroupDataConfig.constant);
+const radioGroupConstantData = Array.isArray(radioGroupConstant.data) ? radioGroupConstant.data : [];
+assert.equal(radioGroupConstantData.length, 2, "RadioGroup options should sync to dataConfig");
+assert.equal(asChartObject(radioGroupConstantData[1]).name, "周", "RadioGroup second option label should sync");
+assert.equal(radioGroupSchema.props.direction, "horizontal", "RadioGroup direction should sync");
+
+// DatePicker: dateFormat and selector placeholder should normalize
+const datePickerCapability = getComponentCapability("DatePicker");
+assert.ok(Array.isArray(datePickerCapability.aiWritableProps), "DatePicker capability has aiWritableProps");
+const datePickerSchema = generateComponentsSchema({
+  componentName: "DatePicker",
+  logicalId: "date_picker_test",
+  parentLogicalId: "form_group",
+  name: "测试日期选择",
+  dateFormat: "YYYY-MM-DD",
+  selector: {
+    placeholder: {
+      content: "请选择日期",
+    },
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 180,
+    height: 40,
+  },
+});
+assert.equal(datePickerSchema.componentName, "DatePicker");
+assert.equal(datePickerSchema.props.dateFormat, "YYYY-MM-DD", "DatePicker dateFormat should sync");
+const datePickerDataConfig = asChartObject(datePickerSchema.props.dataConfig);
+const datePickerIndicator = Array.isArray(datePickerDataConfig.indicator) ? datePickerDataConfig.indicator : [];
+assert.equal(asChartObject(datePickerIndicator[0]).fieldName, "测试日期选择", "DatePicker indicator should use name");
+const datePickerSelector = asChartObject(datePickerSchema.props.selector);
+const datePickerPlaceholder = asChartObject(datePickerSelector.placeholder);
+assert.equal(datePickerPlaceholder.content, "请选择日期", "DatePicker placeholder should sync");
+
+// DateRangePicker: selector placeholder array and separator should normalize
+const dateRangePickerCapability = getComponentCapability("DateRangePicker");
+assert.ok(Array.isArray(dateRangePickerCapability.aiWritableProps), "DateRangePicker capability has aiWritableProps");
+const dateRangePickerSchema = generateComponentsSchema({
+  componentName: "DateRangePicker",
+  logicalId: "date_range_picker_test",
+  parentLogicalId: "form_group",
+  name: "测试日期范围选择",
+  dateFormat: "YYYY-MM-DD",
+  selector: {
+    placeholder: {
+      content: ["开始", "结束"],
+    },
+    separator: "至",
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 280,
+    height: 40,
+  },
+});
+assert.equal(dateRangePickerSchema.componentName, "DateRangePicker");
+assert.equal(dateRangePickerSchema.props.dateFormat, "YYYY-MM-DD", "DateRangePicker dateFormat should sync");
+const dateRangePickerDataConfig = asChartObject(dateRangePickerSchema.props.dataConfig);
+const dateRangePickerConstant = asChartObject(dateRangePickerDataConfig.constant);
+const dateRangePickerConstantData = Array.isArray(dateRangePickerConstant.data) ? dateRangePickerConstant.data : [];
+assert.equal(dateRangePickerConstantData.length, 0, "DateRangePicker dataConfig should be empty");
+const dateRangePickerSelector = asChartObject(dateRangePickerSchema.props.selector);
+const dateRangePickerPlaceholder = asChartObject(dateRangePickerSelector.placeholder);
+assert.deepEqual(dateRangePickerPlaceholder.content, ["开始", "结束"], "DateRangePicker placeholder array should sync");
+assert.equal(dateRangePickerSelector.separator, "至", "DateRangePicker separator should sync");
+
+// Weather: cityCode should normalize to default array
+const weatherCapability = getComponentCapability("Weather");
+assert.ok(Array.isArray(weatherCapability.aiWritableProps), "Weather capability has aiWritableProps");
+const weatherSchema = generateComponentsSchema({
+  componentName: "Weather",
+  logicalId: "weather_test",
+  parentLogicalId: "header_group",
+  name: "测试天气",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 240,
+    height: 34,
+  },
+});
+assert.equal(weatherSchema.componentName, "Weather");
+assert.deepEqual(weatherSchema.props.cityCode, ["11", "1101", "110101"], "Weather cityCode should normalize");
+
+// Date: format/timezone should normalize
+const dateCapability = getComponentCapability("Date");
+assert.ok(Array.isArray(dateCapability.aiWritableProps), "Date capability has aiWritableProps");
+const dateSchema = generateComponentsSchema({
+  componentName: "Date",
+  logicalId: "date_test",
+  parentLogicalId: "header_group",
+  name: "测试时间",
+  format: "YYYY-MM-DD HH:mm:ss",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 320,
+    height: 34,
+  },
+});
+assert.equal(dateSchema.componentName, "Date");
+assert.equal(dateSchema.props.format, "YYYY-MM-DD HH:mm:ss", "Date format should sync");
+assert.equal(dateSchema.props.timezone, "beijing", "Date timezone should default to beijing");
+
+// Video: videoType and booleans should normalize
+const videoCapability = getComponentCapability("Video");
+assert.ok(Array.isArray(videoCapability.aiWritableProps), "Video capability has aiWritableProps");
+const videoSchema = generateComponentsSchema({
+  componentName: "Video",
+  logicalId: "video_test",
+  parentLogicalId: "media_group",
+  name: "测试视频",
+  videoType: "hls",
+  autoplay: true,
+  muted: false,
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 400,
+    height: 260,
+  },
+});
+assert.equal(videoSchema.componentName, "Video");
+assert.equal(videoSchema.props.videoType, "hls", "Video videoType should sync");
+assert.equal(videoSchema.props.autoplay, true, "Video autoplay should sync");
+assert.equal(videoSchema.props.muted, false, "Video muted should sync");
+
+// Audio: controlBar and loopPlay should normalize
+const audioCapability = getComponentCapability("Audio");
+assert.ok(Array.isArray(audioCapability.aiWritableProps), "Audio capability has aiWritableProps");
+const audioSchema = generateComponentsSchema({
+  componentName: "Audio",
+  logicalId: "audio_test",
+  parentLogicalId: "media_group",
+  name: "测试音频",
+  controlBar: false,
+  loopPlay: true,
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 400,
+    height: 55,
+  },
+});
+assert.equal(audioSchema.componentName, "Audio");
+assert.equal(audioSchema.props.controlBar, false, "Audio controlBar should sync");
+assert.equal(audioSchema.props.loopPlay, true, "Audio loopPlay should sync");
+
+// IFrame: url and scroll should normalize
+const iframeCapability = getComponentCapability("IFrame");
+assert.ok(Array.isArray(iframeCapability.aiWritableProps), "IFrame capability has aiWritableProps");
+const iframeSchema = generateComponentsSchema({
+  componentName: "IFrame",
+  logicalId: "iframe_test",
+  parentLogicalId: "content_group",
+  name: "测试iframe",
+  url: "https://example.com",
+  scroll: "hide",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 600,
+    height: 400,
+  },
+});
+assert.equal(iframeSchema.componentName, "IFrame");
+assert.equal(iframeSchema.props.url, "https://example.com", "IFrame url should sync");
+assert.equal(iframeSchema.props.scroll, "hide", "IFrame scroll should sync");
+
+// Swiper: imageSrcList and direction should normalize
+const swiperCapability = getComponentCapability("Swiper");
+assert.ok(Array.isArray(swiperCapability.aiWritableProps), "Swiper capability has aiWritableProps");
+const swiperSchema = generateComponentsSchema({
+  componentName: "Swiper",
+  logicalId: "swiper_test",
+  parentLogicalId: "media_group",
+  name: "测试轮播图",
+  imageSrcList: ["group1/banner1.png", "group1/banner2.png"],
+  direction: "vertical",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 800,
+    height: 240,
+  },
+});
+assert.equal(swiperSchema.componentName, "Swiper");
+assert.deepEqual(swiperSchema.props.imageSrcList, ["group1/banner1.png", "group1/banner2.png"], "Swiper imageSrcList should sync");
+assert.equal(swiperSchema.props.direction, "vertical", "Swiper direction should sync");
+
+// optionButton: btnText and arrange should normalize
+const optionButtonCapability = getComponentCapability("optionButton");
+assert.ok(Array.isArray(optionButtonCapability.aiWritableProps), "optionButton capability has aiWritableProps");
+const optionButtonSchema = generateComponentsSchema({
+  componentName: "optionButton",
+  logicalId: "option_button_test",
+  parentLogicalId: "form_group",
+  name: "测试操作按钮",
+  btnText: "查询",
+  arrange: "column",
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 160,
+    height: 48,
+  },
+});
+assert.equal(optionButtonSchema.componentName, "optionButton");
+assert.equal(optionButtonSchema.props.btnText, "查询", "optionButton btnText should sync");
+assert.equal(optionButtonSchema.props.arrange, "column", "optionButton arrange should sync");
 
 const defaultLineBoxTextSchema = generateComponentsSchema({
   componentName: "SingleText",
@@ -3598,6 +3964,10 @@ function asChartObject(value: unknown): JsonObject {
     : {};
 }
 
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function findMainChart(panel: JsonObject): JsonObject {
   const children = Array.isArray(panel.children) ? (panel.children as unknown[]) : [];
   const chartNames = new Set([
@@ -3871,5 +4241,103 @@ assert.equal(
   "ScatterChart prompt should not include side summary container",
 );
 
+// Earth3D parent + nested children schema generation
+const earth3dSchema = generateComponentsSchema({
+  componentName: "Earth3D",
+  logicalId: "earth_3d_test",
+  parentLogicalId: "earth_group",
+  name: "测试3D地球",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 1000,
+    height: 800,
+  },
+  children: [
+    {
+      componentName: "Earth3D-Pointer",
+      logicalId: "earth_pointer_test",
+      name: "测试标记点",
+      data: [
+        { lng: 116.4074, lat: 39.9042, title: "北京" },
+        { lng: 121.4737, lat: 31.2304, title: "上海" },
+      ],
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+      },
+    },
+  ],
+});
+assert.equal(earth3dSchema.componentName, "Earth3D", "Earth3D schema should have correct componentName");
+assert.equal(earth3dSchema.parentBusinessElementId, "earth_group", "Earth3D schema should have correct parentBusinessElementId");
+assert.equal(earth3dSchema.props.name, "测试3D地球", "Earth3D schema should preserve name");
+assert.ok(isJsonObject(earth3dSchema.props.texture), "Earth3D schema should include texture defaults");
+assert.ok(Array.isArray(earth3dSchema.children), "Earth3D schema should include children array");
+const earthPointerSchema = earth3dSchema.children?.[0];
+assert.ok(earthPointerSchema, "Earth3D-Pointer should be nested in Earth3D children");
+assert.equal(earthPointerSchema.componentName, "Earth3D-Pointer", "Earth3D-Pointer schema should have correct componentName");
+assert.equal(earthPointerSchema.parentBusinessElementId, earth3dSchema.businessElementId, "Earth3D-Pointer should reference parent businessElementId");
+assert.equal(earthPointerSchema.props.earth3DId, earth3dSchema.businessElementId, "Earth3D-Pointer earth3DId should be auto-synced to parent businessElementId");
+const earthPointerDatasource = asChartObject(earthPointerSchema.props.datasource);
+const earthPointerConstantData = Array.isArray(earthPointerDatasource.constantData)
+  ? earthPointerDatasource.constantData
+  : [];
+assert.equal(earthPointerConstantData.length, 2, "Earth3D-Pointer data should sync to datasource");
+assert.equal(asChartObject(earthPointerConstantData[0]).title, "北京", "Earth3D-Pointer first row title should sync");
+assert.equal(earthPointerDatasource.sourceType, "constant", "Earth3D-Pointer datasource sourceType should be constant");
+
+// GaodeMap parent + nested children schema generation
+const gaodeMapSchema = generateComponentsSchema({
+  componentName: "GaodeMap",
+  logicalId: "gaode_map_test",
+  parentLogicalId: "map_group",
+  name: "测试2D高德地图",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 1920,
+    height: 1080,
+  },
+  children: [
+    {
+      componentName: "GaodeMap-FlyLine",
+      logicalId: "gaode_fly_line_test",
+      name: "测试飞线",
+      data: [
+        { fromLng: 120.213336, fromLat: 30.2536, toLng: 119.109556, toLat: 30.174266 },
+      ],
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+      },
+    },
+  ],
+});
+assert.equal(gaodeMapSchema.componentName, "GaodeMap", "GaodeMap schema should have correct componentName");
+assert.equal(gaodeMapSchema.parentBusinessElementId, "map_group", "GaodeMap schema should have correct parentBusinessElementId");
+assert.equal(gaodeMapSchema.props.name, "测试2D高德地图", "GaodeMap schema should preserve name");
+assert.ok(isJsonObject(gaodeMapSchema.props.mapConf), "GaodeMap schema should include mapConf defaults");
+assert.ok(Array.isArray(gaodeMapSchema.children), "GaodeMap schema should include children array");
+const gaodeFlyLineSchema = gaodeMapSchema.children?.[0];
+assert.ok(gaodeFlyLineSchema, "GaodeMap-FlyLine should be nested in GaodeMap children");
+assert.equal(gaodeFlyLineSchema.componentName, "GaodeMap-FlyLine", "GaodeMap-FlyLine schema should have correct componentName");
+assert.equal(gaodeFlyLineSchema.parentBusinessElementId, gaodeMapSchema.businessElementId, "GaodeMap-FlyLine should reference parent businessElementId");
+assert.equal(gaodeFlyLineSchema.props.mapId, gaodeMapSchema.businessElementId, "GaodeMap-FlyLine mapId should be auto-synced to parent businessElementId");
+const gaodeFlyLineDatasource = asChartObject(gaodeFlyLineSchema.props.datasource);
+const gaodeFlyLineConstantData = Array.isArray(gaodeFlyLineDatasource.constantData)
+  ? gaodeFlyLineDatasource.constantData
+  : [];
+assert.equal(gaodeFlyLineConstantData.length, 1, "GaodeMap-FlyLine data should sync to datasource");
+assert.equal(asChartObject(gaodeFlyLineConstantData[0]).toLng, 119.109556, "GaodeMap-FlyLine first row toLng should sync");
+assert.equal(gaodeFlyLineDatasource.sourceType, "constant", "GaodeMap-FlyLine datasource sourceType should be constant");
 
 console.log("test-flow passed");

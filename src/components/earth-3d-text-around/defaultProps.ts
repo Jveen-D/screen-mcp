@@ -1,0 +1,33 @@
+import type { JsonObject } from "../../types/component.js";
+
+export const earth3dTextAroundDefaultProps: JsonObject = {
+  componentName: "Earth3D-TextAround",
+  name: "文字环绕",
+  title: "文字环绕",
+  earth3DId: "",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+    zIndex: 506,
+    textContent: "EARTH • TEXT AROUND",
+    fontFamily: "Microsoft YaHei",
+    color: "rgba(153,153,153,1)",
+    fontSize: 500,
+    fontWeight: "normal",
+    fontStyle: "normal",
+    letterSpacing: 0,
+  },
+  rotate: 0,
+  opacity: 1,
+  entryAnimiation: { isShow: false, type: "" },
+  orbitRadius: 940,
+  orbitColor: "rgba(90,181,246,0.36)",
+  orbitOpacity: 1,
+  orbitXRotation: 0,
+  orbitYRotation: 0,
+  orbitZRotation: 0,
+  eventConfigures: [],
+};

@@ -1,0 +1,148 @@
+import type { JsonObject } from "../../types/component.js";
+import { buildDatePickerDataConfig } from "../form-utils.js";
+
+export const datePickerDefaultProps: JsonObject = {
+  componentName: "DatePicker",
+  name: "日期选择",
+  title: "日期选择",
+  dateFormat: "YYYY-MM-DD",
+  allowClear: true,
+  dropdownDebugFlag: false,
+  defaultValue: "",
+  dataConfig: buildDatePickerDataConfig("日期选择"),
+  selector: {
+    placeholder: {
+      style: {
+        color: "rgba(170,175,183,1)",
+        textAlign: "left",
+        fontWeight: "normal",
+        fontFamily: "思源黑体",
+        fontSize: 16,
+        fontStyle: "normal",
+        letterSpacing: 0,
+      },
+      content: "请选择",
+    },
+    defaultValue: {
+      style: {
+        color: "rgba(0,0,0,1)",
+        fontWeight: "normal",
+        fontFamily: "思源黑体",
+        fontSize: 16,
+        fontStyle: "normal",
+      },
+    },
+    selected: {
+      style: {
+        color: "rgba(0,0,0,1)",
+        textAlign: "left",
+        fontWeight: "normal",
+        fontFamily: "思源黑体",
+        fontSize: 16,
+        fontStyle: "normal",
+        letterSpacing: 0,
+      },
+    },
+    backgroundType: "color",
+    backgroundColor: "rgba(224,242,253,0.09411764705882353)",
+    backgroundImage: "",
+    border: {
+      color: "rgba(230,245,255,1)",
+      show: true,
+      width: 0.5,
+      radius: 8,
+    },
+    dropdownIcon: {
+      color: "#e6f5ff",
+      imageUrl: "",
+      width: 16,
+      height: 16,
+      rightPadding: 8,
+    },
+  },
+  dropdown: {
+    backgroundColor: "rgba(24,39,55,0.8)",
+    scrollbarThumbColor: "rgba(255,255,255,0.3)",
+    optionControl: {
+      style: {
+        color: "rgba(0,0,0,1)",
+        fontSize: 16,
+        fontWeight: "normal",
+        fontStyle: "normal",
+        letterSpacing: 0,
+        lineHeight: 3,
+        textAlign: "center",
+      },
+      nextIcon: {
+        imageUrl: "",
+        width: 16,
+        height: 16,
+      },
+      prevIcon: {
+        imageUrl: "",
+        width: 16,
+        height: 16,
+      },
+      superNextIcon: {
+        imageUrl: "",
+        width: 16,
+        height: 16,
+      },
+      superPrevIcon: {
+        imageUrl: "",
+        width: 16,
+        height: 16,
+      },
+    },
+    defaultOption: {
+      style: {
+        color: "rgba(0,0,0,1)",
+        textAlign: "center",
+        fontWeight: "normal",
+        fontFamily: "思源黑体",
+        fontSize: 16,
+        fontStyle: "normal",
+        letterSpacing: 0,
+      },
+    },
+    selectedOption: {
+      style: {
+        color: "rgba(255,255,255,1)",
+        textAlign: "center",
+        fontWeight: "normal",
+        fontFamily: "思源黑体",
+        fontSize: 16,
+        fontStyle: "normal",
+        letterSpacing: 0,
+      },
+      backgroundFillType: "color",
+      backgroundFillColor: "rgba(133,167,191,0.24)",
+    },
+    placement: "bottomLeft",
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 200,
+    height: 48,
+    zIndex: 10,
+    fontFamily:
+      '-apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, "WenQuanYi Zen Hei Sharp", sans-serif',
+    fontSize: 16,
+    color: "rgba(255,255,255,1)",
+    textAlign: "left",
+    backgroundColor: "transparent",
+    fontStyle: "normal",
+    fontWeight: "normal",
+    letterSpacing: 0,
+    lineHeight: 1,
+  },
+  rotate: 0,
+  opacity: 1,
+  eventConfigures: [],
+  entryAnimiation: {
+    type: "",
+    isShow: false,
+  },
+};

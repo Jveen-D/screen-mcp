@@ -214,11 +214,62 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
   return definition.normalizeProps?.(mergedProps) ?? mergedProps;
 }
 
+function isContainerChild(componentName: string): "earth3DId" | "mapId" | null {
+  if (componentName.startsWith("Earth3D-")) {
+    return "earth3DId";
+  }
+  if (componentName.startsWith("GaodeMap-")) {
+    return "mapId";
+  }
+  return null;
+}
+
+function generateChildSchemas(
+  parentLogicalId: string,
+  childrenProps: JsonValue | undefined,
+): ComponentSchema[] | undefined {
+  if (!Array.isArray(childrenProps)) {
+    return undefined;
+  }
+
+  const result: ComponentSchema[] = [];
+
+  for (let index = 0; index < childrenProps.length; index += 1) {
+    const child = childrenProps[index];
+    if (!isJsonObject(child)) {
+      continue;
+    }
+
+    const childComponentName =
+      typeof child.componentName === "string" ? child.componentName : "";
+    const parentIdKey = isContainerChild(childComponentName);
+
+    const childAiProps: JsonObject = {
+      ...child,
+      parentLogicalId: parentLogicalId,
+    };
+
+    if (parentIdKey && typeof child[parentIdKey] !== "string") {
+      childAiProps[parentIdKey] = parentLogicalId;
+    }
+
+    const childSchema = generateComponentsSchema(childAiProps);
+    childSchema.indexNum = index + 1;
+    result.push(childSchema);
+  }
+
+  return result.length > 0 ? result : undefined;
+}
+
 export function generateComponentsSchema(aiProps: JsonObject): ComponentSchema {
-  const props = generateComponentProps(aiProps) as AiComponentProps;
+  const rawChildren = aiProps.children;
+  const aiPropsWithoutChildren: JsonObject = { ...aiProps };
+  delete aiPropsWithoutChildren.children;
+
+  const props = generateComponentProps(aiPropsWithoutChildren) as AiComponentProps;
   const definition = getComponentDefinition(props.componentName);
 
-  return {
+  const schema: ComponentSchema = {
     businessElementId: props.logicalId,
     parentBusinessElementId: props.parentLogicalId,
     businessType: definition.businessType,
@@ -235,6 +286,13 @@ export function generateComponentsSchema(aiProps: JsonObject): ComponentSchema {
     lockedFlag: false,
     groupFlag: false,
   };
+
+  const children = generateChildSchemas(props.logicalId, rawChildren);
+  if (children) {
+    schema.children = children;
+  }
+
+  return schema;
 }
 
 export function generateComponentsSchemas(
@@ -256,7 +314,7 @@ export function generateComponentsSchemas(
 export function componentSchemaToEditorNode(
   schema: ComponentSchema,
 ): EditorComponentNode {
-  return {
+  const node: EditorComponentNode = {
     id: schema.businessElementId,
     componentName: schema.componentName,
     structVersion: schema.structVersion,
@@ -269,4 +327,10 @@ export function componentSchemaToEditorNode(
     isLocked: schema.lockedFlag,
     isGroup: false,
   };
+
+  if (Array.isArray(schema.children)) {
+    node.children = schema.children.map(componentSchemaToEditorNode);
+  }
+
+  return node;
 }
