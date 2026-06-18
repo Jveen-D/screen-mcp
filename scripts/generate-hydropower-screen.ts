@@ -4,7 +4,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { componentSchemaToEditorNode } from "../src/core/schema.js";
-import type { ComponentSchema, EditorComponentNode } from "../src/types/component.js";
+import type { ComponentSchema, EditorGroupNode } from "../src/types/component.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -893,7 +893,7 @@ async function main() {
     const schemas = readToolJson(result) as ComponentSchema[];
 
     // 使用 MCP 返回的 ComponentSchema 统一转换为编辑器节点，并包装为 __Group__ 根节点
-    const screenTree: EditorComponentNode = {
+    const screenTree: EditorGroupNode = {
       id: SCREEN_ROOT,
       componentName: "__Group__",
       structVersion: "0.0.0",

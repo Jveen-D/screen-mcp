@@ -67,28 +67,50 @@ export const indicatorCapability: JsonObject = {
       path: "globalConfig.flexDirection",
       type: "enum",
       values: ["column", "column-reverse", "inherit", "row-reverse"],
-      description: "标题与数字的排列方向。",
+      description:
+        "标题与数字的排列方向。column=标题在上、数字在下；column-reverse=标题在下、数字在上；inherit=标题在左、数字在右；row-reverse=标题在右、数字在左。",
     },
     {
       path: "globalConfig.alignItems",
       type: "enum",
       values: ["flex-start", "center", "flex-end", "baseline", "stretch"],
-      description: "交叉轴对齐方式。",
+      description:
+        "交叉轴对齐方式。垂直排列时对应 align-items（标题/数字在组件内的水平对齐）；水平排列时对应 justify-content（标题/数字在组件内的垂直对齐）。",
     },
     {
       path: "globalConfig.space",
       type: "number",
-      description: "标题与数字之间的间距（px）。",
+      description:
+        "标题与数字之间的间距（px）。注意：该值会同时作为标题和数字的外边距，因此视觉上两者的真实间距约为 2*space。建议 space 取 2~8。",
     },
     {
       path: "titleStyle",
       type: "object",
-      description: "标题字体样式，包括 fontFamily、fontSize、color、fontWeight、letterSpacing 等。",
+      description: "标题字体样式。",
+      children: [
+        { path: "titleStyle.fontFamily", type: "string", description: "字体族。" },
+        { path: "titleStyle.fontSize", type: "number", description: "字号（px），建议 14~24。" },
+        { path: "titleStyle.color", type: "string", description: "字体颜色，支持 hex / rgba。" },
+        { path: "titleStyle.fontWeight", type: "enum", values: ["normal", "bold", "bolder"], description: "粗细。" },
+        { path: "titleStyle.fontStyle", type: "enum", values: ["normal", "italic", "oblique"], description: "斜体。" },
+        { path: "titleStyle.letterSpacing", type: "number", description: "字距（px）。" },
+        { path: "titleStyle.lineHeight", type: "number", description: "行高。" },
+      ],
     },
     {
       path: "numberStyle",
       type: "object",
-      description: "数字字体样式。",
+      description:
+        "数字字体样式。注意：numberStyle.letterSpacing 会被用作相邻数字/小数点之间的水平间隙（margin），因此不建议设置过大，推荐 0~4。",
+      children: [
+        { path: "numberStyle.fontFamily", type: "string", description: "字体族。" },
+        { path: "numberStyle.fontSize", type: "number", description: "字号（px），建议 32~72，需保证组件高度足够。" },
+        { path: "numberStyle.color", type: "string", description: "字体颜色，建议科技风高亮色如 #00E5FF。" },
+        { path: "numberStyle.fontWeight", type: "enum", values: ["normal", "bold", "bolder"], description: "粗细。" },
+        { path: "numberStyle.fontStyle", type: "enum", values: ["normal", "italic", "oblique"], description: "斜体。" },
+        { path: "numberStyle.letterSpacing", type: "number", description: "数字间隙（px），推荐 0~4。" },
+        { path: "numberStyle.lineHeight", type: "number", description: "行高，无数字背景时生效。" },
+      ],
     },
     {
       path: "prefix",
@@ -103,7 +125,13 @@ export const indicatorCapability: JsonObject = {
     {
       path: "prefixStyle",
       type: "object",
-      description: "前缀样式。",
+      description: "前缀样式。isFollowPrefix=true 时，prefixStyle 会被 numberStyle 覆盖。",
+      children: [
+        { path: "prefixStyle.fontSize", type: "number", description: "字号（px）。" },
+        { path: "prefixStyle.color", type: "string", description: "字体颜色。" },
+        { path: "prefixStyle.fontWeight", type: "enum", values: ["normal", "bold", "bolder"], description: "粗细。" },
+        { path: "prefixStyle.alignSelf", type: "enum", values: ["start", "center", "end"], description: "垂直对齐。" },
+      ],
     },
     {
       path: "isFollowPrefix",
@@ -123,7 +151,13 @@ export const indicatorCapability: JsonObject = {
     {
       path: "suffixStyle",
       type: "object",
-      description: "后缀样式。",
+      description: "后缀样式。isFollowSuffix=true 时，suffixStyle 会被 numberStyle 覆盖。",
+      children: [
+        { path: "suffixStyle.fontSize", type: "number", description: "字号（px）。" },
+        { path: "suffixStyle.color", type: "string", description: "字体颜色。" },
+        { path: "suffixStyle.fontWeight", type: "enum", values: ["normal", "bold", "bolder"], description: "粗细。" },
+        { path: "suffixStyle.alignSelf", type: "enum", values: ["start", "center", "end"], description: "垂直对齐。" },
+      ],
     },
     {
       path: "isFollowSuffix",
@@ -165,7 +199,36 @@ export const indicatorCapability: JsonObject = {
     {
       path: "numBackground",
       type: "object",
-      description: "数字背景配置：width、height、isBgColor、bgColor、bgImg。",
+      description: "数字背景配置：width、height、isBgColor、bgColor、bgImg。开启 hasBackground 后才会生效。",
+      children: [
+        { path: "numBackground.width", type: "number", description: "单个数字背景宽度（px）。" },
+        { path: "numBackground.height", type: "number", description: "单个数字背景高度（px）。" },
+        { path: "numBackground.isBgColor", type: "boolean", description: "true=使用背景色，false=使用背景图片。" },
+        { path: "numBackground.bgColor", type: "string", description: "背景色（isBgColor=true 时生效）。" },
+        { path: "numBackground.bgImg", type: "string", description: "背景图片地址（isBgColor=false 时生效）。" },
+      ],
+    },
+    {
+      path: "entryAnimiation",
+      type: "object",
+      description: "入场动画配置。",
+      children: [
+        { path: "entryAnimiation.isShow", type: "boolean", description: "是否开启动场动画。" },
+        {
+          path: "entryAnimiation.type",
+          type: "enum",
+          values: [
+            "animate__fadeInLeft",
+            "animate__fadeInRight",
+            "animate__fadeInTopLeft",
+            "animate__fadeInTopRight",
+            "animate__fadeInBottomLeft",
+            "animate__fadeInBottomRight",
+            "animate__zoomIn",
+          ],
+          description: "入场动画类型。",
+        },
+      ],
     },
     { path: "style", type: "object", description: "位置、尺寸、层级与背景色。" },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
@@ -187,10 +250,14 @@ export const indicatorCapability: JsonObject = {
     "decimal 会同步到 chartData.indicator[0].fieldDataConfig.format.accuracy。",
   ],
   visualRules: [
-    "Indicator 组件必须保证足够宽度，避免标题、数值、前缀或后缀被挤换行。建议最小宽度 280px；如果同时显示标题 + 多位数 + 后缀，建议使用 320px 及以上。",
+    "Indicator 组件必须保证足够宽度，避免标题、数值、前缀或后缀被挤换行。建议最小宽度 280px；同时显示标题 + 6 位以上数字 + 后缀时，建议使用 360px 及以上。",
     "多个 Indicator 横向排列时，应统一尺寸和间距，保持对齐；不要让每个 KPI 卡片大小或背景风格差异过大。",
-    "标题、数值、后缀应保持同一行或清晰的两行布局；禁止出现数值被截断、 suffix 被挤到第三行的情况。",
+    "标题、数值、后缀应保持同一行或清晰的两行布局；禁止出现数值被截断、suffix 被挤到第三行的情况。",
     "Indicator 背景应使用与所属面板/大屏主题协调的弱透明色或 Tech 边框，不要默认使用高饱和纯色背景。",
+    "numberStyle.fontSize 与组件高度需匹配：单列布局时建议 height ≥ fontSize * 1.6；数字带背景时建议 height ≥ numBackground.height + 20。",
+    "numberStyle.letterSpacing 实际表现为数字间距，推荐 0~4；设置过大将导致数字被撑开并可能溢出。",
+    "globalConfig.space 会同时作用于标题和数字，视觉上真实间距约为 2*space；如需 8px 间距可设置 space=4。",
+    "前缀/后缀开启时，应预留额外宽度，避免 prefix/suffix 与数字重叠或换行。",
   ],
   examples: [
     {
@@ -210,17 +277,33 @@ export const indicatorCapability: JsonObject = {
         animation: true,
         animateType: 1,
         duration: 2,
+        hasBackground: false,
+        entryAnimiation: {
+          isShow: true,
+          type: "animate__zoomIn",
+        },
         globalConfig: {
           flexDirection: "column",
           alignItems: "center",
           space: 4,
         },
+        titleStyle: {
+          fontSize: 18,
+          color: "rgba(255,255,255,0.85)",
+          fontWeight: "normal",
+        },
+        numberStyle: {
+          fontSize: 48,
+          color: "#00E5FF",
+          fontWeight: "bold",
+          letterSpacing: 1,
+        },
         style: {
           position: "absolute",
           left: 400,
           top: 400,
-          width: 320,
-          height: 90,
+          width: 360,
+          height: 100,
           zIndex: 1,
           backgroundColor: "rgba(0,229,255,0.06)",
           borderWidth: 1,

@@ -46,6 +46,35 @@ function ensureEntryAnimation(props: JsonObject): void {
   entryAnimiation.type = asString(entryAnimiation.type, "");
 }
 
+function normalizeTitleName(props: JsonObject): void {
+  const titleVisible = props.titleVisible === true;
+  if (!titleVisible) {
+    return;
+  }
+
+  const titleName = asString(props.titleName, "");
+  if (titleName !== "") {
+    return;
+  }
+
+  const name = asString(props.name, "");
+  props.titleName = name !== "" ? name : "指标";
+}
+
+function normalizeNumBackground(props: JsonObject): void {
+  if (props.hasBackground !== true) {
+    return;
+  }
+
+  const numBackground = isJsonObject(props.numBackground) ? props.numBackground : {};
+  numBackground.width = asNumber(numBackground.width, 36);
+  numBackground.height = asNumber(numBackground.height, 54);
+  numBackground.isBgColor = typeof numBackground.isBgColor === "boolean" ? numBackground.isBgColor : true;
+  numBackground.bgColor = asString(numBackground.bgColor, "rgba(0,229,255,0.15)");
+  numBackground.bgImg = asString(numBackground.bgImg, "");
+  props.numBackground = numBackground;
+}
+
 function normalizeIndicatorData(props: JsonObject): void {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -88,6 +117,9 @@ function normalizeIndicatorData(props: JsonObject): void {
     fieldList,
   };
 
+  const prefixTitle = props.prefix === true ? asString(props.prefixTitle, "") : "";
+  const suffixTitle = props.suffix === true ? asString(props.suffixTitle, "") : "";
+
   chartData.indicator = [
     {
       fieldDataConfig: {
@@ -97,8 +129,8 @@ function normalizeIndicatorData(props: JsonObject): void {
           Millimeter: false,
           accuracy: decimal,
           dataFix: {
-            preFix: "",
-            auFix: "",
+            preFix: prefixTitle,
+            auFix: suffixTitle,
           },
         },
         chartDisplayName: "数值",
@@ -111,6 +143,8 @@ function normalizeIndicatorData(props: JsonObject): void {
 }
 
 export function normalizeIndicatorProps(props: JsonObject): JsonObject {
+  normalizeTitleName(props);
+  normalizeNumBackground(props);
   normalizeIndicatorData(props);
   ensureEntryAnimation(props);
   return props;
