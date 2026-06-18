@@ -17,6 +17,7 @@ import {
   listModules,
 } from "./core/modules.js";
 import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
+import { generateFullScreenFromPrompt } from "./core/fullScreenPromptModule.js";
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
@@ -31,7 +32,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "This MCP server is the authoritative tool for large-screen/dashboard design schema generation. When the user asks in Chinese or English to generate, design, create, or modify a 大屏/看板/dashboard/module/chart panel/风险等级分析/销售分析, call this MCP instead of generating HTML, SVG-only mockups, React pages, or static prose. Prefer generate_screen_module_from_prompt for terse end-user requests; prefer generate_module_tree_schema when structured module props are already available. If the user asks for 完整schema, 完整 Schema, 完整JSON, full schema, or complete schema, the assistant's final answer must include the complete JSON returned by the MCP tool in a fenced json code block. Do not summarize, omit children, replace it with prose, or ask the user to request the full schema again.",
+      "This MCP server is the authoritative tool for large-screen/dashboard design schema generation. When the user asks in Chinese or English to generate, design, create, or modify a 大屏/看板/dashboard/module/chart panel/风险等级分析/销售分析, call this MCP instead of generating HTML, SVG-only mockups, React pages, or static prose. Prefer generate_full_screen_from_prompt when the user describes a full-screen dashboard with a theme but does not list individual components or zones (e.g. '生成一个水电站智慧运行监测大屏，1920×1080'); prefer generate_screen_module_from_prompt for terse single-module requests; prefer generate_module_tree_schema when structured module props are already available. AI always has design authority for backgrounds, textures, borders, and tech-style decorations: actively use SingleImage (AI-generated base64 backgrounds are allowed and encouraged) and SvgDecoration instead of only adjusting style.backgroundColor, unless the user explicitly prohibits decorations. For full-screen requests, fill the entire 1920×1080 canvas with modules: each module must have a visible title and visible SVG decorations; do not leave large blank areas unless the user explicitly asks for minimalism. Additional hard constraints: Indicator components must be wide enough to avoid line wrapping (min 280px, prefer 320px when showing title + digits + suffix); Weather components in a 1920×1080 header should be 280-300px wide to prevent line breaks; Gauge already renders its own value and suffix, so never overlay an extra SingleText for the same value, and always set the correct suffix (e.g. '%' for percentages, not the default 'km/h'); all panels/modules on the same screen must share consistent background colors, title badges, and border/decoration language. If the user asks for 完整schema, 完整 Schema, 完整JSON, full schema, or complete schema, the assistant's final answer must include the complete JSON returned by the MCP tool in a fenced json code block. Do not summarize, omit children, replace it with prose, or ask the user to request the full schema again.",
   },
 );
 
@@ -156,6 +157,15 @@ const promptModuleInput = z
   })
   .passthrough();
 
+const fullScreenPromptInput = z
+  .object({
+    prompt: z.string().min(1),
+    logicalId: z.string().min(1).optional(),
+    title: z.string().min(1).optional(),
+    theme: z.record(z.unknown()).optional(),
+  })
+  .passthrough();
+
 server.registerTool(
   "get_server_diagnostics",
   {
@@ -215,7 +225,7 @@ server.registerTool(
   {
     title: "Generate Component Schema",
     description:
-      "Generate one complete editor component schema for the large-screen editor from one minimal AI props object. Use this instead of hand-writing HTML/SVG when the user wants 大屏/dashboard elements. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON in the final answer, not a summary.",
+      "Generate one complete editor component schema for the large-screen editor from one minimal AI props object. Use this instead of hand-writing HTML/SVG when the user wants 大屏/dashboard elements. AI has continuous design authority: actively use SingleImage (generate base64 backgrounds when helpful) and SvgDecoration for backgrounds, textures, borders, corner marks, and glow decorations rather than only adjusting style.backgroundColor, unless the user explicitly prohibits decorations. Constraints: Indicator width should be at least 280px to avoid wrapping; Weather in a 1920×1080 header should be 280-300px; Gauge already shows its own value, do not overlay SingleText and use the correct suffix. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON in the final answer, not a summary.",
     inputSchema: aiComponentPropsInput,
     annotations: {
       readOnlyHint: false,
@@ -237,7 +247,7 @@ server.registerTool(
   {
     title: "Generate Component Schemas",
     description:
-      "Generate complete large-screen editor component schemas from an array of minimal AI props objects. Use this instead of producing HTML pages for dashboard components. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
+      "Generate complete large-screen editor component schemas from an array of minimal AI props objects. Use this instead of producing HTML pages for dashboard components. AI has continuous design authority: include SingleImage (actively generate base64 backgrounds when helpful) and SvgDecoration components for backgrounds, textures, borders, corner marks, and glow decorations rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. Constraints: Indicator width should be at least 280px to avoid wrapping; Weather in a 1920×1080 header should be 280-300px; Gauge already shows its own value, do not overlay SingleText and use the correct suffix; all panels should share consistent backgrounds, title badges, and decoration language. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
     inputSchema: {
       componentsProps: z.array(aiComponentPropsInput),
     },
@@ -302,7 +312,7 @@ server.registerTool(
   {
     title: "Generate Module Schema",
     description:
-      "Generate complete large-screen editor component schemas from one module composition input. For 大屏/看板/dashboard/chart panel requests, use this MCP instead of generating HTML. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
+      "Generate complete large-screen editor component schemas from one module composition input. For 大屏/看板/dashboard/chart panel requests, use this MCP instead of generating HTML. AI has continuous design authority: generate base64 backgrounds with SingleImage and decorative SVG elements with SvgDecoration rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
     inputSchema: moduleInput,
     annotations: {
       readOnlyHint: false,
@@ -324,7 +334,7 @@ server.registerTool(
   {
     title: "Generate Dashboard Module Tree Schema",
     description:
-      "Generate one editor-ready grouped large-screen/dashboard module tree schema. The root node is __Group__ and children are full component nodes. This is the preferred tool when the user asks to generate a 大屏模块/看板模块/风险等级分析/销售分析; do not answer with HTML. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON object in the final answer, not a summary or partial excerpt.",
+      "Generate one editor-ready grouped large-screen/dashboard module tree schema. The root node is __Group__ and children are full component nodes. This is the preferred tool when the user asks to generate a 大屏模块/看板模块/风险等级分析/销售分析; do not answer with HTML. AI has continuous design authority: include SingleImage (actively generate base64 backgrounds when helpful) and SvgDecoration components for backgrounds, textures, borders, and glow decorations rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON object in the final answer, not a summary or partial excerpt.",
     inputSchema: moduleInput,
     annotations: {
       readOnlyHint: false,
@@ -346,7 +356,7 @@ server.registerTool(
   {
     title: "Generate Screen Module From User Prompt",
     description:
-      "Use this first for terse end-user requests such as “生成销售大屏”, “做个风险等级分析”, “数据：高风险18，中风险37，低风险71”. It converts natural language into an editor-ready large-screen __Group__ schema via ChartPanel. Do not generate HTML, React, or hand-drawn SVG for these dashboard/module requests. If the user asks for 完整schema/full schema/complete schema/完整JSON, the final answer must paste the complete returned JSON object in a fenced json code block.",
+      "Use this first for terse end-user requests such as “生成销售大屏”, “做个风险等级分析”, “数据：高风险18，中风险37，低风险71”. It converts natural language into an editor-ready large-screen __Group__ schema via ChartPanel. Do not generate HTML, React, or hand-drawn SVG for these dashboard/module requests. AI has continuous design authority: generate base64 backgrounds with SingleImage and decorative SVG elements with SvgDecoration rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. If the user asks for 完整schema/full schema/complete schema/完整JSON, the final answer must paste the complete returned JSON object in a fenced json code block.",
     inputSchema: promptModuleInput,
     annotations: {
       readOnlyHint: false,
@@ -357,6 +367,28 @@ server.registerTool(
   async (input) => {
     try {
       return asToolContent(generateScreenModuleFromPrompt(input as JsonObject));
+    } catch (error) {
+      return handleToolError(error);
+    }
+  },
+);
+
+server.registerTool(
+  "generate_full_screen_from_prompt",
+  {
+    title: "Generate Full Screen Dashboard From Prompt",
+    description:
+      "Use this when the user asks for a complete full-screen dashboard with a theme but does not specify individual components or zones, e.g. '生成一个水电站智慧运行监测大屏，科技风深色主题，1920×1080'. It returns a root __Group__ sized 1920×1080 containing a full-screen SingleImage background, header, KPIs, and multiple ChartPanel modules that fill the canvas. Every module has a visible title and SVG decorations. Do not generate HTML or hand-drawn SVG for these requests. If the user asks for 完整schema/full schema/complete schema/完整JSON, the final answer must paste the complete returned JSON object in a fenced json code block.",
+    inputSchema: fullScreenPromptInput,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false,
+    },
+  },
+  async (input) => {
+    try {
+      return asToolContent(generateFullScreenFromPrompt(input as JsonObject));
     } catch (error) {
       return handleToolError(error);
     }

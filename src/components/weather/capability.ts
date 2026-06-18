@@ -54,6 +54,7 @@ export const weatherCapability: JsonObject = {
   ],
   visualRules: [
     "天气组件适合展示在面板标题、角标或状态栏区域。",
+    "天气组件宽度至少为 184px，否则会导致内部换行；在 1920×1080 大屏顶部与日期并排时，建议宽度 280~300px，确保天气图标、温度、风向风力在一行显示。",
     "图标大小可通过 style.iconSize 调整。",
   ],
   examples: [
@@ -66,10 +67,10 @@ export const weatherCapability: JsonObject = {
         name: "天气",
         style: {
           position: "absolute",
-          left: 1600,
+          left: 1360,
           top: 32,
-          width: 220,
-          height: 32,
+          width: 300,
+          height: 34,
         },
       },
     },

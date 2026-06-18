@@ -4,9 +4,11 @@ export const svgDecorationCapability: JsonObject = {
   componentName: "SvgDecoration",
   displayName: "SVG装饰",
   description:
-    "只用于大屏角标、线条、边框、科技纹理、图标和发光装饰的 SVG 组件，不能承载真实图表或业务文本。",
+    "只用于大屏角标、线条、边框、科技纹理、图标和发光装饰的 SVG 组件，不能承载真实图表或业务文本。AI 始终拥有设计权，可主动生成装饰性 SVG；仅当用户明确禁止装饰时才可省略。",
+
   aiRole:
-    "AI 负责选择 preset 或填写安全的装饰性 svgContent，并设置位置、尺寸、颜色、翻转和发光。MCP 负责补齐默认 props，并会拒绝非装饰性 SVG。",
+    "AI 负责自主设计安全的装饰性 svgContent，并设置位置、尺寸、颜色、翻转和发光。只要有助于大屏视觉，就应主动用 custom svgContent 生成边框、角标、结构线、网格、扫描线或光效装饰；除非用户明确禁止装饰，否则不应留白底。MCP 负责补齐默认 props，并会拒绝非装饰性 SVG。",
+
   requiredProps: [
     {
       path: "componentName",
@@ -39,7 +41,7 @@ export const svgDecorationCapability: JsonObject = {
       path: "svgSource",
       type: "enum",
       values: ["preset", "custom"],
-      description: "SVG 来源。优先使用 preset；只有用户明确要求自定义时使用 custom。",
+      description: "SVG 来源。AI 主动设计时优先使用 custom；preset 仅用于已知的小尺寸图标点缀。",
     },
     {
       path: "svgPreset",
@@ -113,6 +115,16 @@ export const svgDecorationCapability: JsonObject = {
     "MCP 会拒绝包含脚本、事件属性、foreignObject 或外链资源的 svgContent。",
     "MCP 会拒绝包含 <text> 或明显图表弧线的 custom svgContent；这类内容必须改用文本组件或图表组件。",
     "SvgDecoration 只能作为装饰层，不得作为承载完整模块内容的画布。",
+    "AI 始终保有装饰设计权：只要设计需要，就可以添加 SvgDecoration；只有当用户明确说'不要装饰'、'极简'、'无装饰'时才可省略。",
+  ],
+  visualRules: [
+    "SvgDecoration 是科技感和模块承载结构的主要来源，适用于边框、角标、标题承托、结构线、分割线、网格纹理、扫描线和发光点缀。",
+    "科技风深色主题下，应主动生成可见的装饰元素：使用主题色描边、低透明填充、弱发光和连续结构线，不能只改背景色或完全省略装饰。",
+    "装饰必须肉眼可见但不抢主信息：标题、主图表和关键数据必须始终在最上层可读。",
+    "优先使用 custom svgContent 设计贴合模块主题的装饰；preset 仅用于小尺寸图标点缀。",
+    "避免使用完全透明或依赖继承色的 SVG；应显式设置 primaryColor/secondaryColor 和适当 opacity。",
+    "同一模块内的装饰语言应统一：角标、底边线、标题承托使用相似的描边粗细、圆角/切角风格和色值。",
+    "除非用户明确禁止，否则每个面板/模块至少应包含一种可见装饰：标题承托、面板边框、角标、结构线或网格纹理中的一种。",
   ],
   examples: [
     {
@@ -145,6 +157,68 @@ export const svgDecorationCapability: JsonObject = {
           isActive: true,
           color: "rgba(0,229,255,0.55)",
           blur: 8,
+        },
+      },
+    },
+    {
+      title: "面板底部结构线",
+      props: {
+        componentName: "SvgDecoration",
+        logicalId: "panel_bottom_line",
+        parentLogicalId: "sales_group",
+        name: "底部结构线",
+        style: {
+          width: 480,
+          height: 24,
+          position: "absolute",
+          left: 20,
+          top: 320,
+          backgroundColor: "rgba(0,0,0,0)",
+        },
+        rotate: 0,
+        opacity: 0.85,
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 480 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 12h472" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".72"/><circle cx="4" cy="12" r="3" fill="currentColor" opacity=".9"/><circle cx="476" cy="12" r="3" fill="currentColor" opacity=".9"/><path d="M160 12v6M320 12v-6" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/></svg>',
+        svgFit: "fill",
+        primaryColor: "#00E5FF",
+        secondaryColor: "#1B5CFF",
+        strokeWidth: 2,
+        glow: {
+          isActive: true,
+          color: "rgba(0,229,255,0.35)",
+          blur: 6,
+        },
+      },
+    },
+    {
+      title: "科技切角边框",
+      props: {
+        componentName: "SvgDecoration",
+        logicalId: "panel_frame_corner",
+        parentLogicalId: "sales_group",
+        name: "切角边框",
+        style: {
+          width: 520,
+          height: 360,
+          position: "absolute",
+          left: 48,
+          top: 96,
+          backgroundColor: "rgba(0,0,0,0)",
+        },
+        rotate: 0,
+        opacity: 0.75,
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg"><path d="M20 2h480l18 18v320l-18 18H20L2 340V20L20 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" opacity=".65"/><path d="M2 20V56M2 304V340M518 20V56M518 304V340M20 2H56M464 2H500M20 358H56M464 358H500" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".85"/></svg>',
+        svgFit: "fill",
+        primaryColor: "#00E5FF",
+        secondaryColor: "#1B5CFF",
+        strokeWidth: 2,
+        glow: {
+          isActive: true,
+          color: "rgba(0,229,255,0.25)",
+          blur: 10,
         },
       },
     },

@@ -235,6 +235,9 @@ export const gaugeCapability: JsonObject = {
   visualRules: [
     "value 应为数值，最终由前端渲染为仪表盘指针位置。",
     "ringRangeColor 中的 startValue/endValue 为 0-1 之间的比例，表示在量程中的位置。",
+    "Gauge 组件内部已通过 indicatorConfig 显示数值和后缀，禁止再额外叠加 SingleText 来显示同一个数值。",
+    "根据业务语义设置正确的 suffix：百分比类指标用 '%'，速度类用 'km/h' 等；不要保留默认的 'km/h' 用于非速度场景。",
+    "当 Gauge 作为某个面板的一部分时，该面板应使用和周围 ChartPanel 模块一致的背景色、标题承托和边框语言，避免风格突兀。",
   ],
   examples: [
     {

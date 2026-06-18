@@ -27,11 +27,11 @@ const SUPPORTED_MAIN_COMPONENTS = [
   "RoseChart",
   "ScatterChart",
 ];
-const DEFAULT_DECORATION_SVG =
+export const DEFAULT_DECORATION_SVG =
   '<svg viewBox="0 0 180 72" xmlns="http://www.w3.org/2000/svg"><path d="M8 62H92l18-18h62" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 46h76" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><path d="M118 28h46" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".42"/><circle cx="94" cy="62" r="4" fill="currentColor"/><circle cx="172" cy="44" r="4" fill="currentColor"/></svg>';
-const TITLE_BADGE_SVG =
+export const TITLE_BADGE_SVG =
   '<svg viewBox="0 0 220 52" xmlns="http://www.w3.org/2000/svg"><path d="M14 40H108l16-14h54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/><path d="M2 10V42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".68"/><circle cx="10" cy="8" r="3.5" fill="#FFB300" opacity=".85"/><circle cx="22" cy="44" r="2.5" fill="currentColor" opacity=".72"/></svg>';
-const DEFAULT_BACKGROUND_SVG =
+export const DEFAULT_BACKGROUND_SVG =
   '<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#061A2E"/><stop offset=".58" stop-color="#03101F"/><stop offset="1" stop-color="#020813"/></linearGradient><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0v48" fill="none" stroke="currentColor" stroke-width="1" opacity=".16"/></pattern><radialGradient id="glow" cx=".5" cy=".42" r=".58"><stop offset="0" stop-color="currentColor" stop-opacity=".12"/><stop offset=".45" stop-color="currentColor" stop-opacity=".04"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs><rect width="800" height="480" fill="url(#bg)"/><rect width="800" height="480" fill="url(#grid)"/><rect width="800" height="480" fill="url(#glow)"/><path d="M1 1H799V479H1Z" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".42"/></svg>';
 const DEFAULT_SIDE_CARD_SVG =
   '<svg viewBox="0 0 280 220" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H262L278 18V202L262 218H18L2 202V18Z" fill="rgba(0,229,255,.04)"/><path d="M18 2H42M136 2H262L278 18V202L262 218H18L2 202V18L18 2" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".76"/><path d="M2 44H16M264 44H278M2 176H16M264 176H278" fill="none" stroke="currentColor" stroke-width="2" opacity=".42"/></svg>';

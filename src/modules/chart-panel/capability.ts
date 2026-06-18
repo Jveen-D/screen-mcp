@@ -89,7 +89,7 @@ export const chartPanelCapability: JsonObject = {
       required: false,
       multiple: false,
       description:
-        "背景图，默认铺满整个模块。优先使用用户提供的 imageBase64；使用 imageBase64 时 imageUseMode 必须为 base64；不要生成不可访问的图片链接。",
+        "背景图，默认铺满整个模块。AI 应主动设计并生成轻量 base64 科技风背景图；用户未提供素材时也应自行生成，而不是回退到纯色背景。只有当用户明确禁止图片背景时才可省略 imageBase64。",
     },
     title: {
       supportedComponents: ["SingleText"],
@@ -135,7 +135,15 @@ export const chartPanelCapability: JsonObject = {
     "background 默认铺满模块区域，并作为数组最后一项输出。",
     "科技风背景必须使用深色系，例如 #020A18、#061A2E、#07182F 或 rgba(4,16,32,0.92)，禁止大面积高饱和纯色背景。",
     "禁止使用 green、lime、red、yellow、bright purple 等大面积高饱和纯色作为面板背景。",
-    "background 优先使用真实 imageBase64。使用 imageBase64 时 imageUseMode 自动为 base64；占位 base64 或无可用图片时使用 MCP 内置深色网格背景。",
+    "background 必须由 AI 主动设计：优先使用 AI 生成的 imageBase64 科技风背景；无素材时也应生成 base64 渐变/网格/光效背景。只有当用户明确禁止图片背景时才允许使用 MCP 内置深色网格背景。",
+    "禁止在无用户禁止的情况下，把 background 留空或仅使用 style.backgroundColor 填充；每个模块都应有一个经过设计的 SingleImage 背景或明显的 SVG 结构装饰。",
+    "每个 ChartPanel 模块必须有可见的标题（title slot 或 input.title），除非用户明确说'不要标题'。标题不能省略或隐藏。",
+    "每个 ChartPanel 模块必须至少包含一种可见的 SVG 装饰：标题承托、面板边框、角标、结构线或网格纹理中的一种；禁止输出裸标题加裸图表。",
+    "模块应填满其分配到的画布区域，主图和文字应根据区域宽高重新计算，避免在巨大空框中显得过小或漂浮。",
+    "当多个 ChartPanel 共同组成一张大屏时，模块之间应保持统一间距（默认 20~30px），并对齐形成清晰网格；禁止模块重叠或大小差异过大导致画布混乱。",
+    "同一张大屏内的所有模块（包括非 ChartPanel 直接生成的面板）必须共享一致的背景色、标题承托样式和边框/角标装饰语言；禁止某个模块使用完全不同的边框或背景风格。",
+
+
     "标题必须有视觉承托，但默认应使用轻量线性承托：短横线、折线、角标、局部光点、弱透明下划线或细描边。避免大面积高亮实色标题底板。",
     "标题承托应与模块整体边框语言一致，不能像单独贴上去的亮色牌子；标题背景不应比主图、右侧信息卡或关键指标更抢视觉重心。",
     "当使用横向顶部栏时，应把它当作面板结构的一部分：它可以承接标题、图例和边框语言，但透明度必须克制，主题色只用于描边、短线、点缀和局部高光，避免整块青色或高饱和色填充。",
