@@ -75,6 +75,82 @@ function normalizeNumBackground(props: JsonObject): void {
   props.numBackground = numBackground;
 }
 
+function formatWithSeparation(value: number, decimal: number): string {
+  const fixed = value.toFixed(decimal);
+  if (decimal > 0) {
+    const [integerPart, decimalPart] = fixed.split(".");
+    const separatedInteger = integerPart.replace(/\B(?=(\d{3})+$)/g, ",");
+    return `${separatedInteger}.${decimalPart}`;
+  }
+  return fixed.replace(/\B(?=(\d{3})+$)/g, ",");
+}
+
+function estimateTextWidth(text: string, fontSize: number): number {
+  // 中文字符约 1em，数字/英文字符约 0.6em
+  let width = 0;
+  for (const char of text) {
+    width += /[\u4e00-\u9fa5]/.test(char) ? fontSize : fontSize * 0.6;
+  }
+  return width;
+}
+
+function estimateIndicatorMinWidth(props: JsonObject): number {
+  const decimal = asIntegerInRange(props.decimal, 0, 4, 0);
+  const textValue = asNumber(props.textValue, 1234);
+  const separation = props.separation === true;
+  const hasBackground = props.hasBackground === true;
+
+  const numberStyle = isJsonObject(props.numberStyle) ? props.numberStyle : {};
+  const numBackground = isJsonObject(props.numBackground) ? props.numBackground : {};
+
+  const numberText = separation ? formatWithSeparation(textValue, decimal) : textValue.toFixed(decimal);
+
+  let numberWidth: number;
+  if (hasBackground) {
+    const bgWidth = asNumber(numBackground.width, 36);
+    const letterSpacing = asNumber(numberStyle.letterSpacing, 1);
+    numberWidth = numberText.length * (bgWidth + letterSpacing * 2);
+  } else {
+    const fontSize = asNumber(numberStyle.fontSize, 48);
+    const letterSpacing = asNumber(numberStyle.letterSpacing, 1);
+    numberWidth = estimateTextWidth(numberText, fontSize) + numberText.length * letterSpacing * 2;
+  }
+
+  let prefixWidth = 0;
+  if (props.prefix === true) {
+    const prefixStyle = isJsonObject(props.prefixStyle) ? props.prefixStyle : {};
+    const prefixFontSize = asNumber(prefixStyle.fontSize, 18);
+    const prefixTitle = asString(props.prefixTitle, "");
+    prefixWidth = estimateTextWidth(prefixTitle, prefixFontSize) + prefixFontSize * 0.8;
+  }
+
+  let suffixWidth = 0;
+  if (props.suffix === true) {
+    const suffixStyle = isJsonObject(props.suffixStyle) ? props.suffixStyle : {};
+    const suffixFontSize = asNumber(suffixStyle.fontSize, 18);
+    const suffixTitle = asString(props.suffixTitle, "");
+    suffixWidth = estimateTextWidth(suffixTitle, suffixFontSize) + suffixFontSize * 0.8;
+  }
+
+  // 额外余量：容器内边距、ant-row gutter 等
+  const buffer = hasBackground ? 48 : 32;
+  return Math.ceil(numberWidth + prefixWidth + suffixWidth + buffer);
+}
+
+function normalizeStyleWidth(props: JsonObject): void {
+  const style = isJsonObject(props.style) ? props.style : {};
+  const currentWidth = asNumber(style.width, 0);
+  if (currentWidth <= 0) {
+    return;
+  }
+
+  const minWidth = estimateIndicatorMinWidth(props);
+  if (currentWidth < minWidth) {
+    style.width = minWidth;
+    props.style = style;
+  }
+}
+
 function normalizeIndicatorData(props: JsonObject): void {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -117,9 +193,6 @@ function normalizeIndicatorData(props: JsonObject): void {
     fieldList,
   };
 
-  const prefixTitle = props.prefix === true ? asString(props.prefixTitle, "") : "";
-  const suffixTitle = props.suffix === true ? asString(props.suffixTitle, "") : "";
-
   chartData.indicator = [
     {
       fieldDataConfig: {
@@ -129,8 +202,8 @@ function normalizeIndicatorData(props: JsonObject): void {
           Millimeter: false,
           accuracy: decimal,
           dataFix: {
-            preFix: prefixTitle,
-            auFix: suffixTitle,
+            preFix: "",
+            auFix: "",
           },
         },
         chartDisplayName: "数值",
@@ -145,6 +218,7 @@ function normalizeIndicatorData(props: JsonObject): void {
 export function normalizeIndicatorProps(props: JsonObject): JsonObject {
   normalizeTitleName(props);
   normalizeNumBackground(props);
+  normalizeStyleWidth(props);
   normalizeIndicatorData(props);
   ensureEntryAnimation(props);
   return props;
