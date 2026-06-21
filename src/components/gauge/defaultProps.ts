@@ -78,7 +78,7 @@ export const gaugeDefaultProps: JsonObject = {
     valueOffsetX: 0,
     valueOffsetY: 50,
     precision: 0,
-    suffix: "km/h",
+    suffix: "",
     suffixOffsetX: 0,
     suffixOffsetY: 0,
     useCustomSuffixStyle: true,

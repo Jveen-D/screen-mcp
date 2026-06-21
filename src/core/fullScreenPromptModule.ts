@@ -1,9 +1,5 @@
 import { randomBytes } from "node:crypto";
-import {
-  generateChartPanelTreeSchema,
-  DEFAULT_BACKGROUND_SVG,
-  TITLE_BADGE_SVG,
-} from "../modules/chart-panel/index.js";
+import { generateChartPanelTreeSchema } from "../modules/chart-panel/index.js";
 import {
   componentSchemaToEditorNode,
   generateComponentsSchema,
@@ -17,6 +13,17 @@ const CANVAS_HEIGHT = 1080;
 
 const TECH_BACKGROUND_BASE64 =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzAyMEExOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA2MTkyRiIvPjwvbGluZWFyR3JhZGllbnQ+PHBhdHRlcm4gaWQ9InAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTQwIDBIMFY0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBFNUZGIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMDgiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiBmaWxsPSJ1cmwoI3ApIi8+PC9zdmc+";
+
+function svgToBase64(svg: string): string {
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+function panelBackgroundSvg(width: number, height: number, primaryColor: string): string {
+  return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#020A18"/><stop offset="1" stop-color="#061A2E"/></linearGradient><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0v48" fill="none" stroke="${primaryColor}" stroke-width="1" opacity="0.12"/></pattern><radialGradient id="glow" cx=".5" cy=".42" r=".58"><stop offset="0" stop-color="${primaryColor}" stop-opacity=".12"/><stop offset="1" stop-color="${primaryColor}" stop-opacity="0"/></radialGradient></defs><rect width="${width}" height="${height}" fill="url(#bg)"/><rect width="${width}" height="${height}" fill="url(#grid)"/><rect width="${width}" height="${height}" fill="url(#glow)"/><path d="M1 1H${width - 1}V${height - 1}H1Z" fill="none" stroke="${primaryColor}" stroke-width="1.5" opacity="0.42"/></svg>`;
+}
+
+const TITLE_BADGE_SVG =
+  '<svg viewBox="0 0 220 52" xmlns="http://www.w3.org/2000/svg"><path d="M14 40H108l16-14h54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/><path d="M2 10V42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".68"/><circle cx="10" cy="8" r="3.5" fill="#FFB300" opacity=".85"/><circle cx="22" cy="44" r="2.5" fill="currentColor" opacity=".72"/></svg>';
 
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -238,6 +245,10 @@ function createChartPanelModule(
     };
   }
 
+  const primaryColor =
+    typeof theme.primaryColor === "string" ? theme.primaryColor : "#00E5FF";
+  const badgeWidth = Math.min(Math.max(zone.width * 0.3, 220), 300);
+
   const input: JsonObject = {
     moduleName: "ChartPanel",
     logicalId,
@@ -255,6 +266,45 @@ function createChartPanelModule(
     },
     slots: {
       mainChart: mainChartSlot,
+      background: {
+        componentName: "SingleImage",
+        props: {
+          name: "面板背景",
+          imageUseMode: "base64",
+          imageBase64: svgToBase64(panelBackgroundSvg(zone.width, zone.height, primaryColor)),
+          imageShowType: "noRepeat",
+          opacity: 0.96,
+          style: {
+            position: "absolute",
+            left: zone.left,
+            top: zone.top,
+            width: zone.width,
+            height: zone.height,
+            backgroundColor: "rgba(0,0,0,0)",
+          },
+        },
+      },
+      decorations: [
+        {
+          componentName: "SvgDecoration",
+          props: {
+            name: "标题承托",
+            svgSource: "custom",
+            svgContent: TITLE_BADGE_SVG,
+            svgFit: "fill",
+            opacity: 0.72,
+            primaryColor,
+            style: {
+              position: "absolute",
+              left: zone.left + 8,
+              top: zone.top + 4,
+              width: badgeWidth,
+              height: 52,
+              backgroundColor: "rgba(0,0,0,0)",
+            },
+          },
+        },
+      ],
     },
   };
 
@@ -381,7 +431,7 @@ function buildHydroScreen(title: string, theme: JsonObject, parentId: string): E
         zIndex: 9,
       },
       imageUseMode: "base64",
-      imageBase64: `data:image/svg+xml;base64,${Buffer.from(DEFAULT_BACKGROUND_SVG).toString("base64")}`,
+      imageBase64: svgToBase64(panelBackgroundSvg(gaugeZone.width, gaugeZone.height, gaugePrimary)),
       imageShowType: "noRepeat",
       opacity: 1,
     }),

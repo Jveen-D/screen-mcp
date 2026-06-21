@@ -4,7 +4,7 @@ import {
   toSchemaId,
   uniqueSchemaId,
 } from "../../core/schema.js";
-import type { EditorGroupNode, JsonObject, JsonValue } from "../../types/component.js";
+import type { EditorGroupNode, EditorTreeNode, JsonObject, JsonValue } from "../../types/component.js";
 import type {
   ModuleDefinition,
   ModuleInput,
@@ -27,28 +27,17 @@ const SUPPORTED_MAIN_COMPONENTS = [
   "RoseChart",
   "ScatterChart",
 ];
-export const DEFAULT_DECORATION_SVG =
-  '<svg viewBox="0 0 180 72" xmlns="http://www.w3.org/2000/svg"><path d="M8 62H92l18-18h62" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 46h76" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><path d="M118 28h46" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".42"/><circle cx="94" cy="62" r="4" fill="currentColor"/><circle cx="172" cy="44" r="4" fill="currentColor"/></svg>';
-export const TITLE_BADGE_SVG =
-  '<svg viewBox="0 0 220 52" xmlns="http://www.w3.org/2000/svg"><path d="M14 40H108l16-14h54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/><path d="M2 10V42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".68"/><circle cx="10" cy="8" r="3.5" fill="#FFB300" opacity=".85"/><circle cx="22" cy="44" r="2.5" fill="currentColor" opacity=".72"/></svg>';
-export const DEFAULT_BACKGROUND_SVG =
-  '<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#061A2E"/><stop offset=".58" stop-color="#03101F"/><stop offset="1" stop-color="#020813"/></linearGradient><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0v48" fill="none" stroke="currentColor" stroke-width="1" opacity=".16"/></pattern><radialGradient id="glow" cx=".5" cy=".42" r=".58"><stop offset="0" stop-color="currentColor" stop-opacity=".12"/><stop offset=".45" stop-color="currentColor" stop-opacity=".04"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs><rect width="800" height="480" fill="url(#bg)"/><rect width="800" height="480" fill="url(#grid)"/><rect width="800" height="480" fill="url(#glow)"/><path d="M1 1H799V479H1Z" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".42"/></svg>';
-const DEFAULT_SIDE_CARD_SVG =
-  '<svg viewBox="0 0 280 220" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H262L278 18V202L262 218H18L2 202V18Z" fill="rgba(0,229,255,.04)"/><path d="M18 2H42M136 2H262L278 18V202L262 218H18L2 202V18L18 2" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".76"/><path d="M2 44H16M264 44H278M2 176H16M264 176H278" fill="none" stroke="currentColor" stroke-width="2" opacity=".42"/></svg>';
-const DEFAULT_BOTTOM_RULE_SVG =
-  '<svg viewBox="0 0 720 56" xmlns="http://www.w3.org/2000/svg"><path d="M8 24H270l20 14h140l20-14h262" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".72"/><path d="M86 38H244M476 38H634" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".32"/><circle cx="290" cy="38" r="3.5" fill="currentColor" opacity=".75"/><circle cx="430" cy="38" r="3.5" fill="currentColor" opacity=".75"/></svg>';
-const DEFAULT_SIDE_MARKER_SVG =
-  '<svg viewBox="0 0 42 18" xmlns="http://www.w3.org/2000/svg"><path d="M4 9H34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".85"/><circle cx="8" cy="9" r="5" fill="currentColor"/><circle cx="36" cy="9" r="2.5" fill="currentColor" opacity=".55"/></svg>';
-const DEFAULT_SIDE_LINK_SVG =
-  '<svg viewBox="0 0 120 26" xmlns="http://www.w3.org/2000/svg"><path d="M4 13H44l12-7h28l10 7h22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".58"/><circle cx="56" cy="6" r="2.5" fill="currentColor" opacity=".7"/><circle cx="94" cy="13" r="2" fill="currentColor" opacity=".56"/></svg>';
+
 const TITLE_SAFE_HEIGHT = 72;
 const MAIN_CHART_TOP_OFFSET = 92;
 const MAIN_CHART_CARTESIAN_TOP_OFFSET = 64;
+const MAIN_CHART_PIE_TOP_OFFSET = 78;
 const MAIN_CHART_SIDE_PADDING = 20;
 const MAIN_CHART_BOTTOM_PADDING = 96;
 const MAIN_CHART_CARTESIAN_BOTTOM_PADDING = 68;
+const MAIN_CHART_PIE_BOTTOM_PADDING = 28;
 const SIDE_SUMMARY_GAP = 18;
-const SIDE_SUMMARY_MIN_WIDTH = 220;
+const SIDE_SUMMARY_MIN_WIDTH = 250;
 const SIDE_SUMMARY_MAX_WIDTH = 330;
 const SIDE_SUMMARY_HEADER_HEIGHT = 34;
 const SIDE_SUMMARY_ROW_STEP = 48;
@@ -574,10 +563,16 @@ function mainChartDefaultStyle(
   isCartesianChart = false,
 ): JsonObject {
   const sideWidth = reserveSideSummary ? sideSummaryWidth(input) + SIDE_SUMMARY_GAP : 0;
-  const topOffset = isCartesianChart ? MAIN_CHART_CARTESIAN_TOP_OFFSET : MAIN_CHART_TOP_OFFSET;
+  const topOffset = isCartesianChart
+    ? MAIN_CHART_CARTESIAN_TOP_OFFSET
+    : reserveSideSummary
+      ? MAIN_CHART_PIE_TOP_OFFSET
+      : MAIN_CHART_TOP_OFFSET;
   const bottomPadding = isCartesianChart
     ? MAIN_CHART_CARTESIAN_BOTTOM_PADDING
-    : MAIN_CHART_BOTTOM_PADDING;
+    : reserveSideSummary
+      ? MAIN_CHART_PIE_BOTTOM_PADDING
+      : MAIN_CHART_BOTTOM_PADDING;
 
   return {
     position: "absolute",
@@ -837,7 +832,8 @@ function shouldUseTwoLineSideSummary(
   rows: JsonObject[],
   sideWidth: number,
 ): boolean {
-  if (isAlarmLikePanel(input, rows) || sideWidth < 250) {
+  // 告警类面板因为需要展示处置说明，默认两行；其他面板按实际文本宽度判断是否放得下。
+  if (isAlarmLikePanel(input, rows)) {
     return true;
   }
 
@@ -865,189 +861,6 @@ function sideSummaryTextContent(
   const actionText = summaryActionText(input, rows, name);
 
   return useTwoLine ? `${mainText}\n${actionText}` : `${mainText} ${actionText}`;
-}
-
-function createDefaultBackgroundSlot(): ModuleSlotInput {
-  return createSlot("SingleImage", {
-    name: "模块背景",
-  });
-}
-
-function themedSvgContent(svgContent: string, theme: JsonObject): string {
-  return svgContent
-    .replaceAll("currentColor", primaryColor(theme))
-    .replaceAll("#FFB300", accentColor(theme))
-    .replaceAll("__SVG_SECONDARY__", secondaryColor(theme));
-}
-
-function decorationSlotName(slot: ModuleSlotInput): string {
-  const props = slotProps(slot);
-  return typeof props.name === "string" ? props.name : "";
-}
-
-function ensureDefaultDecorationSlots(
-  input: ModuleInput,
-  slots: ModuleSlotInput[],
-  dataRows: JsonObject[] | undefined,
-  chartStyleOverride?: JsonObject,
-  includeSideSummary = true,
-  isCartesianChart = false,
-): ModuleSlotInput[] {
-  const defaults = createDefaultDecorationSlots(
-    input,
-    dataRows,
-    chartStyleOverride,
-    includeSideSummary,
-    isCartesianChart,
-  );
-  const hasSideStructure = slots.some((slot) =>
-    /侧边|信息卡|摘要|容器|卡片|分割/.test(decorationSlotName(slot)),
-  );
-  const hasSideConnector = slots.some((slot) =>
-    /关联|连接/.test(decorationSlotName(slot)),
-  );
-  const hasBottomStructure = slots.some((slot) =>
-    /底部|横线|结构线|承托|边界/.test(decorationSlotName(slot)),
-  );
-  const missingDefaults = defaults.filter((slot) => {
-    const name = decorationSlotName(slot);
-    if (/侧边|摘要|容器/.test(name)) {
-      return !hasSideStructure;
-    }
-
-    if (/关联|连接/.test(name)) {
-      return !hasSideConnector;
-    }
-
-    if (/底部|结构线/.test(name)) {
-      return !hasBottomStructure;
-    }
-
-    return true;
-  });
-
-  return [...slots, ...missingDefaults];
-}
-
-function createDefaultDecorationSlots(
-  input: ModuleInput,
-  dataRows: JsonObject[] | undefined,
-  chartStyleOverride?: JsonObject,
-  includeSideSummary = true,
-  isCartesianChart = false,
-): ModuleSlotInput[] {
-  const theme = isJsonObject(input.theme) ? input.theme : {};
-  const chartStyle =
-    chartStyleOverride ?? mainChartDefaultStyle(input, Boolean(dataRows), isCartesianChart);
-
-  const bottomRuleSlot = createSlot("SvgDecoration", {
-    name: "底部结构线",
-    svgContent: themedSvgContent(DEFAULT_BOTTOM_RULE_SVG, theme),
-    svgFit: "fill",
-    opacity: 0.48,
-    style: {
-      position: "absolute",
-      left: input.style.left + 18,
-      top: bottomStructureTop(input),
-      width: Math.max(input.style.width - 36, 160),
-      height: 30,
-      backgroundColor: "rgba(0,0,0,0)",
-    },
-    glow: {
-      isActive: true,
-      color: "rgba(0,229,255,0.18)",
-      blur: 5,
-    },
-  });
-
-  if (!includeSideSummary) {
-    return [bottomRuleSlot];
-  }
-
-  const sideLayout = createSideSummaryLayout(input, dataRows, 22);
-  const chartLeft = asFiniteNumber(chartStyle.left) ?? input.style.left;
-  const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
-  const chartLinkLeft = Math.max(
-    chartLeft + chartWidth * 0.72,
-    sideLayout.sideLeft - 112,
-  );
-  const rowRuleHeight = dataRows
-    ? Math.max((sideLayout.rowCount - 1) * sideLayout.rowStep + 8, 8)
-    : 8;
-  const rowRuleSvg =
-    dataRows && sideLayout.rowCount > 1
-      ? Array.from({ length: sideLayout.rowCount - 1 }, (_, index) => {
-          const y = 4 + index * sideLayout.rowStep;
-          return `<path d="M4 ${y}H256" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".24"/>`;
-        }).join("")
-      : '<path d="M4 4H256" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".2"/>';
-
-  return [
-    createSlot("SvgDecoration", {
-      name: "侧边摘要容器",
-      svgContent: themedSvgContent(DEFAULT_SIDE_CARD_SVG, theme),
-      svgFit: "fill",
-      opacity: dataRows ? 0.7 : 0.48,
-      style: {
-        position: "absolute",
-        left: sideLayout.sideLeft,
-        top: sideLayout.sideTop,
-        width: sideLayout.sideWidth,
-        height: sideLayout.sideHeight,
-        backgroundColor: "rgba(0,0,0,0)",
-      },
-      glow: {
-        isActive: true,
-        color: "rgba(0,229,255,0.22)",
-        blur: 7,
-      },
-    }),
-    createSlot("SvgDecoration", {
-      name: "侧边摘要分隔线",
-      svgContent: themedSvgContent(
-        `<svg viewBox="0 0 260 ${rowRuleHeight}" xmlns="http://www.w3.org/2000/svg">${rowRuleSvg}</svg>`,
-        theme,
-      ),
-      svgFit: "fill",
-      opacity: dataRows ? 0.84 : 0.38,
-      style: {
-        position: "absolute",
-        left: sideLayout.sideLeft + 24,
-        top:
-          sideLayout.summaryStartTop +
-          sideLayout.rowHeight +
-          Math.max((sideLayout.rowStep - sideLayout.rowHeight) / 2 - 4, 0),
-        width: Math.max(sideLayout.sideWidth - 48, 120),
-        height: rowRuleHeight,
-        backgroundColor: "rgba(0,0,0,0)",
-      },
-      glow: {
-        isActive: true,
-        color: "rgba(0,229,255,0.1)",
-        blur: 3,
-      },
-    }),
-    createSlot("SvgDecoration", {
-      name: "主图侧卡关联线",
-      svgContent: themedSvgContent(DEFAULT_SIDE_LINK_SVG, theme),
-      svgFit: "fill",
-      opacity: dataRows ? 0.54 : 0.32,
-      style: {
-        position: "absolute",
-        left: chartLinkLeft,
-        top: sideLayout.summaryStartTop + 20,
-        width: Math.max(sideLayout.sideLeft - chartLinkLeft + 22, 88),
-        height: 26,
-        backgroundColor: "rgba(0,0,0,0)",
-      },
-      glow: {
-        isActive: true,
-        color: "rgba(0,229,255,0.12)",
-        blur: 4,
-      },
-    }),
-    bottomRuleSlot,
-  ];
 }
 
 function createDefaultAuxiliaryTextSlots(
@@ -1101,21 +914,20 @@ function createDefaultAuxiliaryTextSlots(
   const sideLayout = createSideSummaryLayout(input, dataRows, 22);
   const riskLike = isRiskLikePanel(input, dataRows);
   const palette = defaultPalette(theme);
+  const rowFontSize = sideLayout.useTwoLineSummary ? 13 : 14;
+  const markerWidth = Math.round(rowFontSize * 1.8);
   const sideMarkers = summaryRows(input, dataRows).map((row, index) =>
     createSlot("SvgDecoration", {
       name: `侧边摘要色标${index + 1}`,
-      svgContent: themedSvgContent(DEFAULT_SIDE_MARKER_SVG, {
-        ...theme,
-        primaryColor: palette[index % palette.length],
-      }),
+      svgContent: `<svg viewBox="0 0 42 18" xmlns="http://www.w3.org/2000/svg"><path d="M4 9H34" fill="none" stroke="${palette[index % palette.length]}" stroke-width="2.5" stroke-linecap="round" opacity=".85"/><circle cx="8" cy="9" r="5" fill="${palette[index % palette.length]}"/><circle cx="36" cy="9" r="2.5" fill="${palette[index % palette.length]}" opacity=".55"/></svg>`,
       svgFit: "fill",
       opacity: 0.86,
       style: {
         position: "absolute",
         left: sideLayout.sideLeft + 18,
-        top: sideLayout.summaryStartTop + 8 + index * sideLayout.rowStep,
-        width: 24,
-        height: 12,
+        top: sideLayout.summaryStartTop + index * sideLayout.rowStep,
+        width: markerWidth,
+        height: rowFontSize,
         backgroundColor: "rgba(0,0,0,0)",
       },
       glow: {
@@ -1213,29 +1025,31 @@ function createDefaultAuxiliaryTextSlots(
         }),
       ];
 
+  const topConclusion = createSlot("SingleText", {
+    name: "顶部结论",
+    textContent: defaultConclusionText(input, dataRows),
+    opacity: 0.88,
+    style: {
+      position: "absolute",
+      left: sideLayout.sideLeft + 8,
+      top: sideLayout.sideTop - 22,
+      width: Math.max(sideLayout.sideWidth - 16, 120),
+      height: 14,
+      fontSize: 12,
+      color: textColor(theme),
+      textAlign: "left",
+      backgroundColor: "rgba(0,0,0,0)",
+      fontWeight: "normal",
+      lineHeight: 1,
+    },
+  });
+
   return [
     ...centerTexts,
+    topConclusion,
     sideHeader,
     ...sideMarkers,
     ...sideTexts,
-    createSlot("SingleText", {
-      name: "底部结论",
-      textContent: defaultConclusionText(input, dataRows),
-      opacity: 0.88,
-      style: {
-        position: "absolute",
-        left: input.style.left + 30,
-        top: bottomConclusionTop(input, sideLayout),
-        width: Math.max(input.style.width - 60, 120),
-        height: BOTTOM_CONCLUSION_HEIGHT,
-        fontSize: 14,
-        color: textColor(theme),
-        textAlign: "center",
-        backgroundColor: "rgba(0,0,0,0)",
-        fontWeight: "normal",
-        lineHeight: 1,
-      },
-    }),
   ];
 }
 
@@ -1350,7 +1164,7 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
         top: input.style.top,
         width: input.style.width,
         height: input.style.height,
-        backgroundColor: "rgba(4,16,32,0.96)",
+        backgroundColor: "rgba(0,0,0,0)",
         borderStyle: "solid",
         borderRadius: 0,
         borderWidth: 0,
@@ -1359,42 +1173,8 @@ function createBackgroundProps(input: ModuleInput, slot: ModuleSlotInput): JsonO
       },
       props.style,
     ),
-    svgSource: hasImageResource ? props.svgSource : "custom",
-    svgContent: hasImageResource ? props.svgContent : DEFAULT_BACKGROUND_SVG,
-  };
-}
-
-function createTitleBadgeProps(input: ModuleInput): JsonObject {
-  const theme = isJsonObject(input.theme) ? input.theme : {};
-
-  return {
-    componentName: "SvgDecoration",
-    logicalId: childLogicalId(input, "title_badge"),
-    parentLogicalId: input.logicalId,
-    name: "标题背景点缀",
-    style: {
-      position: "absolute",
-      left: input.style.left + 8,
-      top: input.style.top + 4,
-      width: Math.min(Math.max(input.style.width * 0.3, 220), 300),
-      height: 52,
-      backgroundColor: "rgba(0,0,0,0)",
-      zIndex: layerZIndex(input, TITLE_BADGE_Z_OFFSET),
-    },
-    svgSource: "custom",
-    svgContent: themedSvgContent(TITLE_BADGE_SVG, theme),
-    svgFit: "fill",
-    primaryColor: primaryColor(theme),
-    opacity: 0.72,
-    glow: {
-      isActive: true,
-      color: "rgba(0,229,255,0.2)",
-      blur: 6,
-    },
-    entryAnimiation: {
-      isShow: true,
-      type: TITLE_ENTRY_ANIMATION,
-    },
+    svgSource: typeof props.svgSource === "string" ? props.svgSource : "",
+    svgContent: typeof props.svgContent === "string" ? props.svgContent : "",
   };
 }
 
@@ -2160,7 +1940,7 @@ function createDecorationProps(
     svgContent:
       typeof props.svgContent === "string" && props.svgContent.trim() !== ""
         ? props.svgContent
-        : themedSvgContent(DEFAULT_DECORATION_SVG, theme),
+        : "",
     svgFit: typeof props.svgFit === "string" ? props.svgFit : "contain",
     primaryColor:
       typeof props.primaryColor === "string" ? props.primaryColor : primaryColor(theme),
@@ -2271,12 +2051,8 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     reserveDefaultSideSummary,
   );
   const mainChartStyle = isJsonObject(mainChartProps.style) ? mainChartProps.style : undefined;
-  const effectiveBackgroundSlot = backgroundSlot ?? createDefaultBackgroundSlot();
-  const includeSideSummary = !isCartesianChart && !isLiquidFill;
-  const effectiveDecorationSlots =
-    decorationSlots.length > 0
-      ? ensureDefaultDecorationSlots(input, decorationSlots, fallbackDataRows, mainChartStyle, includeSideSummary, isCartesianChart)
-      : createDefaultDecorationSlots(input, fallbackDataRows, mainChartStyle, includeSideSummary, isCartesianChart);
+  const effectiveBackgroundSlot = backgroundSlot;
+  const effectiveDecorationSlots = decorationSlots;
   const effectiveAuxiliaryTextSlots =
     auxiliaryTextSlots.length > 0
       ? normalizeAuxiliaryTextSlots(input, auxiliaryTextSlots, fallbackDataRows)
@@ -2298,17 +2074,15 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     componentProps.push(createAuxiliaryTextProps(input, slot, index));
   }
 
-  if (titleSlot || typeof input.title === "string") {
-    componentProps.push(createTitleBadgeProps(input));
-  }
-
   for (const [index, slot] of effectiveDecorationSlots.entries()) {
     componentProps.push(createDecorationProps(input, slot, index));
   }
 
   componentProps.push(mainChartProps);
 
-  componentProps.push(createBackgroundProps(input, effectiveBackgroundSlot));
+  if (effectiveBackgroundSlot) {
+    componentProps.push(createBackgroundProps(input, effectiveBackgroundSlot));
+  }
 
   return componentProps.map((props, index) => ({
     ...generateComponentsSchema(props),
@@ -2320,9 +2094,126 @@ export function generateChartPanelSchemas(rawInput: ModuleInput) {
   return generateChartPanelSchemasForInput(normalizeModuleInput(rawInput));
 }
 
+function createEditorGroup(
+  parentId: string,
+  suffix: string,
+  title: string,
+  children: EditorTreeNode[],
+): EditorGroupNode {
+  return {
+    id: uniqueSchemaId(`${parentId}_grp_${suffix}`, "fs"),
+    componentName: "__Group__",
+    structVersion: "0.0.0",
+    props: {},
+    title,
+    isHidden: false,
+    isLocked: false,
+    isGroup: true,
+    children,
+  };
+}
+
+/**
+ * 按组件语义对 ChartPanel 模块内的子元素进行分组。
+ * 分组后编辑器树更清晰，也便于按“重点摘要”“标题”等语义计算包围盒和空间关系。
+ */
+function groupChartPanelChildren(
+  parentId: string,
+  children: EditorTreeNode[],
+): EditorTreeNode[] {
+  const buckets: Record<string, EditorTreeNode[]> = {
+    title: [],
+    auxiliary: [],
+    centerSummary: [],
+    conclusion: [],
+    sideSummary: [],
+    decorations: [],
+    mainChart: [],
+    background: [],
+  };
+
+  for (const child of children) {
+    const title = typeof child.title === "string" ? child.title : "";
+    const componentName = child.componentName;
+
+    if (componentName === "SingleImage") {
+      buckets.background.push(child);
+      continue;
+    }
+
+    if (
+      componentName !== "SingleText" &&
+      componentName !== "SvgDecoration"
+    ) {
+      buckets.mainChart.push(child);
+      continue;
+    }
+
+    if (
+      componentName === "SingleText" &&
+      (title === "模块标题" || /标题文本|主标题/.test(title))
+    ) {
+      buckets.title.push(child);
+      continue;
+    }
+
+    if (/标题承托|标题装饰|title[-_ ]?badge|标题背景/.test(title)) {
+      buckets.title.push(child);
+      continue;
+    }
+
+    if (/^(总数|中心指标说明|中心摘要数值|中心摘要说明)$/.test(title)) {
+      buckets.centerSummary.push(child);
+      continue;
+    }
+
+    if (/^(顶部结论|底部结论)$/.test(title)) {
+      buckets.conclusion.push(child);
+      continue;
+    }
+
+    if (/^侧边摘要/.test(title)) {
+      buckets.sideSummary.push(child);
+      continue;
+    }
+
+    if (componentName === "SvgDecoration") {
+      buckets.decorations.push(child);
+      continue;
+    }
+
+    buckets.auxiliary.push(child);
+  }
+
+  const groupOrder = [
+    { key: "title", title: "标题" },
+    { key: "auxiliary", title: "辅助文本" },
+    { key: "centerSummary", title: "中心摘要" },
+    { key: "conclusion", title: "结论" },
+    { key: "sideSummary", title: "重点摘要" },
+    { key: "decorations", title: "装饰" },
+    { key: "mainChart", title: "主图表" },
+    { key: "background", title: "背景" },
+  ];
+
+  const result: EditorTreeNode[] = [];
+  for (const { key, title } of groupOrder) {
+    const items = buckets[key];
+    if (items.length === 1) {
+      // 单个组件不需要再包一层分组，保持扁平
+      result.push(items[0]);
+    } else if (items.length > 1) {
+      result.push(createEditorGroup(parentId, key, title, items));
+    }
+  }
+
+  return result;
+}
+
 export function generateChartPanelTreeSchema(rawInput: ModuleInput): EditorGroupNode {
   const input = normalizeModuleInput(rawInput);
-  const children = generateChartPanelSchemasForInput(input).map(componentSchemaToEditorNode);
+  const flatChildren = generateChartPanelSchemasForInput(input).map(componentSchemaToEditorNode);
+  const children = groupChartPanelChildren(input.logicalId, flatChildren);
 
   return {
     id: input.logicalId,

@@ -97,12 +97,14 @@ export const singleImageCapability: JsonObject = {
     "只要设计需要背景/纹理/光效，就应使用 SingleImage 组件承载，而不是仅调整某个组件的 style.backgroundColor。除非用户明确要求极简/无图背景。",
     "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
     "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
+    "当手动构建 __Group__ 的 children 数组时，必须把 SingleImage 背景图放在 children 末尾；generate_components_schemas 会自动把 SingleImage 排到最后，但手写 children 时需要显式保证。",
   ],
   visualRules: [
     "AI 始终保有设计权：只要有助于大屏视觉，就应主动生成覆盖全屏或面板的 SingleImage 背景/纹理/光效，而不是只修改 style.backgroundColor。",
     "全屏背景图应覆盖整个画布（如 1920×1080），并位于 ComponentSchema[] 末尾作为最底层，避免遮挡内容。",
     "生成的 base64 背景图应使用轻量矢量或简单纹理：深色渐变、科技网格、弱光晕、细边框，避免大尺寸照片级真实图片。",
     "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
+    "在任意 __Group__ 的 children 数组中，覆盖全屏或全面板的 SingleImage 背景图必须是最后一个元素； decorative 光效/纹理如需置顶应使用 SvgDecoration 或提高 zIndex，而不是依靠数组顺序把 SingleImage 提前。",
     "当用户明确说'不要背景图'、'不要图片'、'纯色背景'、'极简'时，才允许只用 style.backgroundColor；否则应使用 SingleImage。",
   ],
   examples: [

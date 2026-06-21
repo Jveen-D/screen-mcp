@@ -251,6 +251,8 @@ export const indicatorCapability: JsonObject = {
   ],
   visualRules: [
     "Indicator 组件必须保证足够宽度，避免标题、数值、前缀或后缀被挤换行。建议最小宽度 280px；同时显示标题 + 6 位以上数字 + 后缀时，建议使用 360px 及以上。",
+    "数值文本样式 numberStyle.lineHeight 必须设置为 1，否则数值在多位数时会出现内部换行。",
+    "标题文本样式 titleStyle.lineHeight 必须设置为 1，避免标题文字在窄高度时出现内部换行。",
     "开启数字背景 hasBackground 时，宽度预算 ≈ (数字位数 + 千分位逗号数 + 小数点) × (numBackground.width + numberStyle.letterSpacing × 2) + 前缀宽度 + 后缀宽度 + 20px 余量。例如 9,876,543.21 共 12 个字符、背景宽 40、字间距 1 时，内容宽度约 504px，加上前缀后缀后组件宽度建议不小于 600px。",
     "未开启数字背景时，宽度预算 ≈ 字体平均字宽 × 字符数 + 前缀宽度 + 后缀宽度 + 20px 余量；字号 40 时单字宽约 24px，应据此估算。",
     "避免 numBackground.width 小于字号实际宽度，否则数字会溢出背景块；一般 numBackground.width 应 ≥ fontSize × 0.75。",

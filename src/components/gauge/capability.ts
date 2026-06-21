@@ -187,7 +187,7 @@ export const gaugeCapability: JsonObject = {
     {
       path: "indicatorConfig.suffix",
       type: "string",
-      description: "指标数值后缀，例如 '%'、'km/h'。",
+      description: "指标数值后缀，必须根据业务语义显式设置，例如 '%'、'km/h'、'kWh'；不要依赖默认值或留空。",
     },
     {
       path: "animation",
@@ -236,7 +236,7 @@ export const gaugeCapability: JsonObject = {
     "value 应为数值，最终由前端渲染为仪表盘指针位置。",
     "ringRangeColor 中的 startValue/endValue 为 0-1 之间的比例，表示在量程中的位置。",
     "Gauge 组件内部已通过 indicatorConfig 显示数值和后缀，禁止再额外叠加 SingleText 来显示同一个数值。",
-    "根据业务语义设置正确的 suffix：百分比类指标用 '%'，速度类用 'km/h' 等；不要保留默认的 'km/h' 用于非速度场景。",
+    "AI 必须显式设置 indicatorConfig.suffix，禁止依赖组件默认值；百分比类指标用 '%'，速度类用 'km/h'，能耗类用 'kWh'/'万kWh' 等，确保后缀与业务语义一致。",
     "当 Gauge 作为某个面板的一部分时，该面板应使用和周围 ChartPanel 模块一致的背景色、标题承托和边框语言，避免风格突兀。",
   ],
   examples: [

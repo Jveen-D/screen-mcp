@@ -5,6 +5,8 @@ import type {
   AiComponentProps,
   ComponentSchema,
   EditorComponentNode,
+  EditorGroupNode,
+  EditorTreeNode,
   JsonObject,
   JsonValue,
 } from "../types/component.js";
@@ -309,6 +311,34 @@ export function generateComponentsSchemas(
     ...generateComponentsSchema(props),
     indexNum: index + 1,
   }));
+}
+
+export function sortComponentSchemas(schemas: ComponentSchema[]): ComponentSchema[] {
+  const sorted = [...schemas].sort((left, right) => {
+    const leftIsImage = left.componentName === "SingleImage";
+    const rightIsImage = right.componentName === "SingleImage";
+    return Number(leftIsImage) - Number(rightIsImage);
+  });
+
+  return sorted.map((schema, index) => {
+    const next: ComponentSchema = { ...schema, indexNum: index + 1 };
+    if (Array.isArray(next.children)) {
+      next.children = sortComponentSchemas(next.children);
+    }
+    return next;
+  });
+}
+
+export function sortEditorTreeChildren(node: EditorTreeNode): EditorTreeNode {
+  if (Array.isArray(node.children)) {
+    const sortedChildren = [...node.children].sort((left, right) => {
+      const leftIsImage = left.componentName === "SingleImage";
+      const rightIsImage = right.componentName === "SingleImage";
+      return Number(leftIsImage) - Number(rightIsImage);
+    });
+    node.children = sortedChildren.map(sortEditorTreeChildren);
+  }
+  return node;
 }
 
 export function componentSchemaToEditorNode(
