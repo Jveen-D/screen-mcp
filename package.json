@@ -9,7 +9,9 @@
   },
   "scripts": {
     "dev": "tsx src/server.ts",
+    "dev:http": "tsx src/http-server.ts",
     "start": "node dist/server.js",
+    "start:http": "node dist/http-server.js",
     "build": "tsc -p tsconfig.json",
     "test:flow": "tsx scripts/test-flow.ts"
   },
