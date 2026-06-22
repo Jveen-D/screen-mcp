@@ -61,6 +61,19 @@ Agent 配置示例：
   }
 }
 ```
+或者
+```json
+{
+  "mcpServers": {
+    "screen-mcp": {
+      "command": "node",
+      "args": [
+        "C:\\github\\screen-mcp\\dist\\src\\server.js"
+      ]
+    }
+  }
+}
+```
 
 ## 本地 AI 代理（浏览器开发用）
 
