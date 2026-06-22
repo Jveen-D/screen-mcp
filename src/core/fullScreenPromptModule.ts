@@ -539,18 +539,7 @@ export function generateFullScreenFromPrompt(input: JsonObject): EditorGroupNode
     throw new Error("missing required prompt");
   }
 
-  const prompt = promptValue.trim();
-  const title = inferTitle(prompt, input.title as string | undefined);
-  const theme = isJsonObject(input.theme) ? input.theme : inferTheme(prompt);
-  const parentId =
-    typeof input.logicalId === "string" && input.logicalId.trim() !== ""
-      ? input.logicalId.trim()
-      : uniqueSchemaId("fullscreen_dashboard", "fs");
-
-  if (/水电|水库|电站|水利|发电/.test(prompt)) {
-    return buildHydroScreen(title, theme, parentId);
-  }
-
-  // Fallback: generic tech dashboard with the same layout pattern and neutral data.
-  return buildHydroScreen(title, theme, parentId);
+  throw new Error(
+    "generate_full_screen_from_prompt is disabled for production generation because it creates template-like screens. Ask the LLM to design a complete DashboardSpec first, then call generate_dashboard_schema.",
+  );
 }

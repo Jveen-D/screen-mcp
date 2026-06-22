@@ -12,6 +12,10 @@ import {
   generateComponentsSchema,
   generateComponentsSchemas,
 } from "../src/core/schema.js";
+import {
+  generateDashboardSchema,
+  validateDashboardSpec,
+} from "../src/core/dashboard.js";
 import { generateScreenModuleFromPrompt } from "../src/core/promptModule.js";
 import type { JsonObject } from "../src/types/component.js";
 
@@ -32,6 +36,23 @@ function readToolJson(result: Awaited<ReturnType<Client["callTool"]>>) {
 function hasPropName(item: JsonObject, name: string): boolean {
   const props = item.props;
   return typeof props === "object" && props !== null && !Array.isArray(props) && props.name === name;
+}
+
+function nodeProps(item: JsonObject | undefined): JsonObject {
+  const props = item?.props;
+  assert.ok(
+    typeof props === "object" && props !== null && !Array.isArray(props),
+    "editor node should have object props",
+  );
+  return props;
+}
+
+function flattenEditorNodes(node: JsonObject): JsonObject[] {
+  const children = Array.isArray(node.children)
+    ? (node.children as JsonObject[])
+    : [];
+
+  return [node, ...children.flatMap(flattenEditorNodes)];
 }
 
 function assertUniqueIds(ids: string[], message: string): void {
@@ -1519,8 +1540,8 @@ assert.ok(
   "ChartPanel should cover terse end-user prompts",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("自动生成深色背景")),
-  "ChartPanel should autonomously fill missing structure slots",
+  moduleLayoutRules.some((rule) => rule.includes("MCP 不再自动生成标题承托")),
+  "ChartPanel should document that structure decoration is LLM-authored",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("最终用户通常不会主动提入场动画")),
@@ -1545,7 +1566,7 @@ assert.ok(
   "ChartPanel should interpret simple style requests without removing structure",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("不允许只输出裸标题")),
+  moduleLayoutRules.some((rule) => rule.includes("不应只输出裸标题")),
   "ChartPanel should forbid bare layouts even when concise",
 );
 assert.ok(
@@ -1633,7 +1654,7 @@ assert.ok(
   "ChartPanel should define side summary two-line text structure",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("正文区域宽度不低于 156px")),
+  moduleLayoutRules.some((rule) => rule.includes("正文区域宽度不低于 180px")),
   "ChartPanel should reserve enough side summary text width",
 );
 assert.ok(
@@ -1669,8 +1690,8 @@ assert.ok(
   "ChartPanel should keep bottom conclusion as a single-line text box",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("不能把结构感削没")),
-  "ChartPanel should restore lightweight structure after visual dedupe",
+  moduleLayoutRules.some((rule) => rule.includes("AI 必须提供至少标题承托")),
+  "ChartPanel should require LLM-authored lightweight structure",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("侧边摘要色标")),
@@ -1713,16 +1734,16 @@ assert.ok(
   "ChartPanel should not confuse SVG content bans with removing decorations",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("默认装饰必须肉眼可见")),
-  "ChartPanel should require visible default SVG decorations",
+  moduleLayoutRules.some((rule) => rule.includes("装饰必须由 AI 设计")),
+  "ChartPanel should require visible LLM-authored SVG decorations",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("只能作为最低保底结构")),
-  "ChartPanel should treat built-in default SVGs as fallback only",
+  moduleLayoutRules.some((rule) => rule.includes("MCP 不再为缺少 svgContent")),
+  "ChartPanel should not silently replace missing SVG design with built-in templates",
 );
 assert.ok(
-  moduleLayoutRules.some((rule) => rule.includes("多个 ChartPanel 模块")),
-  "ChartPanel should avoid reusing one default SVG look across many modules",
+  moduleLayoutRules.some((rule) => rule.includes("不同大屏之间应通过 AI 自主设计产生差异")),
+  "ChartPanel should avoid MCP-owned fixed decoration templates across dashboards",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("结构原则而不是固定图形")),
@@ -1743,6 +1764,7 @@ assert.ok(
 
 const chartPanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "sales_channel_panel",
   parentLogicalId: "root",
   title: "销售渠道占比",
@@ -1819,7 +1841,7 @@ const chartPanelInput = {
 } satisfies JsonObject;
 
 const moduleSchemas = generateModuleSchema(chartPanelInput);
-assert.equal(moduleSchemas.length, 10);
+assert.equal(moduleSchemas.length, 5);
 assertUniqueIds(
   moduleSchemas.map((item) => item.businessElementId),
   "ChartPanel generated component ids should be unique",
@@ -1881,33 +1903,17 @@ assert.ok(
 );
 assert.deepEqual(
   moduleSchemas.map((item) => item.componentName),
-  [
-    "SingleText",
-    "SingleText",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
-    "PieChart",
-    "SingleImage",
-  ],
+  ["SingleText", "SingleText", "SvgDecoration", "PieChart", "SingleImage"],
 );
 assert.deepEqual(
   moduleSchemas.map((item) => item.indexNum),
-  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  [1, 2, 3, 4, 5],
 );
 assertRandomizedId(moduleSchemas[0]?.businessElementId ?? "", "title", "module title id");
 assertRandomizedId(moduleSchemas[1]?.businessElementId ?? "", "aux_text_1", "module auxiliary text id");
-assertRandomizedId(moduleSchemas[2]?.businessElementId ?? "", "title_badge", "module title badge id");
-assertRandomizedId(moduleSchemas[3]?.businessElementId ?? "", "decoration_1", "module decoration 1 id");
-assertRandomizedId(moduleSchemas[4]?.businessElementId ?? "", "decoration_2", "module decoration 2 id");
-assertRandomizedId(moduleSchemas[5]?.businessElementId ?? "", "decoration_3", "module decoration 3 id");
-assertRandomizedId(moduleSchemas[6]?.businessElementId ?? "", "decoration_4", "module decoration 4 id");
-assertRandomizedId(moduleSchemas[7]?.businessElementId ?? "", "decoration_5", "module decoration 5 id");
-assertRandomizedId(moduleSchemas[8]?.businessElementId ?? "", "main_chart", "module main chart id");
-assertRandomizedId(moduleSchemas[9]?.businessElementId ?? "", "background", "module background id");
+assertRandomizedId(moduleSchemas[2]?.businessElementId ?? "", "decoration_1", "module decoration id");
+assertRandomizedId(moduleSchemas[3]?.businessElementId ?? "", "main_chart", "module main chart id");
+assertRandomizedId(moduleSchemas[4]?.businessElementId ?? "", "background", "module background id");
 const moduleTextDatasource = moduleSchemas[0]?.props.datasource as JsonObject;
 const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
 const moduleTitleEntryAnimation = moduleSchemas[0]?.props.entryAnimiation as JsonObject;
@@ -1916,17 +1922,6 @@ assert.deepEqual(moduleTitleEntryAnimation, {
   isShow: true,
   type: "animate__fadeInLeft",
 });
-assert.equal(moduleSchemas[2]?.props.svgSource, "custom");
-assert.equal(moduleSchemas[2]?.props.name, "标题背景点缀");
-assert.equal(moduleSchemas[2]?.props.opacity, 0.72);
-assert.deepEqual(moduleSchemas[2]?.props.entryAnimiation, {
-  isShow: true,
-  type: "animate__fadeInLeft",
-});
-assert.ok(
-  !(moduleSchemas[2]?.props.svgContent as string).includes("<rect"),
-  "title support should avoid filled rectangular slabs",
-);
 const moduleTitleStyle = moduleSchemas[0]?.props.style as JsonObject;
 assert.equal(moduleTitleStyle.left, 72);
 assert.equal(moduleTitleStyle.top, 114);
@@ -1934,16 +1929,10 @@ assert.equal(moduleTitleStyle.width, 472);
 assert.equal(moduleTitleStyle.height, 22);
 assert.equal(moduleTitleStyle.fontSize, 22);
 assert.equal(moduleTitleStyle.lineHeight, 1);
-const moduleTitleBadgeStyle = moduleSchemas[2]?.props.style as JsonObject;
-assert.equal(moduleTitleBadgeStyle.left, 56);
-assert.equal(moduleTitleBadgeStyle.top, 100);
-assert.equal(moduleTitleBadgeStyle.width, 220);
-assert.equal(moduleTitleBadgeStyle.height, 52);
-assert.equal(moduleTitleBadgeStyle.zIndex, 16);
 const moduleAuxText = moduleSchemas.find(
   (item) => item.businessElementId.includes("aux_text_1"),
 );
-assert.ok(moduleAuxText, "module should include auxiliary text");
+assert.ok(moduleAuxText, "module should include explicit auxiliary text");
 const moduleAuxTextDatasource = moduleAuxText.props.datasource as JsonObject;
 const moduleAuxTextConstantData =
   moduleAuxTextDatasource.constantData as JsonObject[];
@@ -1959,24 +1948,34 @@ assert.deepEqual(moduleAuxTextEntryAnimation, {
 const moduleAuxTextStyle = moduleAuxText.props.style as JsonObject;
 assert.equal(moduleAuxTextStyle.height, 14);
 assert.equal(moduleAuxTextStyle.lineHeight, 1);
+const moduleDecoration = moduleSchemas.find(
+  (item) => item.businessElementId.includes("decoration_1"),
+);
+assert.ok(moduleDecoration, "module should include explicit decoration");
+assert.equal(moduleDecoration.props.name, "模块装饰1");
+assert.equal(moduleDecoration.props.svgSource, "preset");
+assert.deepEqual(moduleDecoration.props.entryAnimiation, {
+  isShow: true,
+  type: "animate__fadeInLeft",
+});
+const moduleDecorationStyle = moduleDecoration.props.style as JsonObject;
+assert.equal(moduleDecorationStyle.left, 372);
+assert.equal(moduleDecorationStyle.top, 116);
+assert.equal(moduleDecorationStyle.width, 180);
+assert.equal(moduleDecorationStyle.height, 72);
 const moduleBackground = moduleSchemas.find(
   (item) => item.businessElementId.includes("background"),
 );
-assert.ok(moduleBackground, "module should include background");
+assert.ok(moduleBackground, "module should include explicit background");
 assert.equal(moduleBackground.props.imageBase64, "");
 assert.equal(moduleBackground.props.imageUseMode, "upload");
-assert.equal(moduleBackground.props.svgSource, "custom");
-assert.equal(
-  (moduleBackground.props.svgContent as string).includes("#00E5FF"),
-  false,
-  "default background should use theme-driven structure color instead of fixed cyan",
-);
+assert.equal(moduleBackground.props.svgSource, "");
 assert.deepEqual(moduleBackground.props.entryAnimiation, {
   isShow: false,
   type: "",
 });
 const moduleBackgroundStyle = moduleBackground.props.style as JsonObject;
-assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(4,16,32,0.96)");
+assert.equal(moduleBackgroundStyle.backgroundColor, "rgba(0,0,0,0)");
 assert.equal(moduleBackgroundStyle.zIndex, 10);
 const moduleChart = moduleSchemas.find(
   (item) => item.businessElementId.includes("main_chart"),
@@ -2023,13 +2022,6 @@ assert.equal(moduleChartLegend.borderWidth, 1);
 const moduleChartLegendTextStyle = moduleChartLegend.textStyle as JsonObject;
 assert.equal(moduleChartLegendTextStyle.fontSize, 12);
 assert.equal(moduleChartLegendTextStyle.fontWeight, "normal");
-assert.equal(moduleSchemas[3]?.props.svgSource, "custom");
-assert.equal(typeof moduleSchemas[3]?.props.svgContent, "string");
-assert.deepEqual(moduleSchemas[3]?.props.entryAnimiation, {
-  isShow: true,
-  type: "animate__fadeInLeft",
-});
-const moduleDecorationStyle = moduleSchemas[3]?.props.style as JsonObject;
 const moduleChartStyle = moduleChart.props.style as JsonObject;
 assert.equal(moduleTitleStyle.zIndex, 18);
 assert.equal(moduleChartStyle.zIndex, 12);
@@ -2041,25 +2033,15 @@ assert.ok(
   (moduleChartStyle.height as number) >= 160,
   "module chart should use the released bottom space to make the left panel taller",
 );
-assert.equal(moduleDecorationStyle.left, 372);
-assert.equal(moduleDecorationStyle.top, 116);
-assert.equal(moduleDecorationStyle.width, 180);
-assert.equal(moduleDecorationStyle.height, 72);
-assert.ok(
+assert.equal(
   moduleSchemas.some((item) => item.props.name === "侧边摘要容器"),
-  "module should supplement visible side summary decoration",
+  false,
+  "manual ChartPanel should not synthesize a side summary container",
 );
-assert.ok(
-  moduleSchemas.some((item) => item.props.name === "侧边摘要分隔线"),
-  "module should supplement side summary row-rule decoration",
-);
-assert.ok(
-  moduleSchemas.some((item) => item.props.name === "主图侧卡关联线"),
-  "module should supplement a subtle chart-to-side-card connector",
-);
-assert.ok(
+assert.equal(
   moduleSchemas.some((item) => item.props.name === "底部结构线"),
-  "module should supplement visible bottom structure decoration",
+  false,
+  "manual ChartPanel should not synthesize bottom structure lines",
 );
 
 const noResourcePanelInput = {
@@ -2082,7 +2064,7 @@ assert.equal(noResourceBackground?.props.imageSrc, "");
 assert.equal(noResourceBackground?.props.imageBase64, "");
 assert.equal(noResourceBackground?.props.imageUseMode, "upload");
 assert.equal(noResourceBackground?.props.opacity, 1);
-assert.equal(noResourceBackground?.props.svgSource, "custom");
+assert.equal(noResourceBackground?.props.svgSource, "");
 
 const sideTextDerivedDataInput = {
   moduleName: "ChartPanel",
@@ -2181,6 +2163,7 @@ assert.deepEqual(moduleDataItemsConstant.data, [
 
 const terseUserPanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "terse_risk_level_panel",
   parentLogicalId: "root",
   title: "风险等级分析",
@@ -2217,65 +2200,35 @@ const terseUserPanelInput = {
 } satisfies JsonObject;
 const terseUserPanelSchemas = generateModuleSchema(terseUserPanelInput);
 const terseComponentNames = terseUserPanelSchemas.map((item) => item.componentName);
-assert.equal(terseUserPanelSchemas.at(-1)?.componentName, "SingleImage");
-assert.equal(terseUserPanelSchemas.at(-2)?.componentName, "PieChart");
+assert.equal(terseUserPanelSchemas.at(-1)?.componentName, "PieChart");
 assert.equal(
   terseComponentNames.filter((componentName) => componentName === "SvgDecoration").length,
-  8,
-  "terse input should include title support, structural decorations, connector, side row rules, and color anchors",
+  3,
+  "assisted layout should keep generated color anchors but not synthesize structural decoration templates",
 );
 assert.ok(
   terseComponentNames.filter((componentName) => componentName === "SingleText").length >= 7,
-  "terse input should still include title, center summary, side summaries, and conclusion",
+  "assisted layout should still include title, center summary, side summaries, and conclusion",
 );
 const terseDecorations = terseUserPanelSchemas.filter(
   (item) => item.componentName === "SvgDecoration",
-);
-assert.ok(
-  terseDecorations.every(
-    (item) => !(item.props.svgContent as string | undefined)?.includes("currentColor"),
-  ),
-  "default module decorations should use explicit visible colors",
-);
-assert.ok(
-  terseDecorations.some((item) => item.props.name === "侧边摘要容器"),
-  "terse input should include visible side summary SVG container",
-);
-const terseSideContainer = terseDecorations.find(
-  (item) => item.props.name === "侧边摘要容器",
-);
-const terseSideRowRules = terseDecorations.find(
-  (item) => item.props.name === "侧边摘要分隔线",
-);
-assert.ok(terseSideContainer, "terse input should include side summary container");
-assert.ok(terseSideRowRules, "terse input should include side summary row-rule decoration");
-assert.equal(
-  ((terseSideContainer.props.svgContent as string | undefined) ?? "").includes("M22 58H258"),
-  false,
-  "side summary container should not bake fixed row rules into its background SVG",
-);
-assert.ok(
-  terseDecorations.some((item) => item.props.name === "主图侧卡关联线"),
-  "terse input should include subtle chart-to-side-card connector",
-);
-const terseSideConnector = terseDecorations.find(
-  (item) => item.props.name === "主图侧卡关联线",
-);
-assert.ok(terseSideConnector, "terse input should include chart-to-side-card connector");
-assert.ok(
-  (terseSideConnector.props.opacity as number) >= 0.5,
-  "chart-to-side-card connector should stay visible enough to show structure",
-);
-assert.ok(
-  terseDecorations.some((item) => item.props.name === "底部结构线"),
-  "terse input should include visible bottom SVG structure line",
 );
 assert.equal(
   terseDecorations.filter((item) =>
     typeof item.props.name === "string" && item.props.name.startsWith("侧边摘要色标"),
   ).length,
   3,
-  "terse input should include side summary color anchors",
+  "assisted layout should include side summary color anchors",
+);
+assert.equal(
+  terseDecorations.some((item) => item.props.name === "侧边摘要容器"),
+  false,
+  "assisted layout should not synthesize side summary container decoration",
+);
+assert.equal(
+  terseDecorations.some((item) => item.props.name === "底部结构线"),
+  false,
+  "assisted layout should not synthesize bottom structure decoration",
 );
 const terseChart = terseUserPanelSchemas.find(
   (item) => item.componentName === "PieChart",
@@ -2301,35 +2254,8 @@ const terseSideSummary2 = terseUserPanelSchemas.find(
 assert.ok(terseSideSummary1, "terse input should include first side summary text");
 assert.ok(terseSideSummary2, "terse input should include second side summary text");
 const terseSideSummary1Style = terseSideSummary1.props.style as JsonObject;
-const terseSideSummary2Style = terseSideSummary2.props.style as JsonObject;
-const terseSideContainerStyle = terseSideContainer.props.style as JsonObject;
-const terseSideConnectorStyle = terseSideConnector.props.style as JsonObject;
-const terseSideRowRulesStyle = terseSideRowRules.props.style as JsonObject;
-assert.ok(
-  (terseSideContainerStyle.height as number) <= 180,
-  "side summary container should stay compact for three single-line summaries",
-);
-assert.ok(
-  Math.abs(
-    ((terseSideConnectorStyle.left as number) + (terseSideConnectorStyle.width as number)) -
-      ((terseSideContainerStyle.left as number) + 22),
-  ) <= 2,
-  "chart-to-side-card connector should reach the side-card left edge",
-);
-assert.equal(
-  terseSideRowRulesStyle.top,
-  (terseSideSummary1Style.top as number) +
-    (terseSideSummary1Style.height as number) +
-    Math.max(
-      ((terseSideSummary2Style.top as number) -
-        (terseSideSummary1Style.top as number) -
-        (terseSideSummary1Style.height as number)) /
-        2 -
-        4,
-      0,
-    ),
-  "side summary row-rule decoration should align between text rows",
-);
+assert.equal(terseSideSummary1Style.height, 14);
+assert.equal(terseSideSummary1Style.lineHeight, 1);
 assert.ok(
   terseTexts.includes("处置建议"),
   "terse input should label side card as treatment advice instead of legend",
@@ -2360,50 +2286,17 @@ assert.equal(terseChartLabel.show, true);
 assert.equal(terseChartLabel.formatter, "{b}");
 assert.equal(terseChartLabel.fontWeight, "normal");
 const terseConclusion = terseUserPanelSchemas.find(
-  (item) => item.props.name === "底部结论",
+  (item) => item.props.name === "顶部结论",
 );
-const terseBottomLine = terseUserPanelSchemas.find(
-  (item) => item.props.name === "底部结构线",
-);
-assert.ok(terseConclusion, "terse input should include conclusion text");
-assert.ok(terseBottomLine, "terse input should include bottom structure line");
+assert.ok(terseConclusion, "terse input should include assisted conclusion text");
 const terseConclusionStyle = terseConclusion.props.style as JsonObject;
-const terseBottomLineStyle = terseBottomLine.props.style as JsonObject;
-const terseChartStyle = terseChart.props.style as JsonObject;
-assert.ok(
-  (terseChartStyle.height as number) >= 320,
-  "left main chart area should be tall enough after reducing bottom padding",
-);
-assert.equal(terseConclusionStyle.height, 14);
-assert.equal(terseConclusionStyle.fontSize, 14);
+assert.equal(terseConclusionStyle.height, 12);
+assert.equal(terseConclusionStyle.fontSize, 12);
 assert.equal(terseConclusionStyle.lineHeight, 1);
-assert.ok(
-  (terseConclusionStyle.top as number) + (terseConclusionStyle.height as number) <=
-    (terseBottomLineStyle.top as number),
-  "bottom conclusion should not overlap bottom structure line",
-);
-assert.ok(
-  (terseChartStyle.top as number) + (terseChartStyle.height as number) + 12 <=
-    (terseConclusionStyle.top as number),
-  "chart and legend region should leave vertical space before conclusion",
-);
-assert.ok(
-  (terseSideContainerStyle.top as number) + (terseSideContainerStyle.height as number) + 28 <=
-    (terseConclusionStyle.top as number),
-  "bottom conclusion should keep a safe gap from the side summary card",
-);
-assert.ok(
-  Math.abs(
-    ((terseBottomLineStyle.top as number) -
-      ((terseConclusionStyle.top as number) + (terseConclusionStyle.height as number))) -
-      12,
-  ) <= 2,
-  "bottom conclusion should sit close to the bottom structure line with a visible gap",
-);
 assert.equal(
   terseConclusionStyle.color,
   "#DFF8FF",
-  "bottom conclusion should use normal text color instead of full-line accent highlight",
+  "conclusion should use normal text color instead of full-line accent highlight",
 );
 const terseCenterValue = terseUserPanelSchemas.find(
   (item) => item.componentName === "SingleText" && item.props.textContent === "126",
@@ -2430,11 +2323,11 @@ assert.ok(
     (terseCenterLabelStyle.top as number),
   "center total label should not stick to the center number",
 );
-const terseBackground = terseUserPanelSchemas.find(
-  (item) => item.businessElementId.includes("background"),
+assert.equal(
+  terseUserPanelSchemas.some((item) => item.businessElementId.includes("background")),
+  false,
+  "assisted layout should not synthesize default backgrounds",
 );
-assert.ok(terseBackground, "terse input should get a default background");
-assert.equal(terseBackground.props.svgSource, "custom");
 assert.deepEqual(terseChart.props.entryAnimiation, {
   isShow: true,
   type: "animate__zoomIn",
@@ -2442,6 +2335,7 @@ assert.deepEqual(terseChart.props.entryAnimiation, {
 
 const customerSourcePanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "customer_source_panel",
   parentLogicalId: "root",
   title: "客户来源分析",
@@ -2505,17 +2399,12 @@ assert.equal(
 const customerSideText = customerSourceSchemas.find(
   (item) => item.props.name === "侧边摘要1",
 );
-const customerSideContainer = customerSourceSchemas.find(
-  (item) => item.props.name === "侧边摘要容器",
-);
 const customerChart = customerSourceSchemas.find(
   (item) => item.componentName === "PieChart",
 );
 assert.ok(customerSideText, "customer source panel should include side summary text");
-assert.ok(customerSideContainer, "customer source panel should include side container");
 assert.ok(customerChart, "customer source panel should include chart");
 const customerSideTextStyle = customerSideText.props.style as JsonObject;
-const customerSideContainerStyle = customerSideContainer.props.style as JsonObject;
 const customerChartOption = customerChart.props.option as JsonObject;
 const customerChartSeries = customerChartOption.series as JsonObject[];
 const customerChartLabel = customerChartSeries[0]?.label as JsonObject;
@@ -2523,10 +2412,6 @@ const customerChartLabelLine = customerChartSeries[0]?.labelLine as JsonObject;
 assert.ok(
   !((customerSideText.props.textContent as string | undefined) ?? "").includes("\n"),
   "customer source side summary should not wrap when the single-line text fits",
-);
-assert.ok(
-  (customerSideContainerStyle.width as number) >= 300,
-  "customer source side container should reserve wider text space",
 );
 assert.ok(
   (customerSideTextStyle.width as number) >= 220,
@@ -2542,6 +2427,7 @@ assert.equal(customerChartLabelLine.length2, 4);
 
 const energyPanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "energy_usage_panel",
   parentLogicalId: "root",
   title: "园区能耗占比",
@@ -2620,78 +2506,62 @@ const cleanEnergyPanel = generateScreenModuleFromPrompt({
     height: 600,
   },
 });
-const cleanEnergyChart = cleanEnergyPanel.children.find(
+const cleanEnergyNodes = flattenEditorNodes(cleanEnergyPanel as unknown as JsonObject);
+const cleanEnergyChart = cleanEnergyNodes.find(
   (item) => item.componentName === "PieChart",
 );
 assert.ok(cleanEnergyChart, "clean energy prompt should generate a chart");
-const cleanEnergySideContainer = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "侧边摘要容器",
+const cleanEnergyConclusion = cleanEnergyNodes.find(
+  (item) => nodeProps(item).name === "顶部结论",
 );
-const cleanEnergyConclusion = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "底部结论",
+const cleanEnergySideSummary1 = cleanEnergyNodes.find(
+  (item) => nodeProps(item).name === "侧边摘要1",
 );
-const cleanEnergySideSummary1 = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "侧边摘要1",
+const cleanEnergySideSummary2 = cleanEnergyNodes.find(
+  (item) => nodeProps(item).name === "侧边摘要2",
 );
-const cleanEnergySideSummary2 = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "侧边摘要2",
+const cleanEnergySideSummary3 = cleanEnergyNodes.find(
+  (item) => nodeProps(item).name === "侧边摘要3",
 );
-const cleanEnergySideSummary3 = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "侧边摘要3",
+const cleanEnergySideMarker1 = cleanEnergyNodes.find(
+  (item) => nodeProps(item).name === "侧边摘要色标1",
 );
-const cleanEnergyConnector = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "主图侧卡关联线",
+assert.equal(
+  cleanEnergyNodes.some((item) => nodeProps(item).name === "侧边摘要容器"),
+  false,
+  "clean energy prompt should not synthesize side summary card decoration",
 );
-const cleanEnergySideMarker1 = cleanEnergyPanel.children.find(
-  (item) => item.props.name === "侧边摘要色标1",
+assert.equal(
+  cleanEnergyNodes.some((item) => nodeProps(item).name === "主图侧卡关联线"),
+  false,
+  "clean energy prompt should not synthesize side-card connector decoration",
 );
-assert.ok(cleanEnergySideContainer, "clean energy prompt should generate side summary card");
-assert.ok(cleanEnergyConclusion, "clean energy prompt should generate bottom conclusion");
+assert.ok(cleanEnergyConclusion, "clean energy prompt should generate assisted conclusion");
 assert.ok(cleanEnergySideSummary1, "clean energy prompt should generate first side summary");
 assert.ok(cleanEnergySideSummary2, "clean energy prompt should generate second side summary");
 assert.ok(cleanEnergySideSummary3, "clean energy prompt should generate third side summary");
-assert.ok(cleanEnergyConnector, "clean energy prompt should generate side-card connector");
 assert.ok(cleanEnergySideMarker1, "clean energy prompt should keep side summary color anchors");
-const cleanEnergySideStyle = cleanEnergySideContainer.props.style as JsonObject;
-const cleanEnergyConclusionStyle = cleanEnergyConclusion.props.style as JsonObject;
-const cleanEnergyConnectorStyle = cleanEnergyConnector.props.style as JsonObject;
-const cleanEnergyChartStyle = cleanEnergyChart.props.style as JsonObject;
-const cleanEnergySideMarker1Style = cleanEnergySideMarker1.props.style as JsonObject;
-const cleanEnergySideSummary1Style = cleanEnergySideSummary1.props.style as JsonObject;
-assert.ok(
-  (cleanEnergySideStyle.height as number) <= 230,
-  "clean energy side summary card should stay compact after restoring structure",
-);
-assert.ok(
-  (cleanEnergySideStyle.top as number) + (cleanEnergySideStyle.height as number) + 28 <=
-    (cleanEnergyConclusionStyle.top as number),
-  "prompt-generated conclusion should not sit too close to the side summary artwork",
-);
-assert.equal(cleanEnergyConclusionStyle.height, 14);
+const cleanEnergyConclusionProps = nodeProps(cleanEnergyConclusion);
+const cleanEnergySideMarker1Props = nodeProps(cleanEnergySideMarker1);
+const cleanEnergySideSummary1Props = nodeProps(cleanEnergySideSummary1);
+const cleanEnergySideSummary2Props = nodeProps(cleanEnergySideSummary2);
+const cleanEnergySideSummary3Props = nodeProps(cleanEnergySideSummary3);
+const cleanEnergyConclusionStyle = cleanEnergyConclusionProps.style as JsonObject;
+const cleanEnergySideMarker1Style = cleanEnergySideMarker1Props.style as JsonObject;
+const cleanEnergySideSummary1Style = cleanEnergySideSummary1Props.style as JsonObject;
+assert.equal(cleanEnergyConclusionStyle.height, 12);
 assert.equal(cleanEnergyConclusionStyle.lineHeight, 1);
 assert.ok(
-  ((cleanEnergySideSummary1.props.textContent as string | undefined) ?? "").includes("主体供给"),
+  ((cleanEnergySideSummary1Props.textContent as string | undefined) ?? "").includes("主体供给"),
   "clean energy side summary should add business judgement beyond value repetition",
 );
 assert.ok(
-  ((cleanEnergySideSummary2.props.textContent as string | undefined) ?? "").includes("主体供给"),
+  ((cleanEnergySideSummary2Props.textContent as string | undefined) ?? "").includes("主体供给"),
   "clean energy wind summary should identify supply role",
 );
 assert.ok(
-  ((cleanEnergySideSummary3.props.textContent as string | undefined) ?? "").includes("调峰支撑"),
+  ((cleanEnergySideSummary3Props.textContent as string | undefined) ?? "").includes("调峰支撑"),
   "clean energy storage summary should identify peak-shaving support role",
-);
-assert.ok(
-  Math.abs(
-    ((cleanEnergyConnectorStyle.left as number) + (cleanEnergyConnectorStyle.width as number)) -
-      ((cleanEnergySideStyle.left as number) + 22),
-  ) <= 2,
-  "clean energy connector should visually reach the side summary card",
-);
-assert.ok(
-  (cleanEnergyConnectorStyle.left as number) >=
-    (cleanEnergyChartStyle.left as number) + (cleanEnergyChartStyle.width as number) * 0.7,
-  "clean energy connector should start from the chart outer-side region instead of crossing the donut center",
 );
 assert.equal(
   cleanEnergyConclusionStyle.color,
@@ -2703,7 +2573,7 @@ assert.ok(
     (cleanEnergySideSummary1Style.left as number),
   "side summary color anchor should sit before the matching side summary text",
 );
-const cleanEnergyOption = cleanEnergyChart.props.option as JsonObject;
+const cleanEnergyOption = nodeProps(cleanEnergyChart).option as JsonObject;
 const cleanEnergySeries = cleanEnergyOption.series as JsonObject[];
 const cleanEnergyLabel = cleanEnergySeries[0]?.label as JsonObject;
 assert.equal(
@@ -2778,49 +2648,45 @@ const redComplaintPanel = generateScreenModuleFromPrompt({
     height: 520,
   },
 });
-const redComplaintChart = redComplaintPanel.children.find(
+const redComplaintNodes = flattenEditorNodes(redComplaintPanel as unknown as JsonObject);
+const redComplaintChart = redComplaintNodes.find(
   (item) => item.componentName === "PieChart",
 );
-const redComplaintChartIndex = redComplaintPanel.children.findIndex(
+const redComplaintChartIndex = redComplaintNodes.findIndex(
   (item) => item.componentName === "PieChart",
 );
-const redComplaintSideContainer = redComplaintPanel.children.find(
-  (item) => item.props.name === "侧边摘要容器",
+const redComplaintSideSummary1 = redComplaintNodes.find(
+  (item) => nodeProps(item).name === "侧边摘要1",
 );
-const redComplaintSideSummary1 = redComplaintPanel.children.find(
-  (item) => item.props.name === "侧边摘要1",
+const redComplaintTotal = redComplaintNodes.find(
+  (item) => nodeProps(item).name === "总数",
 );
-const redComplaintTotal = redComplaintPanel.children.find(
-  (item) => item.props.name === "总数",
-);
-const redComplaintTotalIndex = redComplaintPanel.children.findIndex(
-  (item) => item.props.name === "总数",
+const redComplaintTotalIndex = redComplaintNodes.findIndex(
+  (item) => nodeProps(item).name === "总数",
 );
 assert.ok(redComplaintChart, "red complaint prompt should generate PieChart");
-assert.ok(redComplaintSideContainer, "red complaint prompt should generate side summary card");
+assert.equal(
+  redComplaintNodes.some((item) => nodeProps(item).name === "侧边摘要容器"),
+  false,
+  "red complaint prompt should not synthesize side summary card decoration",
+);
 assert.ok(redComplaintSideSummary1, "red complaint prompt should generate side summary text");
 assert.ok(redComplaintTotal, "red complaint prompt should generate center total text");
-const redComplaintChartProps = redComplaintChart.props as JsonObject;
+const redComplaintChartProps = nodeProps(redComplaintChart);
 const redComplaintChartStyle = redComplaintChartProps.style as JsonObject;
 const redComplaintOption = redComplaintChartProps.option as JsonObject;
 const redComplaintLegend = redComplaintOption.legend as JsonObject;
 const redComplaintSeries = redComplaintOption.series as JsonObject[];
 const redComplaintFirstSeries = redComplaintSeries[0] as JsonObject;
-const redComplaintSideStyle = redComplaintSideContainer.props.style as JsonObject;
-const redComplaintSideSummary1Style = redComplaintSideSummary1.props.style as JsonObject;
-const redComplaintTotalStyle = redComplaintTotal.props.style as JsonObject;
+const redComplaintSideSummary1Props = nodeProps(redComplaintSideSummary1);
+const redComplaintTotalProps = nodeProps(redComplaintTotal);
+const redComplaintSideSummary1Style = redComplaintSideSummary1Props.style as JsonObject;
+const redComplaintTotalStyle = redComplaintTotalProps.style as JsonObject;
 assert.equal((redComplaintOption.color as string[])[0], "#FF2D4F");
 assert.equal((redComplaintLegend.textStyle as JsonObject).color, "#FFF3F3");
 assert.ok(
   redComplaintTotalIndex < redComplaintChartIndex,
   "center total text should be emitted before PieChart so it stays above the chart layer",
-);
-assert.ok(
-  (redComplaintChartStyle.left as number) +
-    (redComplaintChartStyle.width as number) +
-    12 <=
-    (redComplaintSideStyle.left as number),
-  "red complaint chart should stay inside the left main area instead of entering the side card",
 );
 const redComplaintCenter = redComplaintFirstSeries.center as string[];
 const redComplaintCenterY = Number(redComplaintCenter[1]?.replace(/[^0-9.]/g, "") ?? 50);
@@ -2853,7 +2719,7 @@ assert.equal(redComplaintSideSummary1Style.height, 14);
 assert.equal(redComplaintSideSummary1Style.fontSize, 14);
 assert.equal(redComplaintSideSummary1Style.lineHeight, 1);
 assert.ok(
-  !((redComplaintSideSummary1.props.textContent as string | undefined) ?? "").includes("\n"),
+  !((redComplaintSideSummary1Props.textContent as string | undefined) ?? "").includes("\n"),
   "red complaint single-line side summary should not use a two-line 52px text box",
 );
 
@@ -2920,23 +2786,15 @@ const mergedSummaryRows = mergedSummaryTexts.filter(
     /^侧边摘要\d+$/.test(item.props.name),
 );
 assert.equal(
-  mergedSummaryRawText,
-  undefined,
-  "MCP should remove merged side-summary paragraph text",
+  Boolean(mergedSummaryRawText),
+  true,
+  "manual ChartPanel should preserve explicitly supplied side-summary paragraph text",
 );
-assert.ok(mergedSummaryHeader, "MCP should regenerate an independent side summary header");
 assert.equal(
   mergedSummaryRows.length,
-  3,
-  "MCP should regenerate independent side summary rows from data",
+  0,
+  "manual ChartPanel should not regenerate independent side summary rows from explicit text",
 );
-for (const row of mergedSummaryRows) {
-  const rowStyle = row.props.style as JsonObject;
-  assert.ok(
-    rowStyle.height === 14 || rowStyle.height === 40,
-    "regenerated side summary rows should use controlled line boxes",
-  );
-}
 
 const customDecorationPanelInput = {
   ...terseUserPanelInput,
@@ -2960,17 +2818,20 @@ const customDecorationNames = customDecorationPanelSchemas
   .filter((item) => item.componentName === "SvgDecoration")
   .map((item) => item.props.name);
 assert.ok(customDecorationNames.includes("右上角科技装饰"));
-assert.ok(
+assert.equal(
   customDecorationNames.includes("侧边摘要容器"),
-  "MCP should supplement side-card decoration when custom decorations omit it",
+  false,
+  "ChartPanel should not supplement side-card decoration when custom decorations omit it",
 );
-assert.ok(
+assert.equal(
   customDecorationNames.includes("底部结构线"),
-  "MCP should supplement bottom structure decoration when custom decorations omit it",
+  false,
+  "ChartPanel should not supplement bottom structure decoration when custom decorations omit it",
 );
 
 const alarmPanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "device_alarm_panel",
   parentLogicalId: "root",
   title: "设备告警分类",
@@ -3043,44 +2904,31 @@ const alarmSideLastText = alarmPanelSchemas.find(
   (item) => item.props.name === "侧边摘要3",
 );
 const alarmConclusion = alarmPanelSchemas.find(
-  (item) => item.props.name === "底部结论",
+  (item) => item.props.name === "顶部结论",
 );
 const alarmBottomLine = alarmPanelSchemas.find(
   (item) => item.props.name === "底部结构线",
 );
-assert.ok(alarmSideContainer, "alarm panel should include side summary container");
+assert.equal(alarmSideContainer, undefined, "alarm panel should not synthesize side summary container");
 assert.ok(alarmSideFirstText, "alarm panel should include first side summary");
 assert.ok(alarmSideLastText, "alarm panel should include last side summary");
-assert.ok(alarmConclusion, "alarm panel should include bottom conclusion");
-assert.ok(alarmBottomLine, "alarm panel should include bottom structure line");
-const alarmSideContainerStyle = alarmSideContainer.props.style as JsonObject;
+assert.ok(alarmConclusion, "alarm panel should include assisted conclusion");
+assert.equal(alarmBottomLine, undefined, "alarm panel should not synthesize bottom structure line");
 const alarmSideFirstStyle = alarmSideFirstText.props.style as JsonObject;
 const alarmSideLastStyle = alarmSideLastText.props.style as JsonObject;
 const alarmConclusionStyle = alarmConclusion.props.style as JsonObject;
-const alarmBottomLineStyle = alarmBottomLine.props.style as JsonObject;
 assert.ok(
   (alarmSideFirstStyle.height as number) >= 36 &&
     (alarmSideFirstStyle.height as number) <= 44,
   "alarm side rows should reserve compact two-line text height",
 );
 assert.ok(
-  (alarmSideLastStyle.top as number) + (alarmSideLastStyle.height as number) <=
-    (alarmSideContainerStyle.top as number) + (alarmSideContainerStyle.height as number),
-  "alarm side summaries should fit inside side container",
+  (alarmSideLastStyle.top as number) > (alarmSideFirstStyle.top as number),
+  "alarm side summaries should keep ordered row positions",
 );
 assert.ok(
-  alarmConclusionStyle.height === 14 && alarmConclusionStyle.lineHeight === 1,
+  alarmConclusionStyle.height === 12 && alarmConclusionStyle.lineHeight === 1,
   "alarm conclusion should use a single-line text box",
-);
-assert.ok(
-  (alarmConclusionStyle.top as number) + (alarmConclusionStyle.height as number) <=
-    (alarmBottomLineStyle.top as number),
-  "alarm conclusion should not overlap bottom structure line",
-);
-assert.ok(
-  (alarmSideContainerStyle.top as number) + (alarmSideContainerStyle.height as number) + 28 <=
-    (alarmConclusionStyle.top as number),
-  "alarm conclusion should keep distance from the side summary card",
 );
 
 const sideLegendTextInput = {
@@ -3127,11 +2975,12 @@ const promptGeneratedTree = generateScreenModuleFromPrompt({
 });
 assert.equal(promptGeneratedTree.componentName, "__Group__");
 assert.equal(promptGeneratedTree.title, "风险等级分析");
-const promptGeneratedChart = promptGeneratedTree.children.find(
+const promptGeneratedNodes = flattenEditorNodes(promptGeneratedTree as unknown as JsonObject);
+const promptGeneratedChart = promptGeneratedNodes.find(
   (item) => item.componentName === "PieChart",
 );
 assert.ok(promptGeneratedChart, "prompt entry should generate a real PieChart");
-const promptGeneratedOption = promptGeneratedChart.props.option as JsonObject;
+const promptGeneratedOption = nodeProps(promptGeneratedChart).option as JsonObject;
 const promptGeneratedLegend = promptGeneratedOption.legend as JsonObject;
 const promptGeneratedSeries = promptGeneratedOption.series as JsonObject[];
 const promptGeneratedLabel = promptGeneratedSeries[0]?.label as JsonObject;
@@ -3143,16 +2992,16 @@ assert.equal(promptGeneratedLegendTextStyle.fontWeight, "normal");
 assert.equal(promptGeneratedLabel.show, true);
 assert.equal(promptGeneratedLabel.formatter, "{b}");
 assert.equal(promptGeneratedLabel.fontWeight, "normal");
-const promptGeneratedChartData = promptGeneratedChart.props.chartData as JsonObject;
+const promptGeneratedChartData = nodeProps(promptGeneratedChart).chartData as JsonObject;
 const promptGeneratedConstant = promptGeneratedChartData.constant as JsonObject;
 assert.deepEqual(promptGeneratedConstant.data, [
   { name: "高风险", type: "风险", value: 18 },
   { name: "中风险", type: "风险", value: 37 },
   { name: "低风险", type: "风险", value: 71 },
 ]);
-const promptGeneratedTexts = promptGeneratedTree.children
+const promptGeneratedTexts = promptGeneratedNodes
   .filter((item) => item.componentName === "SingleText")
-  .map((item) => item.props.textContent);
+  .map((item) => nodeProps(item).textContent);
 assert.ok(
   promptGeneratedTexts.includes("处置建议"),
   "prompt entry should include side treatment-advice heading",
@@ -3176,17 +3025,12 @@ assert.equal(moduleTreeSchema.title, "销售渠道占比");
 assert.equal(moduleTreeSchema.isHidden, false);
 assert.equal(moduleTreeSchema.isLocked, false);
 assert.equal(moduleTreeSchema.isGroup, true);
-assert.equal(moduleTreeSchema.children.length, 10);
+assert.equal(moduleTreeSchema.children.length, 5);
 assert.deepEqual(
   moduleTreeSchema.children.map((item) => item.componentName),
   [
     "SingleText",
     "SingleText",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
-    "SvgDecoration",
     "SvgDecoration",
     "PieChart",
     "SingleImage",
@@ -3202,13 +3046,135 @@ assert.ok(
   ),
   "module tree child parentLogicalId should reference randomized group id",
 );
-assertRandomizedId(moduleTreeSchema.children[8]?.id ?? "", "main_chart", "module tree chart id");
+assertRandomizedId(moduleTreeSchema.children[3]?.id ?? "", "main_chart", "module tree chart id");
 assertRandomizedId(moduleTreeSchema.children[0]?.id ?? "", "title", "module tree title id");
 assert.equal(moduleTreeSchema.children[0]?.isGroup, false);
 assert.equal(moduleTreeSchema.children[0]?.structVersion, "0.0.2");
 assert.equal(
   (moduleTreeSchema.children[0]?.props as JsonObject).logicalId,
   moduleTreeSchema.children[0]?.id,
+);
+
+const dashboardSpec = {
+  logicalId: "ops_dashboard",
+  title: "运营洞察大屏",
+  canvas: {
+    width: 1280,
+    height: 720,
+  },
+  theme: {
+    primaryColor: "#28E0B9",
+    secondaryColor: "#2F80ED",
+    accentColor: "#FFB020",
+    textColor: "#EFFFFA",
+  },
+  components: [
+    {
+      componentName: "SingleText",
+      logicalId: "dashboard_title",
+      textContent: "运营洞察大屏",
+      style: {
+        position: "absolute",
+        left: 40,
+        top: 24,
+        width: 360,
+        height: 32,
+        fontSize: 32,
+        lineHeight: 1,
+      },
+    },
+    {
+      componentName: "SingleImage",
+      logicalId: "dashboard_background",
+      imageBase64: "data:image/png;base64,REALBACKGROUND",
+      opacity: 0.92,
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 1280,
+        height: 720,
+      },
+    },
+  ],
+  modules: [
+    {
+      moduleName: "ChartPanel",
+      logicalId: "risk_panel",
+      title: "风险等级分析",
+      style: {
+        position: "absolute",
+        left: 40,
+        top: 100,
+        width: 520,
+        height: 360,
+      },
+      slots: {
+        title: {
+          componentName: "SingleText",
+          props: {
+            textContent: "风险等级分析",
+          },
+        },
+        mainChart: {
+          componentName: "PieChart",
+          props: {
+            chartData: {
+              constant: {
+                data: [
+                  { name: "高风险", type: "风险", value: 18 },
+                  { name: "中风险", type: "风险", value: 37 },
+                  { name: "低风险", type: "风险", value: 71 },
+                ],
+              },
+            },
+            option: {
+              legend: {
+                left: "center",
+                top: "bottom",
+              },
+            },
+          },
+        },
+        decorations: [
+          {
+            componentName: "SvgDecoration",
+            props: {
+              name: "AI自定义标题线",
+              svgContent:
+                '<svg viewBox="0 0 120 12" xmlns="http://www.w3.org/2000/svg"><path d="M0 6H120" stroke="#28E0B9" stroke-width="2"/></svg>',
+              style: {
+                position: "absolute",
+                left: 64,
+                top: 150,
+                width: 180,
+                height: 18,
+              },
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as JsonObject;
+
+const dashboardValidation = validateDashboardSpec(dashboardSpec);
+assert.equal(dashboardValidation.valid, true, "DashboardSpec should validate");
+assert.deepEqual(dashboardValidation.errors, []);
+const dashboardTree = generateDashboardSchema(dashboardSpec);
+assert.equal(dashboardTree.componentName, "__Group__");
+assert.equal(dashboardTree.title, "运营洞察大屏");
+assert.equal((dashboardTree.props.style as JsonObject).width, 1280);
+assert.equal((dashboardTree.props.style as JsonObject).height, 720);
+assert.equal(dashboardTree.children.at(-1)?.componentName, "SingleImage");
+const dashboardNodes = flattenEditorNodes(dashboardTree as unknown as JsonObject);
+assert.ok(
+  dashboardNodes.some((item) => item.componentName === "PieChart"),
+  "DashboardSpec compiler should include module chart nodes",
+);
+assert.ok(
+  dashboardNodes.some((item) => hasPropName(item, "AI自定义标题线")),
+  "DashboardSpec compiler should preserve LLM-authored decorations",
 );
 
 const nodePath = process.execPath;
@@ -3265,15 +3231,25 @@ try {
     tools.tools.some((tool) => tool.name === "generate_screen_module_from_prompt"),
     "MCP server should expose natural-language screen module entry",
   );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "validate_dashboard_spec"),
+    "MCP server should expose DashboardSpec validation",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "generate_dashboard_schema"),
+    "MCP server should expose DashboardSpec compiler",
+  );
   const serverInstructions = client.getInstructions();
   assert.ok(
-    serverInstructions?.includes("instead of generating HTML"),
-    "MCP server instructions should steer dashboard requests away from HTML generation",
+    serverInstructions?.includes("LLM owns design decisions") &&
+      serverInstructions.includes("DashboardSpec") &&
+      serverInstructions.includes("generate_dashboard_schema"),
+    "MCP server instructions should steer full dashboards through LLM-authored DashboardSpec",
   );
   assert.ok(
     serverInstructions?.includes("完整schema") &&
       serverInstructions.includes("complete JSON") &&
-      serverInstructions.includes("fenced json code block"),
+      serverInstructions.includes("complete JSON returned by the tool"),
     "MCP server instructions should require complete schema output when requested",
   );
   const promptEntryTool = tools.tools.find(
@@ -3308,7 +3284,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-12.12-remove-demo-chart",
+    "2026-06-22.01-dashboard-spec-compiler",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -3542,32 +3518,31 @@ try {
   });
   assert.equal(moduleSchemaResult.isError, undefined);
   const toolModuleSchemas = readToolJson(moduleSchemaResult);
-  assert.equal(toolModuleSchemas.length, 10);
+  assert.equal(toolModuleSchemas.length, 5);
   assert.equal(toolModuleSchemas[0].componentName, "SingleText");
   assert.equal(toolModuleSchemas[1].componentName, "SingleText");
   assert.equal(toolModuleSchemas[2].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[3].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[4].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[5].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[6].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[7].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[8].componentName, "PieChart");
-  assert.equal(toolModuleSchemas[9].componentName, "SingleImage");
-  assert.ok(
+  assert.equal(toolModuleSchemas[3].componentName, "PieChart");
+  assert.equal(toolModuleSchemas[4].componentName, "SingleImage");
+  assert.equal(
     toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "侧边摘要容器")),
-    "MCP tool should supplement side summary decoration",
+    false,
+    "MCP tool should not synthesize side summary decoration templates",
   );
-  assert.ok(
+  assert.equal(
     toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "侧边摘要分隔线")),
-    "MCP tool should supplement side summary row-rule decoration",
+    false,
+    "MCP tool should not synthesize side summary row-rule decoration templates",
   );
-  assert.ok(
+  assert.equal(
     toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "主图侧卡关联线")),
-    "MCP tool should supplement subtle chart-to-side-card connector",
+    false,
+    "MCP tool should not synthesize chart-to-side-card connector templates",
   );
-  assert.ok(
+  assert.equal(
     toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "底部结构线")),
-    "MCP tool should supplement bottom structure decoration",
+    false,
+    "MCP tool should not synthesize bottom structure decoration templates",
   );
 
   const moduleTreeSchemaResult = await client.callTool({
@@ -3579,8 +3554,58 @@ try {
   assert.equal(toolModuleTreeSchema.componentName, "__Group__");
   assert.equal(toolModuleTreeSchema.structVersion, "0.0.0");
   assert.deepEqual(toolModuleTreeSchema.props, {});
-  assert.equal(toolModuleTreeSchema.children.length, 10);
-  assert.equal(toolModuleTreeSchema.children[8].componentName, "PieChart");
+  assert.equal(toolModuleTreeSchema.children.length, 5);
+  assert.equal(toolModuleTreeSchema.children[3].componentName, "PieChart");
+
+  const dashboardValidationResult = await client.callTool({
+    name: "validate_dashboard_spec",
+    arguments: dashboardSpec,
+  });
+  assert.equal(dashboardValidationResult.isError, undefined);
+  const toolDashboardValidation = readToolJson(dashboardValidationResult);
+  assert.equal(toolDashboardValidation.valid, true);
+  assert.deepEqual(toolDashboardValidation.errors, []);
+
+  const dashboardSchemaResult = await client.callTool({
+    name: "generate_dashboard_schema",
+    arguments: dashboardSpec,
+  });
+  assert.equal(dashboardSchemaResult.isError, undefined);
+  const toolDashboardTree = readToolJson(dashboardSchemaResult);
+  const toolDashboardNodes = flattenEditorNodes(toolDashboardTree as JsonObject);
+  assert.equal(toolDashboardTree.componentName, "__Group__");
+  assert.equal(toolDashboardTree.title, "运营洞察大屏");
+  assert.equal(toolDashboardTree.children.at(-1)?.componentName, "SingleImage");
+  assert.ok(
+    toolDashboardNodes.some((item) => item.componentName === "PieChart"),
+    "DashboardSpec MCP compiler should include module chart nodes",
+  );
+  assert.ok(
+    toolDashboardNodes.some((item) => hasPropName(item, "AI自定义标题线")),
+    "DashboardSpec MCP compiler should preserve LLM-authored decorations",
+  );
+
+  const fullScreenPromptResult = await client.callTool({
+    name: "generate_full_screen_from_prompt",
+    arguments: {
+      prompt: "生成一个水电站智慧运行监测大屏",
+    },
+  });
+  assert.equal(fullScreenPromptResult.isError, true);
+  assert.ok(Array.isArray(fullScreenPromptResult.content));
+  const fullScreenPromptContent = fullScreenPromptResult.content[0];
+  const fullScreenPromptText =
+    fullScreenPromptContent &&
+    typeof fullScreenPromptContent === "object" &&
+    "text" in fullScreenPromptContent &&
+    typeof fullScreenPromptContent.text === "string"
+      ? fullScreenPromptContent.text
+      : "";
+  assert.ok(
+    fullScreenPromptText.includes("disabled") &&
+      fullScreenPromptText.includes("DashboardSpec"),
+    "full-screen prompt tool should be disabled in favor of DashboardSpec",
+  );
 
   const promptModuleResult = await client.callTool({
     name: "generate_screen_module_from_prompt",
@@ -3598,13 +3623,14 @@ try {
   const toolPromptModuleTree = readToolJson(promptModuleResult);
   assert.equal(toolPromptModuleTree.componentName, "__Group__");
   assert.equal(toolPromptModuleTree.title, "风险等级分析");
+  const toolPromptModuleNodes = flattenEditorNodes(toolPromptModuleTree as JsonObject);
   assert.equal(
-    toolPromptModuleTree.children.filter(
+    toolPromptModuleNodes.filter(
       (item: JsonObject) => item.componentName === "SvgDecoration",
     ).length,
-    8,
+    3,
   );
-  const toolPromptChart = toolPromptModuleTree.children.find(
+  const toolPromptChart = toolPromptModuleNodes.find(
     (item: JsonObject) => item.componentName === "PieChart",
   ) as JsonObject | undefined;
   assert.ok(toolPromptChart, "prompt MCP tool should generate PieChart child");
@@ -3633,7 +3659,7 @@ try {
     { name: "中风险", type: "风险", value: 37 },
     { name: "低风险", type: "风险", value: 71 },
   ]);
-  const toolPromptTexts = toolPromptModuleTree.children
+  const toolPromptTexts = toolPromptModuleNodes
     .filter((item: JsonObject) => item.componentName === "SingleText")
     .map((item: JsonObject) => (item.props as JsonObject).textContent);
   assert.ok(
@@ -3665,7 +3691,8 @@ try {
   const toolPrompt3DTree = readToolJson(prompt3DResult);
   assert.equal(toolPrompt3DTree.componentName, "__Group__");
   assert.equal(toolPrompt3DTree.title, "风险等级分析");
-  const toolPrompt3DChart = toolPrompt3DTree.children.find(
+  const toolPrompt3DNodes = flattenEditorNodes(toolPrompt3DTree as JsonObject);
+  const toolPrompt3DChart = toolPrompt3DNodes.find(
     (item: JsonObject) => item.componentName === "ThreeDPieChart",
   ) as JsonObject | undefined;
   assert.ok(toolPrompt3DChart, "3D prompt should generate ThreeDPieChart child");
@@ -3675,11 +3702,11 @@ try {
     "3D prompt chart should have threeDSettings",
   );
   assert.equal(
-    toolPrompt3DTree.children.filter((item: JsonObject) => item.componentName === "SvgDecoration").length,
-    8,
-    "3D prompt panel should include 8 SvgDecoration components",
+    toolPrompt3DNodes.filter((item: JsonObject) => item.componentName === "SvgDecoration").length,
+    3,
+    "3D prompt panel should include assisted side summary color anchors",
   );
-  const toolPrompt3DTexts = toolPrompt3DTree.children
+  const toolPrompt3DTexts = toolPrompt3DNodes
     .filter((item: JsonObject) => item.componentName === "SingleText")
     .map((item: JsonObject) => (item.props as JsonObject).textContent);
   assert.ok(
@@ -3704,7 +3731,8 @@ try {
   const toolPromptLineTree = readToolJson(promptLineResult);
   assert.equal(toolPromptLineTree.componentName, "__Group__");
   assert.equal(toolPromptLineTree.title, "季度访问量趋势分析");
-  const toolPromptLineChart = toolPromptLineTree.children.find(
+  const toolPromptLineNodes = flattenEditorNodes(toolPromptLineTree as JsonObject);
+  const toolPromptLineChart = toolPromptLineNodes.find(
     (item: JsonObject) => item.componentName === "LineChart",
   ) as JsonObject | undefined;
   assert.ok(toolPromptLineChart, "line chart prompt MCP tool should generate LineChart child");
@@ -3737,7 +3765,7 @@ try {
     { name: "第四季度访问量", type: "系列", value: 280 },
   ]);
   assert.ok(
-    toolPromptLineTree.children.some(
+    toolPromptLineNodes.some(
       (item: JsonObject) => item.componentName === "SingleText" && ((item.props as JsonObject).name as string | undefined)?.includes("标题"),
     ),
     "line chart prompt MCP tool should include title text",
@@ -3749,6 +3777,7 @@ try {
 // ChartPanel + ThreeDPieChart integration
 const threeDPanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "risk_3d_panel",
   parentLogicalId: "root",
   title: "风险等级3D分析",
@@ -3814,32 +3843,36 @@ assert.ok(
   "ChartPanel tree should include ThreeDPieChart",
 );
 
-// Verify 3D panel includes full decorations (not just the chart)
+// Assisted mode keeps semantic helper texts/color anchors, but no fixed structure templates.
 const threeDSvgDecorations = threeDModuleSchemas.filter((item) => item.componentName === "SvgDecoration");
-assert.ok(
-  threeDSvgDecorations.length >= 4,
-  `ChartPanel ThreeDPieChart should include at least 4 SvgDecoration components, got ${threeDSvgDecorations.length}`,
+assert.equal(
+  threeDSvgDecorations.length,
+  3,
+  "ChartPanel ThreeDPieChart should include side summary color anchors only",
 );
-assert.ok(
+assert.equal(
   threeDSvgDecorations.some((d) => (d.props.name as string | undefined)?.includes("侧边摘要容器")),
-  "3D panel should include side summary container decoration",
+  false,
+  "3D panel should not synthesize side summary container decoration",
 );
-assert.ok(
+assert.equal(
   threeDSvgDecorations.some((d) => (d.props.name as string | undefined)?.includes("底部结构线")),
-  "3D panel should include bottom structure line decoration",
+  false,
+  "3D panel should not synthesize bottom structure line decoration",
 );
 assert.ok(
   threeDModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题")),
   "3D panel should include title text",
 );
 assert.ok(
-  threeDModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("底部结论")),
-  "3D panel should include bottom conclusion text",
+  threeDModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("顶部结论")),
+  "3D panel should include assisted conclusion text",
 );
 
 // ── LineChart panel assertions ───────────────────────────────
 const lineChartPanelInput = {
   moduleName: "ChartPanel",
+  layoutMode: "assisted",
   logicalId: "sales_line_panel",
   parentLogicalId: "root",
   title: "季度销售趋势",
@@ -3946,11 +3979,17 @@ assert.ok(
   "ChartPanel tree should include LineChart",
 );
 
-// Verify LineChart panel includes full decorations
+// LineChart assisted mode should not invent structural SVG decorations.
 const lineSvgDecorations = lineModuleSchemas.filter((item) => item.componentName === "SvgDecoration");
-assert.ok(
-  lineSvgDecorations.length >= 2,
-  `ChartPanel LineChart should include at least 2 SvgDecoration components, got ${lineSvgDecorations.length}`,
+assert.equal(
+  lineSvgDecorations.some((item) => (item.props.name as string | undefined)?.includes("侧边摘要容器")),
+  false,
+  "LineChart panel should not synthesize side summary container decoration",
+);
+assert.equal(
+  lineSvgDecorations.some((item) => (item.props.name as string | undefined)?.includes("底部结构线")),
+  false,
+  "LineChart panel should not synthesize bottom structure line decoration",
 );
 assert.ok(
   lineModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题")),

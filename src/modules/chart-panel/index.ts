@@ -94,6 +94,10 @@ type SideSummaryLayout = {
   useTwoLineSummary: boolean;
 };
 
+function layoutMode(input: ModuleInput): "manual" | "assisted" {
+  return input.layoutMode === "assisted" ? "assisted" : "manual";
+}
+
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -2039,7 +2043,9 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     getModuleDataRows(input) ??
     getChartDataRowsFromProps(slotProps(mainChartSlot)) ??
     deriveDataRowsFromAuxiliaryTexts(auxiliaryTextSlots);
+  const isAssistedLayout = layoutMode(input) === "assisted";
   const reserveDefaultSideSummary =
+    isAssistedLayout &&
     !isCartesianChart &&
     !isLiquidFill &&
     auxiliaryTextSlots.length === 0 &&
@@ -2055,14 +2061,18 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
   const effectiveDecorationSlots = decorationSlots;
   const effectiveAuxiliaryTextSlots =
     auxiliaryTextSlots.length > 0
-      ? normalizeAuxiliaryTextSlots(input, auxiliaryTextSlots, fallbackDataRows)
-      : createDefaultAuxiliaryTextSlots(
+      ? isAssistedLayout
+        ? normalizeAuxiliaryTextSlots(input, auxiliaryTextSlots, fallbackDataRows)
+        : auxiliaryTextSlots
+      : isAssistedLayout
+        ? createDefaultAuxiliaryTextSlots(
           input,
           fallbackDataRows,
           mainChartStyle,
           isThreeDPie,
           isCartesianChart || isLiquidFill,
-        );
+        )
+        : [];
 
   const componentProps: JsonObject[] = [];
 

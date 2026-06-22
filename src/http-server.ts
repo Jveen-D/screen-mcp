@@ -20,6 +20,10 @@ import {
 } from "./core/modules.js";
 import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
 import { generateFullScreenFromPrompt } from "./core/fullScreenPromptModule.js";
+import {
+  generateDashboardSchema,
+  validateDashboardSpec,
+} from "./core/dashboard.js";
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
@@ -34,7 +38,7 @@ function createServer() {
     },
     {
       instructions:
-        "This MCP server is the authoritative tool for large-screen/dashboard design schema generation. When the user asks in Chinese or English to generate, design, create, or modify a 大屏/看板/dashboard/module/chart panel/风险等级分析/销售分析, call this MCP instead of generating HTML, SVG-only mockups, React pages, or static prose. Prefer generate_full_screen_from_prompt when the user describes a full-screen dashboard with a theme but does not list individual components or zones (e.g. '生成一个水电站智慧运行监测大屏，1920×1080'); prefer generate_screen_module_from_prompt for terse single-module requests; prefer generate_module_tree_schema when structured module props are already available. AI always has design authority for backgrounds, textures, borders, and tech-style decorations: actively use SingleImage (AI-generated base64 backgrounds are allowed and encouraged) and SvgDecoration instead of only adjusting style.backgroundColor, unless the user explicitly prohibits decorations. For full-screen requests, fill the entire 1920×1080 canvas with modules: each module must have a visible title and visible SVG decorations; do not leave large blank areas unless the user explicitly asks for minimalism. Additional hard constraints: Indicator components must be wide enough to avoid line wrapping (min 280px, prefer 320px when showing title + digits + suffix); Weather components in a 1920×1080 header should be 280-300px wide to prevent line breaks; Gauge already renders its own value and suffix, so never overlay an extra SingleText for the same value, and always set the correct suffix (e.g. '%' for percentages, not the default 'km/h'); all panels/modules on the same screen must share consistent background colors, title badges, and border/decoration language. If the user asks for 完整schema, 完整 Schema, 完整JSON, full schema, or complete schema, the assistant's final answer must include the complete JSON returned by the MCP tool in a fenced json code block. Do not summarize, omit children, replace it with prose, or wrap it in a partial excerpt.",
+        "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; use layoutMode: 'assisted' only for legacy/demo flows that intentionally want automatic summaries. Hard constraints: SingleImage backgrounds must be the last child in sibling arrays; Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly.",
     },
   );
 
@@ -121,6 +125,23 @@ function createServer() {
     })
     .passthrough();
 
+  const dashboardSpecInput = z
+    .object({
+      logicalId: z.string().min(1).optional(),
+      title: z.string().min(1).optional(),
+      canvas: z
+        .object({
+          width: z.number().optional(),
+          height: z.number().optional(),
+        })
+        .passthrough()
+        .optional(),
+      theme: z.record(z.unknown()).optional(),
+      components: z.array(z.record(z.unknown())).optional(),
+      modules: z.array(z.record(z.unknown())).optional(),
+    })
+    .passthrough();
+
   server.registerTool("get_server_diagnostics", { title: "Get Server Diagnostics", description: "Return the running MCP server process diagnostics.", annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }, async () => asToolContent(serverDiagnostics()));
   server.registerTool("list_components", { title: "List Components", description: "List supported large-screen editor components for dashboard schema generation.", annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }, async () => asToolContent(listComponents()));
   server.registerTool("get_component_capability", { title: "Get Component Capability", description: "Return the AI-readable capability map for a large-screen editor component.", inputSchema: { componentName: z.string().min(1) }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }, async ({ componentName }) => { try { return asToolContent(getComponentCapability(componentName)); } catch (error) { return handleToolError(error); } });
@@ -131,7 +152,9 @@ function createServer() {
   server.registerTool("generate_module_schema", { title: "Generate Module Schema", description: "Generate complete large-screen editor component schemas from one module composition input.", inputSchema: moduleInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateModuleSchema(input as JsonObject)); } catch (error) { return handleToolError(error); } });
   server.registerTool("generate_module_tree_schema", { title: "Generate Dashboard Module Tree Schema", description: "Generate one editor-ready grouped large-screen/dashboard module tree schema.", inputSchema: moduleInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateModuleTreeSchema(input as JsonObject)); } catch (error) { return handleToolError(error); } });
   server.registerTool("generate_screen_module_from_prompt", { title: "Generate Screen Module From User Prompt", description: "Use this first for terse end-user requests such as 生成销售大屏, 做个风险等级分析.", inputSchema: promptModuleInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateScreenModuleFromPrompt(input as JsonObject)); } catch (error) { return handleToolError(error); } });
-  server.registerTool("generate_full_screen_from_prompt", { title: "Generate Full Screen Dashboard From Prompt", description: "Use this when the user asks for a complete full-screen dashboard with a theme.", inputSchema: fullScreenPromptInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateFullScreenFromPrompt(input as JsonObject)); } catch (error) { return handleToolError(error); } });
+  server.registerTool("validate_dashboard_spec", { title: "Validate Dashboard Spec", description: "Validate a LLM-authored DashboardSpec without generating a template.", inputSchema: dashboardSpecInput, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(validateDashboardSpec(input as JsonObject)); } catch (error) { return handleToolError(error); } });
+  server.registerTool("generate_dashboard_schema", { title: "Generate Dashboard Schema", description: "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. This tool compiles and validates the spec; it does not infer a full-screen layout from a prompt or apply a fixed dashboard template.", inputSchema: dashboardSpecInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateDashboardSchema(input as JsonObject)); } catch (error) { return handleToolError(error); } });
+  server.registerTool("generate_full_screen_from_prompt", { title: "Generate Full Screen Dashboard From Prompt", description: "Disabled for production generation because prompt-only full-screen generation encourages fixed templates. Create a DashboardSpec with LLM-chosen theme, modules, layout, and slots, then call generate_dashboard_schema.", inputSchema: fullScreenPromptInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateFullScreenFromPrompt(input as JsonObject)); } catch (error) { return handleToolError(error); } });
 
   return server;
 }

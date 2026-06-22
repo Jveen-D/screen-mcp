@@ -536,6 +536,7 @@ export function buildScreenModuleInputFromPrompt(input: JsonObject): JsonObject 
 
   return {
     moduleName: "ChartPanel",
+    layoutMode: "assisted",
     logicalId: inferLogicalId(prompt, input.logicalId),
     parentLogicalId:
       typeof input.parentLogicalId === "string" && input.parentLogicalId.trim() !== ""

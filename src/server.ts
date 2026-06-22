@@ -20,10 +20,14 @@ import {
 } from "./core/modules.js";
 import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
 import { generateFullScreenFromPrompt } from "./core/fullScreenPromptModule.js";
+import {
+  generateDashboardSchema,
+  validateDashboardSpec,
+} from "./core/dashboard.js";
 import type { EditorTreeNode, JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-17.02-spatial-sidecard";
+const RULES_VERSION = "2026-06-22.01-dashboard-spec-compiler";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -34,7 +38,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "This MCP server is the authoritative tool for large-screen/dashboard design schema generation. When the user asks in Chinese or English to generate, design, create, or modify a 大屏/看板/dashboard/module/chart panel/风险等级分析/销售分析, call this MCP instead of generating HTML, SVG-only mockups, React pages, or static prose. Prefer generate_full_screen_from_prompt when the user describes a full-screen dashboard with a theme but does not list individual components or zones (e.g. '生成一个水电站智慧运行监测大屏，1920×1080'); prefer generate_screen_module_from_prompt for terse single-module requests; prefer generate_module_tree_schema when structured module props are already available. AI always has design authority for backgrounds, textures, borders, and tech-style decorations: actively use SingleImage (AI-generated base64 backgrounds are allowed and encouraged) and SvgDecoration instead of only adjusting style.backgroundColor, unless the user explicitly prohibits decorations. For full-screen requests, fill the entire 1920×1080 canvas with modules: each module must have a visible title and visible SVG decorations; do not leave large blank areas unless the user explicitly asks for minimalism. Spatial design workflow: every dashboard must be planned from the canvas size down. First establish the module grid (zones, gutters, alignment), then decide each module's internal spatial structure (title safe area, main chart area, side/legend area, bottom conclusion/structure line area). Inside each ChartPanel module, use __Group__ subgroups to organize components by meaning (title group, center summary group, conclusion group, side-summary group, main chart group, decoration group, background group) so the editor tree is clear and spatial bounding boxes can be computed per group. AI must also maintain visual balance: auxiliary elements (legend, side summary, conclusion) should be distributed around the module rather than clustered on one side while leaving large empty zones; when a pie/ring module has many categories or a tall right-side empty area, prefer a right-side vertical legend with the side summary/conclusion placed at the bottom. For PieChart/RingChart, the chart container style.width/height may approach the full module area; control the actual pie position and size through series.center and series.radius rather than shrinking the chart container, and allow overlays as long as pie sectors and center values remain readable. Containers and decorations must be sized to fit their actual content and maintain safe margins; side-summary card backgrounds must first identify all summary elements (title, rows, color markers), compute their combined bounding box from x/y minima and maxima, then expand all four sides outward with uniform padding; do not use the raw bounding box as the background, do not expand only one side, and do not use a fixed percentage or full-module-height rectangle. Side-summary rows should default to single-line boxes (height = fontSize, lineHeight = 1); only switch to two-line layout for alarm-like panels or when the text truly cannot fit the available width, never force two-line mode merely because the side card is narrow. Do not stretch side-summary cards to fill the whole module height, do not let decorations overlap titles or conclusions, and do not let the side card overlap the main chart. Additional hard constraints: Indicator components must be wide enough to avoid line wrapping (min 280px, prefer 320px when showing title + digits + suffix) and must set numberStyle.lineHeight = 1 and titleStyle.lineHeight = 1 to prevent internal wrapping; Weather components in a 1920×1080 header should be 280-300px wide to prevent line breaks; Gauge already renders its own value and suffix, so never overlay an extra SingleText for the same value, and always explicitly set indicatorConfig.suffix to the correct business unit; SingleImage backgrounds must be the last child in any sibling group/children array (the renderer paints children in array order and earlier items are on top); all panels/modules on the same screen must share consistent background colors, title badges, and border/decoration language. If the user asks for 完整schema, 完整 Schema, 完整JSON, full schema, or complete schema, the assistant's final answer must include the complete JSON returned by the MCP tool in a fenced json code block. Do not summarize, omit children, replace it with prose, or ask the user to request the full schema again.",
+      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; use layoutMode: 'assisted' only for legacy/demo flows that intentionally want automatic summaries. Hard constraints: SingleImage backgrounds must be the last child in sibling arrays; Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
   },
 );
 
@@ -170,6 +174,23 @@ const fullScreenPromptInput = z
     logicalId: z.string().min(1).optional(),
     title: z.string().min(1).optional(),
     theme: z.record(z.unknown()).optional(),
+  })
+  .passthrough();
+
+const dashboardSpecInput = z
+  .object({
+    logicalId: z.string().min(1).optional(),
+    title: z.string().min(1).optional(),
+    canvas: z
+      .object({
+        width: z.number().optional(),
+        height: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+    theme: z.record(z.unknown()).optional(),
+    components: z.array(z.record(z.unknown())).optional(),
+    modules: z.array(z.record(z.unknown())).optional(),
   })
   .passthrough();
 
@@ -388,11 +409,55 @@ server.registerTool(
 );
 
 server.registerTool(
+  "validate_dashboard_spec",
+  {
+    title: "Validate Dashboard Spec",
+    description:
+      "Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, layout, and components. Returns errors and warnings such as missing fields, out-of-canvas modules, or overlapping top-level regions.",
+    inputSchema: dashboardSpecInput,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+    },
+  },
+  async (input) => {
+    try {
+      return asToolContent(validateDashboardSpec(input as JsonObject));
+    } catch (error) {
+      return handleToolError(error);
+    }
+  },
+);
+
+server.registerTool(
+  "generate_dashboard_schema",
+  {
+    title: "Generate Dashboard Schema",
+    description:
+      "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, chart choices, layout coordinates, copy, backgrounds, and decorations before calling this tool. This tool compiles and validates the spec; it does not infer a full-screen layout from a prompt or apply a fixed dashboard template.",
+    inputSchema: dashboardSpecInput,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false,
+    },
+  },
+  async (input) => {
+    try {
+      return asToolContent(generateDashboardSchema(input as JsonObject));
+    } catch (error) {
+      return handleToolError(error);
+    }
+  },
+);
+
+server.registerTool(
   "generate_full_screen_from_prompt",
   {
     title: "Generate Full Screen Dashboard From Prompt",
     description:
-      "Use this when the user asks for a complete full-screen dashboard with a theme but does not specify individual components or zones, e.g. '生成一个水电站智慧运行监测大屏，科技风深色主题，1920×1080'. It returns a root __Group__ sized 1920×1080 containing a full-screen SingleImage background, header, KPIs, and multiple ChartPanel modules that fill the canvas. The layout is planned spatially: module grid, gutters, and internal zones (title safe area, main chart area, side/legend area, bottom conclusion/structure line area) are computed from the canvas size, with side-summary card heights fitting their actual content rather than stretching to fill each module. ChartPanel modules are further organized into __Group__ subgroups by semantic meaning (title, center summary, conclusion, side summary, main chart, decoration, background). Every module has a visible title and SVG decorations, and the returned tree is post-processed so that SingleImage background children are moved to the end of every sibling list, preventing images from obscuring content. Do not generate HTML or hand-drawn SVG for these requests. If the user asks for 完整schema/full schema/complete schema/完整JSON, the final answer must paste the complete returned JSON object in a fenced json code block.",
+      "Disabled for production generation because prompt-only full-screen generation encourages fixed templates. Create a DashboardSpec with LLM-chosen theme, modules, layout, and slots, then call generate_dashboard_schema.",
     inputSchema: fullScreenPromptInput,
     annotations: {
       readOnlyHint: false,
