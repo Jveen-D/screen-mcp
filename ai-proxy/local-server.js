@@ -11,9 +11,9 @@
  *   http://localhost:3456/v1?target=https%3A%2F%2Fapi.openai.com%2Fv1
  */
 
-const http = require('node:http')
-const https = require('node:https')
-const url = require('node:url')
+import http from 'node:http'
+import https from 'node:https'
+import url from 'node:url'
 
 const PORT = process.env.PORT || 3456
 

@@ -7,7 +7,7 @@
  * 需要把下面的 API_KEY 替换成你的 Kimi Code API Key
  */
 
-const https = require('node:https')
+import https from 'node:https'
 
 const API_KEY = '你的KimiCodeApiKey'
 
