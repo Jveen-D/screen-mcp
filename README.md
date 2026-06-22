@@ -38,6 +38,63 @@ npm start
 
 Server 使用官方 `@modelcontextprotocol/sdk`，默认通过 stdio transport 工作。
 
+## 启动 HTTP MCP Server
+
+开发模式：
+
+```bash
+npm run dev:http
+```
+
+默认运行在 `http://localhost:3460`，SSE 端点为 `http://localhost:3460/sse`。
+
+Agent 配置示例：
+
+```json
+{
+  "mcpServers": {
+    "screen-mcp": {
+      "name": "screen-component-mcp",
+      "transport": "sse",
+      "url": "http://localhost:3460/sse"
+    }
+  }
+}
+```
+
+## 本地 AI 代理（浏览器开发用）
+
+`ai-proxy/` 提供了一个轻量本地代理，用于解决浏览器直接调用 Kimi Code API 等远程服务时的 CORS 限制。
+
+启动代理：
+
+```bash
+node ai-proxy/local-server.js
+```
+
+默认监听 `http://localhost:3456`。
+
+前端 Base URL 填写：
+
+```text
+http://localhost:3456/v1/messages?target=<目标 baseURL 的 URL 编码>
+```
+
+Kimi Code API 示例：
+
+```text
+http://localhost:3456/v1/messages?target=https%3A%2F%2Fapi.kimi.com%2Fcoding%2Fv1
+```
+
+代理会把请求转发到 `target` 指定的后端，并在响应中附加 CORS 头，允许前端跨域访问。
+
+目录结构：
+
+- `ai-proxy/local-server.js`：本地 Node.js 代理，开发时最常用
+- `ai-proxy/cloudflare-worker.js`：Cloudflare Worker 版本，可部署到边缘节点
+- `ai-proxy/vercel-edge-function.ts`：Vercel Edge Function 版本
+- `ai-proxy/test-kimi.js`：快速验证 Kimi Code API 连通性
+
 ## 用 MCP Inspector 测试
 
 ```bash
