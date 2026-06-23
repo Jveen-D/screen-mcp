@@ -75,7 +75,7 @@ export const freeformModuleCapability: JsonObject = {
           path: "grouping.mode",
           type: "enum",
           values: ["semantic", "none"],
-          description: "semantic=按语义分组；none=不创建语义分组，仅保证 SingleImage 背景在最后。",
+          description: "semantic=按语义分组，主内容组位于装饰和背景组之上；none=不创建语义分组，仅保证 SingleImage 背景在最后。",
         },
         {
           path: "grouping.singleChildGroup",
@@ -99,7 +99,7 @@ export const freeformModuleCapability: JsonObject = {
     "slots.children 中的每个组件使用画布绝对坐标，并应落在 module.style 定义的模块区域内；MCP 只编译，不重新排版。",
     "同一模块内需要可编辑的结构层级时，设置 grouping.singleChildGroup=true；否则只有同语义桶包含多个组件时才自动生成子分组。",
     "语义分组是通用规则：SingleImage 进入背景组，SvgDecoration 进入装饰组，标题类 SingleText/SvgDecoration 进入标题组，其余业务组件进入主内容组。",
-    "SingleImage 背景必须排在同级数组最后；当启用语义分组时，背景组也会排在模块子分组最后，避免遮挡真实内容。",
+    "主内容组必须排在装饰组和背景组之前，确保业务组件在顶层；SingleImage 背景必须排在同级数组最后，避免遮挡真实内容。",
     "FreeformModule 适合 KPI 指标区、表格区、地图区、视频区、控制区、混合信息卡等非标准图表面板；图表分析面板仍优先使用 ChartPanel。",
   ],
   examples: [
@@ -173,7 +173,7 @@ export const freeformModuleCapability: JsonObject = {
               componentName: "SingleImage",
               logicalId: "kpi_background",
               name: "指标背景",
-              imageBase64: "data:image/png;base64,...",
+              imageBase64: "data:image/png;base64,<user-provided-or-short-generated-texture>",
               opacity: 0.92,
               style: {
                 position: "absolute",

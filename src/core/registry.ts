@@ -52,6 +52,7 @@ import { infoPannelDefinition } from "../components/gaode-map-info-pannel/index.
 import { markerDefinition } from "../components/gaode-map-marker/index.js";
 import { polygonDefinition } from "../components/gaode-map-polygon/index.js";
 import { withBaseCapability } from "./baseCapability.js";
+import { compactComponentCapability } from "./capabilityCompact.js";
 import type { ComponentDefinition } from "../types/component.js";
 
 const definitions = [
@@ -118,7 +119,7 @@ export function listComponents() {
     businessType: definition.businessType,
     description:
       typeof definition.capability.description === "string"
-        ? definition.capability.description
+        ? definition.capability.description.slice(0, 96)
         : "",
   }));
 }
@@ -137,4 +138,8 @@ export function getComponentDefinition(componentName: string): ComponentDefiniti
 
 export function getComponentCapability(componentName: string) {
   return withBaseCapability(getComponentDefinition(componentName));
+}
+
+export function getCompactComponentCapability(componentName: string) {
+  return compactComponentCapability(getComponentCapability(componentName));
 }

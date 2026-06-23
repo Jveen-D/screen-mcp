@@ -1,5 +1,6 @@
 import { chartPanelDefinition } from "../modules/chart-panel/index.js";
 import { freeformModuleDefinition } from "../modules/freeform-module/index.js";
+import { compactModuleCapability } from "./capabilityCompact.js";
 import type { JsonObject } from "../types/component.js";
 import type { ModuleDefinition, ModuleInput } from "../types/module.js";
 
@@ -25,6 +26,10 @@ export function getModuleDefinition(moduleName: string): ModuleDefinition {
 
 export function getModuleCapability(moduleName: string): JsonObject {
   return getModuleDefinition(moduleName).capability;
+}
+
+export function getCompactModuleCapability(moduleName: string): JsonObject {
+  return compactModuleCapability(getModuleCapability(moduleName));
 }
 
 export function generateModuleSchema(input: JsonObject) {

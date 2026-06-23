@@ -4,10 +4,10 @@ export const singleImageCapability: JsonObject = {
   componentName: "SingleImage",
   displayName: "图片",
   description:
-    "用于大屏面板背景、全屏背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。AI 始终拥有设计权，可以主动生成轻量 base64 科技风背景/纹理；只有当用户明确禁止背景图或图片装饰时才放弃使用。",
+    "用于大屏面板背景、全屏背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。imageSrc 只能使用用户明确提供的路径，AI 不要猜测或选择现有素材库资源；没有素材时可用 style/SvgDecoration 表达轻量背景，只有确实需要图片纹理时才生成短 base64。",
 
   aiRole:
-    "AI 负责图片组件的位置、尺寸和图片来源，并始终保有主动设计权：只要有助于大屏视觉效果，就可以生成 base64 科技风背景/纹理/光效。MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责图片组件的位置、尺寸和图片来源。MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
 
   requiredProps: [
     {
@@ -49,13 +49,13 @@ export const singleImageCapability: JsonObject = {
     {
       path: "imageSrc",
       type: "string",
-      description: "图片资源路径。用于素材库或服务端已存在图片。",
+      description: "图片资源路径。只能在用户明确提供具体路径时填写；AI 不要自行编造或选择现有素材库路径。",
     },
     {
       path: "imageBase64",
       type: "string",
       description:
-        "base64 图片内容。AI 可主动生成轻量 base64 科技风渐变、网格、光效或纹理图作为设计的一部分；用户提供的素材优先，但没有素材时不必留白底。填写后 imageUseMode 必须为 base64。",
+        "base64 图片内容。优先使用用户提供的 base64；AI 自行生成时必须保持短小，只用于确实需要图片纹理/光效的场景。填写后 imageUseMode 必须为 base64。",
     },
     {
       path: "imageShowType",
@@ -91,30 +91,29 @@ export const singleImageCapability: JsonObject = {
   mergeRules: [
     "对象按 key 深合并。",
     "数组按下标深合并。",
-    "AI 可以主动生成轻量 base64 背景/纹理/光效作为设计的一部分，不必等待用户明确请求；只有当用户明确禁止图片、背景图或装饰时才不得生成。",
-    "用户提供的 imageSrc/imageBase64 优先使用；无素材时，AI 应自行设计并生成 base64，而不是回退到纯色 backgroundColor。",
-    "禁止生成不可访问的外部图片链接或照片级真实图片；base64 内容应为轻量矢量风格渐变、网格、光效或纹理。",
-    "只要设计需要背景/纹理/光效，就应使用 SingleImage 组件承载，而不是仅调整某个组件的 style.backgroundColor。除非用户明确要求极简/无图背景。",
+    "用户明确提供的 imageSrc/imageBase64 优先使用；无素材时优先考虑 style.backgroundColor 或 SvgDecoration，禁止自行选择现有素材库路径，只有确实需要图片纹理时才生成短 base64。",
+    "禁止生成不可访问的外部图片链接或照片级真实图片；自行生成的 base64 内容应为短小的矢量风格渐变、网格、光效或纹理。",
+    "需要真实图片素材、纹理或光效时使用 SingleImage；简单面板底色、边框和线性结构优先使用 style 或 SvgDecoration。",
     "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
     "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
     "当手动构建 __Group__ 的 children 数组时，必须把 SingleImage 背景图放在 children 末尾；generate_components_schemas 会自动把 SingleImage 排到最后，但手写 children 时需要显式保证。",
   ],
   visualRules: [
-    "AI 始终保有设计权：只要有助于大屏视觉，就应主动生成覆盖全屏或面板的 SingleImage 背景/纹理/光效，而不是只修改 style.backgroundColor。",
+    "AI 始终保有设计权：根据用户需求决定是否使用 SingleImage。不要为了默认科技感而生成长 base64。",
     "全屏背景图应覆盖整个画布（如 1920×1080），并位于 ComponentSchema[] 末尾作为最底层，避免遮挡内容。",
-    "生成的 base64 背景图应使用轻量矢量或简单纹理：深色渐变、科技网格、弱光晕、细边框，避免大尺寸照片级真实图片。",
+    "生成的 base64 背景图应使用短小矢量或简单纹理：深色渐变、科技网格、弱光晕、细边框，避免大尺寸照片级真实图片。",
     "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
     "在任意 __Group__ 的 children 数组中，覆盖全屏或全面板的 SingleImage 背景图必须是最后一个元素； decorative 光效/纹理如需置顶应使用 SvgDecoration 或提高 zIndex，而不是依靠数组顺序把 SingleImage 提前。",
-    "当用户明确说'不要背景图'、'不要图片'、'纯色背景'、'极简'时，才允许只用 style.backgroundColor；否则应使用 SingleImage。",
+    "当 style.backgroundColor 或 SvgDecoration 足以表达背景结构时，不必额外生成 SingleImage。",
   ],
   examples: [
     {
-      title: "科技面板背景图",
+      title: "用户提供的面板背景图",
       props: {
         componentName: "SingleImage",
         logicalId: "panel_bg_image",
         parentLogicalId: "sales_group",
-        name: "销售面板背景",
+        name: "用户提供背景",
         style: {
           position: "absolute",
           left: 48,
@@ -128,7 +127,7 @@ export const singleImageCapability: JsonObject = {
           borderColor: "rgba(0,0,0,0)",
         },
         imageUseMode: "upload",
-        imageSrc: "group1/M00/panel-bg-tech.png",
+        imageSrc: "<user-provided-image-src>",
         imageShowType: "noRepeat",
         opacity: 1,
       },

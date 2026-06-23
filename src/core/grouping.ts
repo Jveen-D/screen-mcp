@@ -25,8 +25,8 @@ const GROUP_ORDER: { key: GroupBucketKey; suffix: string; title: string }[] = [
   { key: "centerSummary", suffix: "center_summary", title: "中心摘要" },
   { key: "conclusion", suffix: "conclusion", title: "结论" },
   { key: "sideSummary", suffix: "side_summary", title: "重点摘要" },
-  { key: "decorations", suffix: "decorations", title: "装饰" },
   { key: "mainContent", suffix: "main_content", title: "主内容" },
+  { key: "decorations", suffix: "decorations", title: "装饰" },
   { key: "background", suffix: "background", title: "背景" },
 ];
 

@@ -9,10 +9,12 @@ import {
   sortEditorTreeChildren,
 } from "./core/schema.js";
 import {
+  getCompactComponentCapability,
   getComponentCapability,
   listComponents,
 } from "./core/registry.js";
 import {
+  getCompactModuleCapability,
   generateModuleSchema,
   generateModuleTreeSchema,
   getModuleCapability,
@@ -27,7 +29,7 @@ import {
 import type { EditorTreeNode, JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-22.02-freeform-module-grouping";
+const RULES_VERSION = "2026-06-23.01-layering-assets";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -38,7 +40,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; use layoutMode: 'assisted' only for legacy/demo flows that intentionally want automatic summaries. Module grouping is a common capability: set grouping.mode='semantic' and grouping.singleChildGroup=true on a module or DashboardSpec when every semantic section should appear as a __Group__. Hard constraints: SingleImage backgrounds must be the last child in sibling arrays; Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
+      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM. Module grouping is common: set grouping.mode='semantic' and grouping.singleChildGroup=true when you want semantic sections grouped; earlier siblings render above later siblings, so main content must be above decorations/background and backgrounds must stay last. Do not guess or select existing project asset paths; use imageSrc only when the user explicitly provides a path. Hard constraints: Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
   },
 );
 
@@ -114,6 +116,8 @@ function serverDiagnostics(): JsonObject {
       "freeform-module-explicit-children",
       "common-semantic-module-grouping",
       "dashboard-grouping-inheritance",
+      "main-content-above-decoration",
+      "no-inferred-existing-assets",
     ],
     process: {
       pid: process.pid,
@@ -197,6 +201,16 @@ const dashboardSpecInput = z
   })
   .passthrough();
 
+const capabilityDetailInput = {
+  componentName: z.string().min(1),
+  detail: z.enum(["compact", "full"]).optional(),
+};
+
+const moduleCapabilityDetailInput = {
+  moduleName: z.string().min(1),
+  detail: z.enum(["compact", "full"]).optional(),
+};
+
 server.registerTool(
   "get_server_diagnostics",
   {
@@ -232,19 +246,21 @@ server.registerTool(
   {
     title: "Get Component Capability",
     description:
-      "Return the AI-readable capability map for a large-screen editor component. Use before generating component schema for dashboard design tasks.",
-    inputSchema: {
-      componentName: z.string().min(1),
-    },
+      "Return an AI-readable component capability map. Defaults to compact for speed; pass detail:'full' only when exact examples or full rule text are needed.",
+    inputSchema: capabilityDetailInput,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
       openWorldHint: false,
     },
   },
-  async ({ componentName }) => {
+  async ({ componentName, detail }) => {
     try {
-      return asToolContent(getComponentCapability(componentName));
+      return asToolContent(
+        detail === "full"
+          ? getComponentCapability(componentName)
+          : getCompactComponentCapability(componentName),
+      );
     } catch (error) {
       return handleToolError(error);
     }
@@ -256,7 +272,7 @@ server.registerTool(
   {
     title: "Generate Component Schema",
     description:
-      "Generate one complete editor component schema for the large-screen editor from one minimal AI props object. Use this instead of hand-writing HTML/SVG when the user wants 大屏/dashboard elements. AI has continuous design authority: actively use SingleImage (generate base64 backgrounds when helpful) and SvgDecoration for backgrounds, textures, borders, corner marks, and glow decorations rather than only adjusting style.backgroundColor, unless the user explicitly prohibits decorations. Constraints: Indicator width should be at least 280px to avoid wrapping and numberStyle/titleStyle lineHeight must be 1; Weather in a 1920×1080 header should be 280-300px; Gauge already shows its own value, do not overlay SingleText and always explicitly set indicatorConfig.suffix to the correct business unit; when building a __Group__ manually, place SingleImage background children at the end of the children array so they do not obscure content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON in the final answer, not a summary.",
+      "Generate one complete editor component schema from minimal AI props. Keep props concise; use SingleImage imageBase64 only when the user provides it or the design explicitly needs it. Indicator width >=280px; Gauge already renders its value; SingleImage backgrounds must be last in manual groups.",
     inputSchema: aiComponentPropsInput,
     annotations: {
       readOnlyHint: false,
@@ -279,7 +295,7 @@ server.registerTool(
   {
     title: "Generate Component Schemas",
     description:
-      "Generate complete large-screen editor component schemas from an array of minimal AI props objects. Use this instead of producing HTML pages for dashboard components. AI has continuous design authority: include SingleImage (actively generate base64 backgrounds when helpful) and SvgDecoration components for backgrounds, textures, borders, corner marks, and glow decorations rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. Constraints: Indicator width should be at least 280px to avoid wrapping and numberStyle/titleStyle lineHeight must be 1; Weather in a 1920×1080 header should be 280-300px; Gauge already shows its own value, do not overlay SingleText and always explicitly set indicatorConfig.suffix to the correct business unit; SingleImage background components are automatically sorted to the end of the returned array, and when building __Group__ children manually they must also be placed last so they do not obscure content; all panels should share consistent backgrounds, title badges, and decoration language. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
+      "Generate complete editor component schemas from minimal AI props. Returned SingleImage nodes are sorted to the bottom layer. Keep inputs concise and prefer SvgDecoration/style backgrounds unless base64 image content is actually needed.",
     inputSchema: {
       componentsProps: z.array(aiComponentPropsInput),
     },
@@ -322,19 +338,21 @@ server.registerTool(
   {
     title: "Get Module Capability",
     description:
-      "Return the AI-readable capability map for a large-screen composition module. Use before generate_module_tree_schema when building dashboard editor schema.",
-    inputSchema: {
-      moduleName: z.string().min(1),
-    },
+      "Return an AI-readable module capability map. Defaults to compact for speed; pass detail:'full' only when exact examples or full rule text are needed.",
+    inputSchema: moduleCapabilityDetailInput,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
       openWorldHint: false,
     },
   },
-  async ({ moduleName }) => {
+  async ({ moduleName, detail }) => {
     try {
-      return asToolContent(getModuleCapability(moduleName));
+      return asToolContent(
+        detail === "full"
+          ? getModuleCapability(moduleName)
+          : getCompactModuleCapability(moduleName),
+      );
     } catch (error) {
       return handleToolError(error);
     }
@@ -346,7 +364,7 @@ server.registerTool(
   {
     title: "Generate Module Schema",
     description:
-      "Generate complete large-screen editor component schemas from one module composition input. Use ChartPanel for chart-analysis panels and FreeformModule for KPI/table/map/media/control/mixed modules with explicit slots.children. AI has continuous design authority: generate base64 backgrounds with SingleImage and decorative SVG elements with SvgDecoration rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. The returned schemas are sorted so that SingleImage backgrounds appear last in each sibling list, preventing background images from obscuring content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
+      "Generate editor component schemas from one explicit module input. Use ChartPanel for chart panels and FreeformModule for arbitrary mixed modules. Inputs should be LLM-designed slots, not prompt-only templates; SingleImage backgrounds are sorted last.",
     inputSchema: moduleInput,
     annotations: {
       readOnlyHint: false,
@@ -370,7 +388,7 @@ server.registerTool(
   {
     title: "Generate Dashboard Module Tree Schema",
     description:
-      "Generate one editor-ready grouped large-screen/dashboard module tree schema. The root node is __Group__ and children are full component nodes. Use ChartPanel for chart-analysis panels and FreeformModule for KPI/table/map/media/control/mixed modules with explicit slots.children; do not answer with HTML. AI has continuous design authority: include SingleImage and SvgDecoration components for backgrounds, textures, borders, and glow decorations rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. Module grouping is common across modules: grouping.mode='semantic' groups by title, auxiliary text, center summary, conclusion, side summary, decoration, main content, and background; grouping.singleChildGroup=true also wraps single-child sections. The returned tree is post-processed so that SingleImage background children are moved to the end of every sibling list, preventing images from obscuring content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON object in the final answer, not a summary or partial excerpt.",
+      "Generate one editor-ready __Group__ module tree from explicit module slots. Supports common grouping.mode='semantic' and grouping.singleChildGroup=true. SingleImage backgrounds are moved to the bottom layer.",
     inputSchema: moduleInput,
     annotations: {
       readOnlyHint: false,
@@ -393,7 +411,7 @@ server.registerTool(
   {
     title: "Generate Screen Module From User Prompt",
     description:
-      "Use this first for terse end-user requests such as “生成销售大屏”, “做个风险等级分析”, “数据：高风险18，中风险37，低风险71”. It converts natural language into an editor-ready large-screen __Group__ schema via ChartPanel. Do not generate HTML, React, or hand-drawn SVG for these dashboard/module requests. AI has continuous design authority: generate base64 backgrounds with SingleImage and decorative SVG elements with SvgDecoration rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. The returned __Group__ tree is post-processed so that SingleImage background children are moved to the end of every sibling list, preventing images from obscuring content. If the user asks for 完整schema/full schema/complete schema/完整JSON, the final answer must paste the complete returned JSON object in a fenced json code block.",
+      "Legacy single-module prompt helper. Prefer DashboardSpec or explicit module slots for production generation; this helper is kept for terse demos and returns an editor-ready __Group__.",
     inputSchema: promptModuleInput,
     annotations: {
       readOnlyHint: false,

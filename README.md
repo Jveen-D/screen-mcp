@@ -120,16 +120,18 @@ npx @modelcontextprotocol/inspector npm run dev
 生成单个组件时可依次调用：
 
 1. `list_components`
-2. `get_component_capability`，输入 `{ "componentName": "PieChart" }`
-3. `generate_components_schema`，输入 capability 示例里的 `props`
+2. `get_component_capability`，输入 `{ "componentName": "PieChart" }`，默认返回 compact 能力
+3. `generate_components_schema`，输入 LLM 自己设计的最小 props
 
-AI 应该按 `list_components -> get_component_capability -> generate_components_schema` 的顺序使用。先发现组件，再读取组件能力与约束，最后只提交 AI 可写的最小 props 给 MCP 生成完整 schema。
+AI 应该按 `list_components -> get_component_capability -> generate_components_schema` 的顺序使用。先发现组件，再读取组件能力与约束，最后只提交 AI 可写的最小 props 给 MCP 生成完整 schema。为提升速度，`get_component_capability` 默认省略 `examples`、长规则和完整视觉说明；只有调试组件能力或确实需要示例时才传 `{ "detail": "full" }`。
 
 生成一个完整面板模块时，AI 应该按以下顺序使用：
 
 1. `list_modules`
-2. `get_module_capability`，输入 `{ "moduleName": "ChartPanel" }` 或 `{ "moduleName": "FreeformModule" }`
+2. `get_module_capability`，输入 `{ "moduleName": "ChartPanel" }` 或 `{ "moduleName": "FreeformModule" }`，默认返回 compact 能力
 3. `generate_module_schema` 或 `generate_module_tree_schema`，输入模块级 props
+
+`get_module_capability` 默认只返回 slots、必要 props、分组能力和规则分组摘要，不返回完整 `layoutRules` 与示例。需要完整规则文本时显式传 `{ "detail": "full" }`。
 
 模块选择原则：
 
@@ -150,6 +152,8 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 ```
 
 `mode: "semantic"` 会按标题、辅助文本、中心摘要、结论、重点摘要、装饰、主内容、背景分组；`singleChildGroup: true` 表示即使某个语义分组里只有一个组件，也会包成 `__Group__`。如果在 DashboardSpec 顶层设置 `grouping`，所有没有单独设置 `grouping` 的模块都会继承该策略。
+
+层级顺序遵循编辑器渲染规则：同级数组越靠前越在顶层。语义分组会让主内容组排在装饰组和背景组之前，背景组始终最后，避免装饰或背景遮挡主图表、指标、表格等业务内容。`imageSrc` 只应在用户明确提供素材路径时使用；LLM 不应猜测或选择项目现有素材，现有素材主要用于大屏生成后由用户替换元素。
 
 生成整屏大屏时，推荐使用 DashboardSpec：
 

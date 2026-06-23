@@ -1922,7 +1922,7 @@ assert.ok(
 );
 assert.deepEqual(
   moduleSchemas.map((item) => item.componentName),
-  ["SingleText", "SingleText", "SvgDecoration", "PieChart", "SingleImage"],
+  ["SingleText", "SingleText", "PieChart", "SvgDecoration", "SingleImage"],
 );
 assert.deepEqual(
   moduleSchemas.map((item) => item.indexNum),
@@ -1930,8 +1930,8 @@ assert.deepEqual(
 );
 assertRandomizedId(moduleSchemas[0]?.businessElementId ?? "", "title", "module title id");
 assertRandomizedId(moduleSchemas[1]?.businessElementId ?? "", "aux_text_1", "module auxiliary text id");
-assertRandomizedId(moduleSchemas[2]?.businessElementId ?? "", "decoration_1", "module decoration id");
-assertRandomizedId(moduleSchemas[3]?.businessElementId ?? "", "main_chart", "module main chart id");
+assertRandomizedId(moduleSchemas[2]?.businessElementId ?? "", "main_chart", "module main chart id");
+assertRandomizedId(moduleSchemas[3]?.businessElementId ?? "", "decoration_1", "module decoration id");
 assertRandomizedId(moduleSchemas[4]?.businessElementId ?? "", "background", "module background id");
 const moduleTextDatasource = moduleSchemas[0]?.props.datasource as JsonObject;
 const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
@@ -3050,8 +3050,8 @@ assert.deepEqual(
   [
     "SingleText",
     "SingleText",
-    "SvgDecoration",
     "PieChart",
+    "SvgDecoration",
     "SingleImage",
   ],
 );
@@ -3065,7 +3065,7 @@ assert.ok(
   ),
   "module tree child parentLogicalId should reference randomized group id",
 );
-assertRandomizedId(moduleTreeSchema.children[3]?.id ?? "", "main_chart", "module tree chart id");
+assertRandomizedId(moduleTreeSchema.children[2]?.id ?? "", "main_chart", "module tree chart id");
 assertRandomizedId(moduleTreeSchema.children[0]?.id ?? "", "title", "module tree title id");
 assert.equal(moduleTreeSchema.children[0]?.isGroup, false);
 assert.equal(moduleTreeSchema.children[0]?.structVersion, "0.0.2");
@@ -3088,7 +3088,7 @@ assert.ok(
 );
 assert.deepEqual(
   groupedChartPanelTree.children.map((item) => item.title),
-  ["标题", "辅助文本", "装饰", "主内容", "背景"],
+  ["标题", "辅助文本", "主内容", "装饰", "背景"],
 );
 const groupedChartPanelNodes = flattenEditorNodes(groupedChartPanelTree as unknown as JsonObject);
 assert.ok(
@@ -3099,6 +3099,16 @@ assert.equal(
   groupedChartPanelTree.children.at(-1)?.title,
   "背景",
   "grouped ChartPanel tree should keep the background group last",
+);
+assert.equal(
+  groupedChartPanelTree.children.find((item) => item.title === "主内容")?.isGroup,
+  true,
+  "grouped ChartPanel tree should keep main content grouped above decorations",
+);
+assert.equal(
+  groupedChartPanelTree.children.find((item) => item.title === "装饰")?.isGroup,
+  true,
+  "grouped ChartPanel tree should keep decorations grouped below main content",
 );
 
 const freeformModuleInput: JsonObject = {
@@ -3202,7 +3212,7 @@ assert.equal(freeformTree.componentName, "__Group__");
 assert.equal(freeformTree.title, "核心指标");
 assert.deepEqual(
   freeformTree.children.map((item) => item.title),
-  ["标题", "装饰", "主内容", "背景"],
+  ["标题", "主内容", "装饰", "背景"],
   "FreeformModule should apply common semantic grouping",
 );
 assert.ok(
@@ -3213,6 +3223,11 @@ assert.equal(
   freeformTree.children.at(-1)?.title,
   "背景",
   "FreeformModule should keep the background group last",
+);
+assert.equal(
+  freeformTree.children.find((item) => item.title === "主内容")?.isGroup,
+  true,
+  "FreeformModule should keep main content above decorations",
 );
 const freeformNodes = flattenEditorNodes(freeformTree as unknown as JsonObject);
 assert.ok(
@@ -3472,24 +3487,27 @@ try {
     (tool) => tool.name === "generate_screen_module_from_prompt",
   );
   assert.ok(
-    promptEntryTool?.description?.includes("做个风险等级分析"),
-    "prompt entry tool should be discoverable for terse Chinese dashboard requests",
+    promptEntryTool?.description?.includes("Legacy single-module prompt helper") &&
+      promptEntryTool.description.includes("Prefer DashboardSpec"),
+    "prompt entry tool should be discoverable as a legacy helper while steering production use to DashboardSpec",
   );
   assert.ok(
-    promptEntryTool?.description?.includes("完整schema") &&
-      promptEntryTool.description.includes("complete schema") &&
-      promptEntryTool.description.includes("complete returned JSON object"),
-    "prompt entry tool should require full JSON output when user asks for complete schema",
+    promptEntryTool?.description &&
+      promptEntryTool.description.length < 260,
+    "prompt entry tool description should stay compact for faster model routing",
   );
   const moduleTreeTool = tools.tools.find(
     (tool) => tool.name === "generate_module_tree_schema",
   );
   assert.ok(
-    moduleTreeTool?.description?.includes("complete returned JSON object") &&
-      moduleTreeTool.description.includes("not a summary") &&
-      moduleTreeTool.description.includes("FreeformModule") &&
+    moduleTreeTool?.description?.includes("__Group__") &&
       moduleTreeTool.description.includes("grouping.singleChildGroup"),
-    "module tree tool should require complete JSON output when user asks for full schema",
+    "module tree tool should document grouped module tree generation compactly",
+  );
+  assert.ok(
+    moduleTreeTool?.description &&
+      moduleTreeTool.description.length < 360,
+    "module tree tool description should stay compact for faster model routing",
   );
 
   const diagnosticsResult = await client.callTool({
@@ -3502,7 +3520,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-22.02-freeform-module-grouping",
+    "2026-06-23.01-layering-assets",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -3670,6 +3688,7 @@ try {
     arguments: { componentName: "PieChart" },
   });
   const mcpCapability = readToolJson(capabilityResult);
+  assert.equal(mcpCapability.compact, true, "MCP capability should default to compact mode");
   assert.ok(
     Array.isArray(mcpCapability.requiredProps),
     "MCP capability has requiredProps",
@@ -3682,7 +3701,15 @@ try {
     Array.isArray(mcpCapability.aiForbiddenProps),
     "MCP capability has aiForbiddenProps",
   );
-  assert.ok(Array.isArray(mcpCapability.examples), "MCP capability has examples");
+  assert.equal(
+    Array.isArray(mcpCapability.examples),
+    false,
+    "compact MCP capability should omit examples for speed",
+  );
+  assert.ok(
+    typeof mcpCapability.exampleCount === "number" && mcpCapability.exampleCount > 0,
+    "compact MCP capability should expose omitted example count",
+  );
   const writableProps = mcpCapability.aiWritableProps as JsonObject[];
   const legendCapability = writableProps.find(
     (item) => item.path === "option.legend",
@@ -3691,6 +3718,15 @@ try {
   assert.ok(
     legendCapability.positionRules,
     "MCP capability should describe legend position rules",
+  );
+  const fullCapabilityResult = await client.callTool({
+    name: "get_component_capability",
+    arguments: { componentName: "PieChart", detail: "full" },
+  });
+  const fullMcpCapability = readToolJson(fullCapabilityResult);
+  assert.ok(
+    Array.isArray(fullMcpCapability.examples),
+    "MCP full capability should include examples when requested",
   );
 
   const toolResult = await client.callTool({
@@ -3742,10 +3778,33 @@ try {
     arguments: { moduleName: "ChartPanel" },
   });
   const mcpModuleCapability = readToolJson(moduleCapabilityResult);
+  assert.equal(
+    mcpModuleCapability.compact,
+    true,
+    "MCP module capability should default to compact mode",
+  );
   assert.ok(mcpModuleCapability.slots, "MCP module capability should include slots");
   assert.equal(
     (mcpModuleCapability.groupSchema as JsonObject).componentName,
     "__Group__",
+  );
+  assert.equal(
+    Array.isArray(mcpModuleCapability.layoutRules),
+    false,
+    "compact MCP module capability should omit full layoutRules for speed",
+  );
+  assert.ok(
+    Array.isArray(mcpModuleCapability.layoutRuleGroups),
+    "compact MCP module capability should retain layout rule group summaries",
+  );
+  const fullModuleCapabilityResult = await client.callTool({
+    name: "get_module_capability",
+    arguments: { moduleName: "ChartPanel", detail: "full" },
+  });
+  const fullMcpModuleCapability = readToolJson(fullModuleCapabilityResult);
+  assert.ok(
+    Array.isArray(fullMcpModuleCapability.layoutRules),
+    "MCP full module capability should include full layoutRules when requested",
   );
   const freeformCapabilityResult = await client.callTool({
     name: "get_module_capability",
@@ -3767,8 +3826,8 @@ try {
   assert.equal(toolModuleSchemas.length, 5);
   assert.equal(toolModuleSchemas[0].componentName, "SingleText");
   assert.equal(toolModuleSchemas[1].componentName, "SingleText");
-  assert.equal(toolModuleSchemas[2].componentName, "SvgDecoration");
-  assert.equal(toolModuleSchemas[3].componentName, "PieChart");
+  assert.equal(toolModuleSchemas[2].componentName, "PieChart");
+  assert.equal(toolModuleSchemas[3].componentName, "SvgDecoration");
   assert.equal(toolModuleSchemas[4].componentName, "SingleImage");
   assert.equal(
     toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "侧边摘要容器")),
@@ -3801,7 +3860,8 @@ try {
   assert.equal(toolModuleTreeSchema.structVersion, "0.0.0");
   assert.deepEqual(toolModuleTreeSchema.props, {});
   assert.equal(toolModuleTreeSchema.children.length, 5);
-  assert.equal(toolModuleTreeSchema.children[3].componentName, "PieChart");
+  assert.equal(toolModuleTreeSchema.children[2].componentName, "PieChart");
+  assert.equal(toolModuleTreeSchema.children[3].componentName, "SvgDecoration");
 
   const freeformModuleTreeResult = await client.callTool({
     name: "generate_module_tree_schema",
@@ -3813,7 +3873,7 @@ try {
   assert.equal(toolFreeformTree.title, "核心指标");
   assert.deepEqual(
     toolFreeformTree.children.map((item: JsonObject) => item.title),
-    ["标题", "装饰", "主内容", "背景"],
+    ["标题", "主内容", "装饰", "背景"],
     "MCP FreeformModule tree should apply common semantic grouping",
   );
 

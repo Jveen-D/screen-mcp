@@ -2088,11 +2088,11 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     componentProps.push(createAuxiliaryTextProps(input, slot, index));
   }
 
+  componentProps.push(mainChartProps);
+
   for (const [index, slot] of effectiveDecorationSlots.entries()) {
     componentProps.push(createDecorationProps(input, slot, index));
   }
-
-  componentProps.push(mainChartProps);
 
   if (effectiveBackgroundSlot) {
     componentProps.push(createBackgroundProps(input, effectiveBackgroundSlot));
