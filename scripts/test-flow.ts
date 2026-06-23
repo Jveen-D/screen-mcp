@@ -1469,6 +1469,10 @@ assert.ok(
   modules.some((moduleItem) => moduleItem.moduleName === "ChartPanel"),
   "list_modules should include ChartPanel",
 );
+assert.ok(
+  modules.some((moduleItem) => moduleItem.moduleName === "FreeformModule"),
+  "list_modules should include FreeformModule",
+);
 
 const moduleCapability = getModuleCapability("ChartPanel");
 assert.ok(moduleCapability.slots, "ChartPanel capability should include slots");
@@ -1760,6 +1764,21 @@ assert.ok(
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("禁止大面积高饱和纯色背景")),
   "ChartPanel should reject bright solid panel backgrounds",
+);
+const freeformModuleCapability = getModuleCapability("FreeformModule");
+assert.ok(freeformModuleCapability.slots, "FreeformModule capability should include slots");
+assert.equal(
+  (freeformModuleCapability.groupSchema as JsonObject).componentName,
+  "__Group__",
+);
+const freeformLayoutRules = freeformModuleCapability.layoutRules as string[];
+assert.ok(
+  freeformLayoutRules.some((rule) => rule.includes("不提供任何固定布局")),
+  "FreeformModule should not introduce templates",
+);
+assert.ok(
+  freeformLayoutRules.some((rule) => rule.includes("grouping.singleChildGroup=true")),
+  "FreeformModule should document single-child semantic grouping",
 );
 
 const chartPanelInput = {
@@ -3055,12 +3074,168 @@ assert.equal(
   moduleTreeSchema.children[0]?.id,
 );
 
+const groupedChartPanelTree = generateModuleTreeSchema({
+  ...chartPanelInput,
+  logicalId: "grouped_sales_channel_panel",
+  grouping: {
+    mode: "semantic",
+    singleChildGroup: true,
+  },
+} satisfies JsonObject);
+assert.ok(
+  groupedChartPanelTree.children.every((item) => item.componentName === "__Group__"),
+  "ChartPanel should group single semantic children when requested",
+);
+assert.deepEqual(
+  groupedChartPanelTree.children.map((item) => item.title),
+  ["标题", "辅助文本", "装饰", "主内容", "背景"],
+);
+const groupedChartPanelNodes = flattenEditorNodes(groupedChartPanelTree as unknown as JsonObject);
+assert.ok(
+  groupedChartPanelNodes.some((item) => item.componentName === "PieChart"),
+  "grouped ChartPanel tree should preserve the chart component",
+);
+assert.equal(
+  groupedChartPanelTree.children.at(-1)?.title,
+  "背景",
+  "grouped ChartPanel tree should keep the background group last",
+);
+
+const freeformModuleInput: JsonObject = {
+  moduleName: "FreeformModule",
+  logicalId: "kpi_panel",
+  parentLogicalId: "root",
+  title: "核心指标",
+  grouping: {
+    mode: "semantic",
+    singleChildGroup: true,
+  },
+  style: {
+    position: "absolute",
+    left: 600,
+    top: 100,
+    width: 360,
+    height: 180,
+  },
+  slots: {
+    children: [
+      {
+        componentName: "SingleText",
+        logicalId: "kpi_title",
+        name: "模块标题",
+        textContent: "核心指标",
+        style: {
+          position: "absolute",
+          left: 620,
+          top: 118,
+          width: 160,
+          height: 22,
+          fontSize: 22,
+          lineHeight: 1,
+        },
+      },
+      {
+        componentName: "Indicator",
+        logicalId: "revenue_indicator",
+        name: "销售额",
+        textValue: 128760,
+        titleName: "销售额",
+        suffix: true,
+        suffixTitle: "元",
+        titleStyle: {
+          lineHeight: 1,
+        },
+        numberStyle: {
+          lineHeight: 1,
+        },
+        style: {
+          position: "absolute",
+          left: 620,
+          top: 150,
+          width: 300,
+          height: 92,
+        },
+      },
+      {
+        componentName: "SvgDecoration",
+        logicalId: "kpi_border",
+        props: {
+          name: "指标面板边框",
+          svgSource: "custom",
+          svgContent:
+            '<svg viewBox="0 0 360 180" xmlns="http://www.w3.org/2000/svg"><path d="M1 24V1h80M359 156v23h-80" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+          style: {
+            position: "absolute",
+            left: 600,
+            top: 100,
+            width: 360,
+            height: 180,
+          },
+        },
+      },
+      {
+        componentName: "SingleImage",
+        logicalId: "kpi_background",
+        name: "指标背景",
+        imageBase64: "data:image/png;base64,KPIBACKGROUND",
+        opacity: 0.9,
+        style: {
+          position: "absolute",
+          left: 600,
+          top: 100,
+          width: 360,
+          height: 180,
+        },
+      },
+    ],
+  },
+};
+
+const freeformSchemas = generateModuleSchema(freeformModuleInput);
+assert.deepEqual(
+  freeformSchemas.map((item) => item.componentName),
+  ["SingleText", "Indicator", "SvgDecoration", "SingleImage"],
+  "FreeformModule should compile explicit children and keep background last",
+);
+const freeformTree = generateModuleTreeSchema(freeformModuleInput);
+assert.equal(freeformTree.componentName, "__Group__");
+assert.equal(freeformTree.title, "核心指标");
+assert.deepEqual(
+  freeformTree.children.map((item) => item.title),
+  ["标题", "装饰", "主内容", "背景"],
+  "FreeformModule should apply common semantic grouping",
+);
+assert.ok(
+  freeformTree.children.every((item) => item.componentName === "__Group__"),
+  "FreeformModule should group single semantic children when requested",
+);
+assert.equal(
+  freeformTree.children.at(-1)?.title,
+  "背景",
+  "FreeformModule should keep the background group last",
+);
+const freeformNodes = flattenEditorNodes(freeformTree as unknown as JsonObject);
+assert.ok(
+  freeformNodes.some((item) => item.componentName === "Indicator"),
+  "FreeformModule should preserve non-chart business components",
+);
+assert.ok(
+  freeformNodes
+    .filter((item) => item.componentName !== "__Group__")
+    .every((item) => (nodeProps(item).parentLogicalId as string | undefined) === freeformTree.id),
+  "FreeformModule child parentLogicalId should reference randomized module group id",
+);
+
 const dashboardSpec = {
   logicalId: "ops_dashboard",
   title: "运营洞察大屏",
   canvas: {
     width: 1280,
     height: 720,
+  },
+  grouping: {
+    mode: "semantic",
+    singleChildGroup: true,
   },
   theme: {
     primaryColor: "#28E0B9",
@@ -3155,12 +3330,27 @@ const dashboardSpec = {
         ],
       },
     },
+    {
+      ...freeformModuleInput,
+      logicalId: "dashboard_kpi_panel",
+      parentLogicalId: "ops_dashboard",
+      grouping: undefined,
+    },
   ],
 } as JsonObject;
 
 const dashboardValidation = validateDashboardSpec(dashboardSpec);
 assert.equal(dashboardValidation.valid, true, "DashboardSpec should validate");
 assert.deepEqual(dashboardValidation.errors, []);
+const invalidGroupingValidation = validateDashboardSpec({
+  ...dashboardSpec,
+  grouping: { mode: "template" },
+} as JsonObject);
+assert.equal(invalidGroupingValidation.valid, false);
+assert.ok(
+  (invalidGroupingValidation.errors as string[]).includes("grouping.mode must be semantic or none"),
+  "DashboardSpec validation should reject unknown grouping modes",
+);
 const dashboardTree = generateDashboardSchema(dashboardSpec);
 assert.equal(dashboardTree.componentName, "__Group__");
 assert.equal(dashboardTree.title, "运营洞察大屏");
@@ -3175,6 +3365,30 @@ assert.ok(
 assert.ok(
   dashboardNodes.some((item) => hasPropName(item, "AI自定义标题线")),
   "DashboardSpec compiler should preserve LLM-authored decorations",
+);
+const dashboardRiskModule = dashboardTree.children.find(
+  (item) => item.componentName === "__Group__" && item.title === "风险等级分析",
+);
+assert.ok(dashboardRiskModule, "DashboardSpec should include the ChartPanel module group");
+assert.ok(
+  Array.isArray(dashboardRiskModule.children),
+  "DashboardSpec ChartPanel module should include children",
+);
+assert.ok(
+  dashboardRiskModule.children.every((item) => item.componentName === "__Group__"),
+  "DashboardSpec grouping should be inherited by ChartPanel modules",
+);
+const dashboardKpiModule = dashboardTree.children.find(
+  (item) => item.componentName === "__Group__" && item.title === "核心指标",
+);
+assert.ok(dashboardKpiModule, "DashboardSpec should include the FreeformModule group");
+assert.ok(
+  Array.isArray(dashboardKpiModule.children),
+  "DashboardSpec FreeformModule should include children",
+);
+assert.ok(
+  dashboardKpiModule.children.every((item) => item.componentName === "__Group__"),
+  "DashboardSpec grouping should be inherited by FreeformModule modules",
 );
 
 const nodePath = process.execPath;
@@ -3243,7 +3457,9 @@ try {
   assert.ok(
     serverInstructions?.includes("LLM owns design decisions") &&
       serverInstructions.includes("DashboardSpec") &&
-      serverInstructions.includes("generate_dashboard_schema"),
+      serverInstructions.includes("generate_dashboard_schema") &&
+      serverInstructions.includes("FreeformModule") &&
+      serverInstructions.includes("grouping.singleChildGroup"),
     "MCP server instructions should steer full dashboards through LLM-authored DashboardSpec",
   );
   assert.ok(
@@ -3270,7 +3486,9 @@ try {
   );
   assert.ok(
     moduleTreeTool?.description?.includes("complete returned JSON object") &&
-      moduleTreeTool.description.includes("not a summary"),
+      moduleTreeTool.description.includes("not a summary") &&
+      moduleTreeTool.description.includes("FreeformModule") &&
+      moduleTreeTool.description.includes("grouping.singleChildGroup"),
     "module tree tool should require complete JSON output when user asks for full schema",
   );
 
@@ -3284,7 +3502,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-22.01-dashboard-spec-compiler",
+    "2026-06-22.02-freeform-module-grouping",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -3389,6 +3607,18 @@ try {
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("component-id-max-50-randomized"),
     "diagnostics should expose randomized component id fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("freeform-module-explicit-children"),
+    "diagnostics should expose FreeformModule fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("common-semantic-module-grouping"),
+    "diagnostics should expose common semantic grouping fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-grouping-inheritance"),
+    "diagnostics should expose DashboardSpec grouping inheritance fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,
@@ -3500,6 +3730,12 @@ try {
     ),
     "MCP list_modules should include ChartPanel",
   );
+  assert.ok(
+    listedModules.some(
+      (moduleItem: JsonObject) => moduleItem.moduleName === "FreeformModule",
+    ),
+    "MCP list_modules should include FreeformModule",
+  );
 
   const moduleCapabilityResult = await client.callTool({
     name: "get_module_capability",
@@ -3509,6 +3745,16 @@ try {
   assert.ok(mcpModuleCapability.slots, "MCP module capability should include slots");
   assert.equal(
     (mcpModuleCapability.groupSchema as JsonObject).componentName,
+    "__Group__",
+  );
+  const freeformCapabilityResult = await client.callTool({
+    name: "get_module_capability",
+    arguments: { moduleName: "FreeformModule" },
+  });
+  const mcpFreeformCapability = readToolJson(freeformCapabilityResult);
+  assert.ok(mcpFreeformCapability.slots, "MCP FreeformModule capability should include slots");
+  assert.equal(
+    (mcpFreeformCapability.groupSchema as JsonObject).componentName,
     "__Group__",
   );
 
@@ -3556,6 +3802,20 @@ try {
   assert.deepEqual(toolModuleTreeSchema.props, {});
   assert.equal(toolModuleTreeSchema.children.length, 5);
   assert.equal(toolModuleTreeSchema.children[3].componentName, "PieChart");
+
+  const freeformModuleTreeResult = await client.callTool({
+    name: "generate_module_tree_schema",
+    arguments: freeformModuleInput,
+  });
+  assert.equal(freeformModuleTreeResult.isError, undefined);
+  const toolFreeformTree = readToolJson(freeformModuleTreeResult);
+  assert.equal(toolFreeformTree.componentName, "__Group__");
+  assert.equal(toolFreeformTree.title, "核心指标");
+  assert.deepEqual(
+    toolFreeformTree.children.map((item: JsonObject) => item.title),
+    ["标题", "装饰", "主内容", "背景"],
+    "MCP FreeformModule tree should apply common semantic grouping",
+  );
 
   const dashboardValidationResult = await client.callTool({
     name: "validate_dashboard_spec",

@@ -4,7 +4,11 @@ import {
   toSchemaId,
   uniqueSchemaId,
 } from "../../core/schema.js";
-import type { EditorGroupNode, EditorTreeNode, JsonObject, JsonValue } from "../../types/component.js";
+import {
+  groupEditorTreeChildren,
+  resolveSemanticGroupingOptions,
+} from "../../core/grouping.js";
+import type { EditorGroupNode, JsonObject, JsonValue } from "../../types/component.js";
 import type {
   ModuleDefinition,
   ModuleInput,
@@ -2104,126 +2108,13 @@ export function generateChartPanelSchemas(rawInput: ModuleInput) {
   return generateChartPanelSchemasForInput(normalizeModuleInput(rawInput));
 }
 
-function createEditorGroup(
-  parentId: string,
-  suffix: string,
-  title: string,
-  children: EditorTreeNode[],
-): EditorGroupNode {
-  return {
-    id: uniqueSchemaId(`${parentId}_grp_${suffix}`, "fs"),
-    componentName: "__Group__",
-    structVersion: "0.0.0",
-    props: {},
-    title,
-    isHidden: false,
-    isLocked: false,
-    isGroup: true,
-    children,
-  };
-}
-
-/**
- * 按组件语义对 ChartPanel 模块内的子元素进行分组。
- * 分组后编辑器树更清晰，也便于按“重点摘要”“标题”等语义计算包围盒和空间关系。
- */
-function groupChartPanelChildren(
-  parentId: string,
-  children: EditorTreeNode[],
-): EditorTreeNode[] {
-  const buckets: Record<string, EditorTreeNode[]> = {
-    title: [],
-    auxiliary: [],
-    centerSummary: [],
-    conclusion: [],
-    sideSummary: [],
-    decorations: [],
-    mainChart: [],
-    background: [],
-  };
-
-  for (const child of children) {
-    const title = typeof child.title === "string" ? child.title : "";
-    const componentName = child.componentName;
-
-    if (componentName === "SingleImage") {
-      buckets.background.push(child);
-      continue;
-    }
-
-    if (
-      componentName !== "SingleText" &&
-      componentName !== "SvgDecoration"
-    ) {
-      buckets.mainChart.push(child);
-      continue;
-    }
-
-    if (
-      componentName === "SingleText" &&
-      (title === "模块标题" || /标题文本|主标题/.test(title))
-    ) {
-      buckets.title.push(child);
-      continue;
-    }
-
-    if (/标题承托|标题装饰|title[-_ ]?badge|标题背景/.test(title)) {
-      buckets.title.push(child);
-      continue;
-    }
-
-    if (/^(总数|中心指标说明|中心摘要数值|中心摘要说明)$/.test(title)) {
-      buckets.centerSummary.push(child);
-      continue;
-    }
-
-    if (/^(顶部结论|底部结论)$/.test(title)) {
-      buckets.conclusion.push(child);
-      continue;
-    }
-
-    if (/^侧边摘要/.test(title)) {
-      buckets.sideSummary.push(child);
-      continue;
-    }
-
-    if (componentName === "SvgDecoration") {
-      buckets.decorations.push(child);
-      continue;
-    }
-
-    buckets.auxiliary.push(child);
-  }
-
-  const groupOrder = [
-    { key: "title", title: "标题" },
-    { key: "auxiliary", title: "辅助文本" },
-    { key: "centerSummary", title: "中心摘要" },
-    { key: "conclusion", title: "结论" },
-    { key: "sideSummary", title: "重点摘要" },
-    { key: "decorations", title: "装饰" },
-    { key: "mainChart", title: "主图表" },
-    { key: "background", title: "背景" },
-  ];
-
-  const result: EditorTreeNode[] = [];
-  for (const { key, title } of groupOrder) {
-    const items = buckets[key];
-    if (items.length === 1) {
-      // 单个组件不需要再包一层分组，保持扁平
-      result.push(items[0]);
-    } else if (items.length > 1) {
-      result.push(createEditorGroup(parentId, key, title, items));
-    }
-  }
-
-  return result;
-}
-
 export function generateChartPanelTreeSchema(rawInput: ModuleInput): EditorGroupNode {
   const input = normalizeModuleInput(rawInput);
   const flatChildren = generateChartPanelSchemasForInput(input).map(componentSchemaToEditorNode);
-  const children = groupChartPanelChildren(input.logicalId, flatChildren);
+  const children = groupEditorTreeChildren(
+    flatChildren,
+    resolveSemanticGroupingOptions(input, input.logicalId),
+  );
 
   return {
     id: input.logicalId,

@@ -27,7 +27,7 @@ import {
 import type { EditorTreeNode, JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-22.01-dashboard-spec-compiler";
+const RULES_VERSION = "2026-06-22.02-freeform-module-grouping";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -38,7 +38,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; use layoutMode: 'assisted' only for legacy/demo flows that intentionally want automatic summaries. Hard constraints: SingleImage backgrounds must be the last child in sibling arrays; Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
+      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; use layoutMode: 'assisted' only for legacy/demo flows that intentionally want automatic summaries. Module grouping is a common capability: set grouping.mode='semantic' and grouping.singleChildGroup=true on a module or DashboardSpec when every semantic section should appear as a __Group__. Hard constraints: SingleImage backgrounds must be the last child in sibling arrays; Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
   },
 );
 
@@ -111,6 +111,9 @@ function serverDiagnostics(): JsonObject {
       "gauge-suffix-mandatory",
       "visible-svg-structure-decorations",
       "default-entry-animation-strategy",
+      "freeform-module-explicit-children",
+      "common-semantic-module-grouping",
+      "dashboard-grouping-inheritance",
     ],
     process: {
       pid: process.pid,
@@ -304,7 +307,7 @@ server.registerTool(
   {
     title: "List Modules",
     description:
-      "List supported large-screen composition modules such as ChartPanel. Use for user requests like 生成销售大屏, 风险等级分析, 做一个看板模块.",
+      "List supported large-screen composition modules such as ChartPanel and FreeformModule. Use ChartPanel for chart-analysis panels; use FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -343,7 +346,7 @@ server.registerTool(
   {
     title: "Generate Module Schema",
     description:
-      "Generate complete large-screen editor component schemas from one module composition input. For 大屏/看板/dashboard/chart panel requests, use this MCP instead of generating HTML. AI has continuous design authority: generate base64 backgrounds with SingleImage and decorative SVG elements with SvgDecoration rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. The returned schemas are sorted so that SingleImage backgrounds appear last in each sibling list, preventing background images from obscuring content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
+      "Generate complete large-screen editor component schemas from one module composition input. Use ChartPanel for chart-analysis panels and FreeformModule for KPI/table/map/media/control/mixed modules with explicit slots.children. AI has continuous design authority: generate base64 backgrounds with SingleImage and decorative SVG elements with SvgDecoration rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. The returned schemas are sorted so that SingleImage backgrounds appear last in each sibling list, preventing background images from obscuring content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON array in the final answer, not a summary.",
     inputSchema: moduleInput,
     annotations: {
       readOnlyHint: false,
@@ -367,7 +370,7 @@ server.registerTool(
   {
     title: "Generate Dashboard Module Tree Schema",
     description:
-      "Generate one editor-ready grouped large-screen/dashboard module tree schema. The root node is __Group__ and children are full component nodes. This is the preferred tool when the user asks to generate a 大屏模块/看板模块/风险等级分析/销售分析; do not answer with HTML. AI has continuous design authority: include SingleImage (actively generate base64 backgrounds when helpful) and SvgDecoration components for backgrounds, textures, borders, and glow decorations rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. The module must respect spatial structure: title safe area, main chart area, side/legend area, and bottom conclusion/structure line area must not overlap, and side-summary card heights must fit their actual content rather than stretching to fill the module. ChartPanel output is organized into __Group__ subgroups by semantic meaning (title, center summary, conclusion, side summary, main chart, decoration, background) to keep the editor tree clear and spatial relationships explicit. The returned tree is post-processed so that SingleImage background children are moved to the end of every sibling list, preventing images from obscuring content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON object in the final answer, not a summary or partial excerpt.",
+      "Generate one editor-ready grouped large-screen/dashboard module tree schema. The root node is __Group__ and children are full component nodes. Use ChartPanel for chart-analysis panels and FreeformModule for KPI/table/map/media/control/mixed modules with explicit slots.children; do not answer with HTML. AI has continuous design authority: include SingleImage and SvgDecoration components for backgrounds, textures, borders, and glow decorations rather than only setting style.backgroundColor, unless the user explicitly prohibits decorations. Module grouping is common across modules: grouping.mode='semantic' groups by title, auxiliary text, center summary, conclusion, side summary, decoration, main content, and background; grouping.singleChildGroup=true also wraps single-child sections. The returned tree is post-processed so that SingleImage background children are moved to the end of every sibling list, preventing images from obscuring content. If the user asks for 完整schema/full schema/complete schema, include the complete returned JSON object in the final answer, not a summary or partial excerpt.",
     inputSchema: moduleInput,
     annotations: {
       readOnlyHint: false,
@@ -413,7 +416,7 @@ server.registerTool(
   {
     title: "Validate Dashboard Spec",
     description:
-      "Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, layout, and components. Returns errors and warnings such as missing fields, out-of-canvas modules, or overlapping top-level regions.",
+      "Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, layout, components, and optional grouping. Returns errors and warnings such as missing fields, invalid grouping mode, out-of-canvas modules, or overlapping top-level regions.",
     inputSchema: dashboardSpecInput,
     annotations: {
       readOnlyHint: true,
@@ -435,7 +438,7 @@ server.registerTool(
   {
     title: "Generate Dashboard Schema",
     description:
-      "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, chart choices, layout coordinates, copy, backgrounds, and decorations before calling this tool. This tool compiles and validates the spec; it does not infer a full-screen layout from a prompt or apply a fixed dashboard template.",
+      "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, chart choices, layout coordinates, copy, backgrounds, decorations, and optional grouping before calling this tool. DashboardSpec.grouping is inherited by modules that do not define their own grouping. This tool compiles and validates the spec; it does not infer a full-screen layout from a prompt or apply a fixed dashboard template.",
     inputSchema: dashboardSpecInput,
     annotations: {
       readOnlyHint: false,

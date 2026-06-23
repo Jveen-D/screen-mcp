@@ -1,0 +1,31 @@
+---
+description: Screen MCP project rules for every AI-assisted edit
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# Screen MCP Project Rules
+
+Before changing this project, follow the root `AGENTS.md`.
+
+Key constraints:
+
+- This MCP is a capability compiler, not a template generator.
+- LLM decides theme, colors, modules, layout, copy, decorations, and component composition.
+- MCP exposes capabilities, validates specs, merges default props, and compiles editor schemas.
+- Do not add fixed industry/theme/layout templates or keyword-to-template routing.
+- Do not make repeated prompts reuse a stored or hardcoded dashboard style.
+- Prefer capability descriptions, validators, normalization, schema compilation, and focused tests.
+- `ChartPanel` is only a chart analysis panel.
+- Use or improve `FreeformModule` for arbitrary KPI/table/map/media/control/mixed modules.
+- Common semantic grouping applies to all modules, not only `ChartPanel`.
+- Dashboard-level `grouping` should be inherited by modules that do not define their own grouping.
+
+Run relevant verification after code changes:
+
+```bash
+npm run build
+npm run test:flow
+```
+

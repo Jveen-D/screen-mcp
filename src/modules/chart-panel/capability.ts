@@ -82,6 +82,25 @@ export const chartPanelCapability: JsonObject = {
       type: "object",
       description: "模块主题色，用于映射标题、图表色板和 SVG 装饰。",
     },
+    {
+      path: "grouping",
+      type: "object",
+      description:
+        "模块内语义分组策略。默认按语义分桶，但单组件桶保持扁平；设置 singleChildGroup: true 时，标题、主内容、背景等单组件语义区也会包成 __Group__。",
+      children: [
+        {
+          path: "grouping.mode",
+          type: "enum",
+          values: ["semantic", "none"],
+          description: "semantic=按语义分组；none=不创建语义分组，仅保证 SingleImage 背景在最后。",
+        },
+        {
+          path: "grouping.singleChildGroup",
+          type: "boolean",
+          description: "true 时单个组件也会包成语义 __Group__。",
+        },
+      ],
+    },
   ],
   slots: {
     background: {
@@ -120,7 +139,7 @@ export const chartPanelCapability: JsonObject = {
   },
   layoutRules: [
     "大屏设计必须从画布尺寸出发进行空间规划：在生成模块之前，先确定模块网格（模块数量、left/top/width/height、统一间距），再规划每个模块的内部空间（标题安全区、主图区、侧边摘要/图例区、底部结论/结构线区）；禁止组件随意堆叠、压盖或悬浮。",
-    "ChartPanel 模块内应按语义对子组件分组，例如：标题组、中心摘要组、结论组、重点摘要组、主图表组、装饰组、背景组。分组后编辑器树更清晰，也便于按组识别哪些元素属于同一个部分，再对组内元素计算包围盒和空间关系；但分组内只有一个组件时不必额外包一层分组，避免无意义嵌套。",
+    "ChartPanel 模块内应按语义对子组件分组，例如：标题组、中心摘要组、结论组、重点摘要组、主图表组、装饰组、背景组。分组后编辑器树更清晰，也便于按组识别哪些元素属于同一个部分，再对组内元素计算包围盒和空间关系；默认分组内只有一个组件时保持扁平，设置 grouping.singleChildGroup=true 时单组件语义区也会包成 __Group__。",
     "每个模块的容器、背景和装饰必须按实际内容和可用空间计算尺寸，不能把少量摘要撑成过高空框，也不能让右侧摘要卡、图例、底部结论或主图相互重叠；右侧摘要卡高度必须跟随摘要条数和行高收敛。",
     "AI 必须把模块内所有辅助元素（legend、重点摘要、结论）作为整体空间规划，不能只把 legend 压底部、重点摘要挤右上角；当右侧出现大面积空置时，应主动把 legend 改为右侧垂直布局，把重点摘要/结论挪到底部或左侧，避免半边拥挤、半边空白。",
     "模块内部必须保持视觉平衡：主图应位于视觉重心，辅助元素应分散填充四角/四边；禁止所有辅助信息扎堆在同一侧，导致另一侧长期空置。",

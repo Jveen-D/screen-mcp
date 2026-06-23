@@ -1,8 +1,9 @@
 import { chartPanelDefinition } from "../modules/chart-panel/index.js";
+import { freeformModuleDefinition } from "../modules/freeform-module/index.js";
 import type { JsonObject } from "../types/component.js";
 import type { ModuleDefinition, ModuleInput } from "../types/module.js";
 
-const modules = [chartPanelDefinition] satisfies ModuleDefinition[];
+const modules = [chartPanelDefinition, freeformModuleDefinition] satisfies ModuleDefinition[];
 
 export function listModules() {
   return modules.map((definition) => ({

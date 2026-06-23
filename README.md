@@ -14,6 +14,7 @@
 当前内置模块：
 
 - `ChartPanel`
+- `FreeformModule`
 
 ## 安装依赖
 
@@ -127,10 +128,28 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 生成一个完整面板模块时，AI 应该按以下顺序使用：
 
 1. `list_modules`
-2. `get_module_capability`，输入 `{ "moduleName": "ChartPanel" }`
+2. `get_module_capability`，输入 `{ "moduleName": "ChartPanel" }` 或 `{ "moduleName": "FreeformModule" }`
 3. `generate_module_schema` 或 `generate_module_tree_schema`，输入模块级 props
 
+模块选择原则：
+
+- `ChartPanel` 是图表分析面板模块，主内容由 `slots.mainChart` 承载，适合饼图、柱状图、折线图、玫瑰图、散点图等图表分析面板。
+- `FreeformModule` 是自由模块，不生成固定布局和默认装饰，只把 LLM 在 `slots.children` 中明确提供的任意组件编译成模块树，适合 KPI、表格、地图、媒体、控制器和混合信息卡。
+
 `ChartPanel` 默认是 manual 编译模式：只编排 LLM 显式提供的 slots。背景、标题承托、面板边框、侧边容器、底部结构线等装饰应由 LLM 放入 `slots.background` / `slots.decorations`，MCP 不再自动套固定装饰模板。`layoutMode: "assisted"` 仅用于旧 demo 或单模块 prompt 流程，保留中心摘要、侧边摘要文本和色标等辅助生成能力。
+
+所有模块都支持通用语义分组：
+
+```json
+{
+  "grouping": {
+    "mode": "semantic",
+    "singleChildGroup": true
+  }
+}
+```
+
+`mode: "semantic"` 会按标题、辅助文本、中心摘要、结论、重点摘要、装饰、主内容、背景分组；`singleChildGroup: true` 表示即使某个语义分组里只有一个组件，也会包成 `__Group__`。如果在 DashboardSpec 顶层设置 `grouping`，所有没有单独设置 `grouping` 的模块都会继承该策略。
 
 生成整屏大屏时，推荐使用 DashboardSpec：
 
@@ -146,6 +165,10 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
   "logicalId": "ops_dashboard",
   "title": "运营洞察大屏",
   "canvas": { "width": 1920, "height": 1080 },
+  "grouping": {
+    "mode": "semantic",
+    "singleChildGroup": true
+  },
   "theme": {
     "primaryColor": "#28E0B9",
     "secondaryColor": "#2F80ED",
@@ -182,6 +205,33 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
           }
         }
       }
+    },
+    {
+      "moduleName": "FreeformModule",
+      "logicalId": "kpi_panel",
+      "title": "核心指标",
+      "style": { "position": "absolute", "left": 600, "top": 120, "width": 360, "height": 180 },
+      "slots": {
+        "children": [
+          {
+            "componentName": "SingleText",
+            "logicalId": "kpi_title",
+            "name": "模块标题",
+            "textContent": "核心指标",
+            "style": { "position": "absolute", "left": 620, "top": 138, "width": 160, "height": 22, "fontSize": 22, "lineHeight": 1 }
+          },
+          {
+            "componentName": "Indicator",
+            "logicalId": "revenue_indicator",
+            "name": "销售额",
+            "textValue": 128760,
+            "titleName": "销售额",
+            "suffix": true,
+            "suffixTitle": "元",
+            "style": { "position": "absolute", "left": 620, "top": 170, "width": 300, "height": 92 }
+          }
+        ]
+      }
     }
   ]
 }
@@ -198,11 +248,13 @@ npm run test:flow
 测试会验证：
 
 - `list_components` 能返回 `PieChart`
-- `list_modules` 能返回 `ChartPanel`
+- `list_modules` 能返回 `ChartPanel` 和 `FreeformModule`
 - `get_component_capability("PieChart")` 能返回 `requiredProps`、`aiWritableProps`、`aiForbiddenProps`、`examples`
 - `get_module_capability("ChartPanel")` 能返回模块 slots 和布局规则
+- `get_module_capability("FreeformModule")` 能返回自由模块 slots 和分组规则
 - 使用 capability 示例 props 生成完整 schema
-- 使用 `generate_module_schema` 生成完整图表面板 schema 数组
+- 使用 `generate_module_schema` 生成完整图表面板和自由模块 schema 数组
+- 使用 `grouping.singleChildGroup` 生成单组件语义分组
 - 使用 `validate_dashboard_spec` / `generate_dashboard_schema` 走通整屏编译流程
 - `generate_full_screen_from_prompt` 保持禁用，避免 prompt-only 固定模板生成
 - `chartData.sourceType` 仍然是 `constant`

@@ -95,6 +95,7 @@ function compileModule(
   item: JsonObject,
   parentId: string,
   theme: JsonObject | undefined,
+  grouping: JsonObject | undefined,
 ): EditorTreeNode {
   if (typeof item.moduleName !== "string" || item.moduleName.trim() === "") {
     throw new Error("dashboard module missing moduleName");
@@ -104,7 +105,12 @@ function compileModule(
     throw new Error(`dashboard module ${item.moduleName} missing logicalId`);
   }
 
-  return generateModuleTreeSchema(withParentAndTheme(item, parentId, theme));
+  const moduleInput = withParentAndTheme(item, parentId, theme);
+  if (grouping && !isJsonObject(moduleInput.grouping)) {
+    moduleInput.grouping = grouping;
+  }
+
+  return generateModuleTreeSchema(moduleInput);
 }
 
 function rectFromItem(item: JsonObject, fallbackId: string): Rect | undefined {
@@ -150,6 +156,7 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   const canvas = canvasSize(input);
   const components = asArray(input.components);
   const modules = asArray(input.modules);
+  const grouping = isJsonObject(input.grouping) ? input.grouping : undefined;
   const rects: Rect[] = [];
 
   if (components.length === 0 && modules.length === 0) {
@@ -158,6 +165,15 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
 
   if (canvas.width <= 0 || canvas.height <= 0) {
     errors.push("canvas width and height must be positive numbers");
+  }
+
+  if (
+    grouping &&
+    grouping.mode !== undefined &&
+    grouping.mode !== "semantic" &&
+    grouping.mode !== "none"
+  ) {
+    errors.push("grouping.mode must be semantic or none");
   }
 
   components.forEach((component, index) => {
@@ -227,11 +243,12 @@ export function generateDashboardSchema(input: JsonObject): EditorGroupNode {
   const rootId = dashboardRootId(input);
   const canvas = canvasSize(input);
   const theme = isJsonObject(input.theme) ? input.theme : undefined;
+  const grouping = isJsonObject(input.grouping) ? input.grouping : undefined;
   const components = asArray(input.components);
   const modules = asArray(input.modules);
   const children: EditorTreeNode[] = [
     ...components.map((component) => compileComponent(component, rootId)),
-    ...modules.map((module) => compileModule(module, rootId, theme)),
+    ...modules.map((module) => compileModule(module, rootId, theme, grouping)),
   ];
 
   const root: EditorGroupNode = {
