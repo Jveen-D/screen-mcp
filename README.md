@@ -4,6 +4,17 @@
 
 核心原则：LLM 负责设计决策，MCP 负责能力说明、校验、默认组件 props 合并和 schema 编译。整屏大屏不再由 MCP 根据 prompt 套固定模板生成。
 
+## 项目意图
+
+`screen-component-mcp` 的定位是大屏编辑器 schema 的能力编译器，而不是大屏模板生成器。它要解决的问题是：大屏编辑器 schema 结构复杂，LLM 直接输出完整 schema 容易遗漏字段、层级错误或覆盖默认配置；但如果 MCP 根据 prompt 固定套模板，又会限制 LLM 的设计自由。
+
+因此项目采用清晰的职责拆分：
+
+- LLM 负责完整设计：主题、颜色、模块列表、布局坐标、图表类型、文案、背景、装饰和组件组合。
+- MCP 负责工程化编译：暴露组件/模块能力，校验 `DashboardSpec`，合并默认 props，规范 ID、父子关系和层级顺序，输出编辑器可直接使用的完整 schema。
+- 生产整屏流程以 `DashboardSpec` 为中心：LLM 先设计完整 spec，可选调用 `validate_dashboard_spec` 检查结构，再调用 `generate_dashboard_schema` 编译。
+- 项目不沉淀行业模板、主题模板、布局模板或关键词到模板的映射；新增能力应优先增强能力说明、校验、规范化、编译和测试。
+
 当前内置组件：
 
 - `PieChart`
