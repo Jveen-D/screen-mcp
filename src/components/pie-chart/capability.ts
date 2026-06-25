@@ -6,7 +6,7 @@ export const pieChartCapability: JsonObject = {
   description:
     "用于展示分类占比、构成比例和环形占比关系的 ECharts 饼图组件。",
   aiRole:
-    "AI 负责生成组件布局、视觉表达和可选的 chartData.constant.data 语义数据；MCP 会补齐完整 props 与有效 chartData。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责生成组件布局、视觉表达和真实 chartData.constant.data 语义数据；MCP 会补齐完整 props 与有效 chartData，但不会回退到默认“类目N/系列”演示数据。组件层级由最终 schema 数组顺序决定。",
   requiredProps: [
     {
       path: "componentName",
@@ -168,8 +168,8 @@ export const pieChartCapability: JsonObject = {
   ],
   mergeRules: [
     "option.series[0].type 固定为 'pie'，即使 AI 输入其他值也会被 MCP 归一化为 'pie'。",
-    "option.dataset 会被 MCP 移除；饼图数据由默认 chartData 或外部数据源替换链路提供。",
-    "AI 可填写 chartData.constant.data；MCP 会归一化为完整有效的 constant chartData，并同步 originalData。",
+    "option.dataset 会被 MCP 移除；饼图数据由 AI 提供的 chartData.constant.data 或外部数据源替换链路提供。",
+    "AI 必须填写真实 chartData.constant.data；MCP 会归一化为完整有效的 constant chartData，并同步 originalData。",
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "option.series[0] 只写 radius 时，会保留默认 type、label、itemStyle。",
@@ -198,6 +198,16 @@ export const pieChartCapability: JsonObject = {
         logicalId: "theme_pie_chart",
         parentLogicalId: "screen_group",
         name: "主题化占比图",
+        chartData: {
+          constant: {
+            data: [
+              { name: "直销", type: "渠道", value: 128 },
+              { name: "代理", type: "渠道", value: 96 },
+              { name: "线上", type: "渠道", value: 76 },
+              { name: "门店", type: "渠道", value: 54 },
+            ],
+          },
+        },
         style: {
           left: 80,
           top: 160,

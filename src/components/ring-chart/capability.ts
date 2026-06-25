@@ -308,6 +308,7 @@ export const ringChartCapability: JsonObject = {
     "legend 默认必须保留，除非用户明确要求隐藏。动态数据下 legend 承担完整分类展示和点击切换能力，右侧摘要卡不能替代 legend。",
     "legend 的位置要承担结构功能：放在标题下方时用于承接标题和图表；放在底部时必须和图表主体、外部 label、底部装饰留出足够距离；放在侧边时要给主图留出足够空间。",
     "处理环形图挤压时优先联动三类能力：legend.offsetX/offsetY 微调图例、series[0].center 调整圆心、series[0].radius 调整内外半径。不要只依赖扩大组件、隐藏 legend、关闭 label 或限制数据项个数。",
+    "当 RingChart 宽度小于 420px、高度小于 220px 或数据项不少于 5 项，且同时使用底部 legend 与外部 label 时，应主动缩小 outerRadius、上移 centerY、压缩 legend itemGap 和 labelLine，避免 label 与 legend 重叠。",
     "AI 必须根据指标业务含义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName，如“销售额”“客户数”“完成量”，不能保留默认值“value”；该名称会用于图例和提示框展示。",
     "标签较多或分类名较长时，应适当设置 option.series[0].labelLine.length（建议 8-16），避免引出线过短导致标签与图形主体重叠。",
     "内环、外环装饰与环形文字属于增强表达，应与整体视觉风格统一；不需要装饰时保持关闭，避免过度堆砌。",

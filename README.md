@@ -149,7 +149,7 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 - `ChartPanel` 是图表分析面板模块，主内容由 `slots.mainChart` 承载，适合饼图、柱状图、折线图、玫瑰图、散点图等图表分析面板。
 - `FreeformModule` 是自由模块，不生成固定布局和默认装饰，只把 LLM 在 `slots.children` 中明确提供的任意组件编译成模块树，适合 KPI、表格、地图、媒体、控制器和混合信息卡。
 
-`ChartPanel` 默认是 manual 编译模式：只编排 LLM 显式提供的 slots。背景、标题承托、面板边框、侧边容器、底部结构线等装饰应由 LLM 放入 `slots.background` / `slots.decorations`，MCP 不再自动套固定装饰模板。`layoutMode: "assisted"` 仅用于旧 demo 或单模块 prompt 流程，保留中心摘要、侧边摘要文本和色标等辅助生成能力。
+`ChartPanel` 默认是 manual 编译模式：只编排 LLM 显式提供的 slots。背景、标题承托、面板边框、侧边容器、底部结构线等装饰应由 LLM 放入 `slots.background` / `slots.decorations`，关键洞察、中心指标、侧边摘要或底部结论应由 LLM 放入 `slots.auxiliaryTexts`。MCP 不再自动套固定装饰模板，也不会在 manual 模式下自动补业务辅助文案；无论通过 DashboardSpec 还是直接调用模块生成工具，缺少 `slots.auxiliaryTexts` 的 manual `ChartPanel` 都会被拒绝。`layoutMode: "assisted"` 仅用于旧 demo 或单模块 prompt 流程，保留中心摘要、侧边摘要文本和色标等辅助生成能力。
 
 所有模块都支持通用语义分组：
 
@@ -172,6 +172,22 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 2. LLM 组装完整 `DashboardSpec`。
 3. 可选调用 `validate_dashboard_spec` 检查缺字段、越界、重叠等问题。
 4. 调用 `generate_dashboard_schema` 编译成一个编辑器可用的 `__Group__` 树。
+
+DashboardSpec 支持三类顶层内容：
+
+- `components`：少量全局组件，例如全屏标题、全屏背景、时间天气等。设置顶层 `grouping` 时，这些组件会按语义分组，背景组保持最后。
+- `groups`：LLM 明确声明的一组相关组件，适合顶部信息组、KPI 组、自定义混合面板等不适合 ChartPanel 的区域。每个显式 `groups` 项必须声明完整的绝对区域 `style.left/top/width/height`，不能只作为无定位的组件桶。组内可使用 `components` 或 `children`，MCP 只按声明编译，不根据坐标或关键词猜测归属。
+- `modules`：结构化模块。图表分析面板用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合信息卡优先用 `FreeformModule`。
+
+当一个大屏包含多个相关元素时，不要把所有元素都平铺到 `components`。应优先使用 `modules` 或显式 `groups`，这样编辑器树会按区域形成 `__Group__`，并且每个组内的背景组件会被放到背景组/底层，避免遮挡文字、图表和指标。
+
+`__Group__` 只负责编辑器层级分组，不承担视觉背景。全屏底色、模块底板、面板边框都必须由真实组件表达，例如 `SvgDecoration` 或 `SingleImage`。如果 DashboardSpec 没有提供覆盖全屏的背景组件，或某个显式分组/模块没有背景承载，`generate_dashboard_schema` 会补同主题的轻量 `SvgDecoration` 背景组件；已有显式背景、底板或边框不会被替换。
+
+DashboardSpec 的 `theme` 是编译期设计上下文，用于让 LLM 传入本屏的色板、背景色、主色、图表色等，MCP 在补齐轻量默认色、图表配置和背景承载时会读取它。最终编辑器 schema 不应在每个组件 `props` 里反复保留同一份 `theme`，编译输出会剥离该字段。
+
+`SvgDecoration` 不能作为空占位。需要装饰时，LLM 必须提供非空 `svgContent`，或显式选择非空 `svgPreset`；否则 `validate_dashboard_spec` / `generate_dashboard_schema` 会拒绝该 DashboardSpec，避免出现不可见装饰或默认图标回退。
+
+DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真实 `textContent`，不能依赖“辅助信息”“单行文本”等默认文案；图表组件必须提供真实 `chartData.constant.data`，或在支持的 `ChartPanel` 中提供 `dataItems`，不能落回 `类目1/系列` 这类演示数据。直接调用 `generate_components_schema(s)` 生成图表组件时同样不能省略真实数据，否则会被拒绝，避免底层组件入口静默输出默认演示数据。
 
 简化示例：
 
@@ -196,6 +212,30 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
       "logicalId": "dashboard_title",
       "textContent": "运营洞察大屏",
       "style": { "position": "absolute", "left": 48, "top": 28, "width": 520, "height": 36 }
+    }
+  ],
+  "groups": [
+    {
+      "logicalId": "header_group",
+      "title": "顶部信息组",
+      "style": { "position": "absolute", "left": 0, "top": 0, "width": 1920, "height": 96 },
+      "components": [
+        {
+          "componentName": "SvgDecoration",
+          "logicalId": "header_line",
+          "name": "顶部结构线",
+          "svgSource": "custom",
+          "svgContent": "<svg viewBox=\"0 0 1920 96\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M48 80H1872\" stroke=\"currentColor\" stroke-width=\"2\"/></svg>",
+          "style": { "position": "absolute", "left": 0, "top": 0, "width": 1920, "height": 96 }
+        },
+        {
+          "componentName": "SingleImage",
+          "logicalId": "header_background",
+          "name": "顶部背景",
+          "imageBase64": "data:image/png;base64,...",
+          "style": { "position": "absolute", "left": 0, "top": 0, "width": 1920, "height": 96 }
+        }
+      ]
     }
   ],
   "modules": [

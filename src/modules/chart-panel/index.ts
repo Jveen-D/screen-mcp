@@ -1117,6 +1117,32 @@ function normalizeAuxiliaryTextSlots(
     : [...normalizedSlots, ...createDefaultAuxiliaryTextSlots(input, dataRows).slice(2, -1)];
 }
 
+function isPlaceholderText(value: string): boolean {
+  const text = value.trim();
+  return text === "" ||
+    /^(辅助信息|单行文本|默认文本|占位(?:文本|内容)?|placeholder)$/iu.test(text);
+}
+
+function hasUsableAuxiliaryText(slot: ModuleSlotInput): boolean {
+  if (slot.componentName !== "SingleText") {
+    return true;
+  }
+
+  const props = slotProps(slot);
+  return typeof props.textContent === "string" && !isPlaceholderText(props.textContent);
+}
+
+function hasDecorationVisualSource(slot: ModuleSlotInput): boolean {
+  if (slot.componentName !== "SvgDecoration") {
+    return true;
+  }
+
+  const props = slotProps(slot);
+  const svgContent = typeof props.svgContent === "string" ? props.svgContent.trim() : "";
+  const svgPreset = typeof props.svgPreset === "string" ? props.svgPreset.trim() : "";
+  return svgContent !== "" || svgPreset !== "";
+}
+
 function mergeStyle(base: JsonObject, override: JsonValue | undefined): JsonObject {
   return isJsonObject(override) ? { ...base, ...override } : base;
 }
@@ -1898,6 +1924,12 @@ function createDecorationProps(
 ): JsonObject {
   const props = slotProps(slot);
   const theme = isJsonObject(input.theme) ? input.theme : {};
+  const svgSource =
+    typeof props.svgSource === "string"
+      ? props.svgSource
+      : typeof props.svgPreset === "string" && props.svgPreset.trim() !== ""
+        ? "preset"
+        : "custom";
   const offset = 16;
   const defaultPositions = [
     {
@@ -1943,7 +1975,7 @@ function createDecorationProps(
       },
       props.style,
     ),
-    svgSource: "custom",
+    svgSource,
     svgPreset: typeof props.svgPreset === "string" ? props.svgPreset : "",
     svgContent:
       typeof props.svgContent === "string" && props.svgContent.trim() !== ""
@@ -2018,11 +2050,20 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
   const backgroundSlot = asSlot(slots.background, "background");
   const titleSlot = asSlot(slots.title, "title");
   const mainChartSlot = asSlot(slots.mainChart, "mainChart");
-  const decorationSlots = asSlotArray(slots.decorations, "decorations");
-  const auxiliaryTextSlots = asSlotArray(slots.auxiliaryTexts, "auxiliaryTexts");
+  const decorationSlots = asSlotArray(slots.decorations, "decorations")
+    .filter(hasDecorationVisualSource);
+  const auxiliaryTextSlots = asSlotArray(slots.auxiliaryTexts, "auxiliaryTexts")
+    .filter(hasUsableAuxiliaryText);
 
   if (!mainChartSlot) {
     throw new Error("missing required module slot: mainChart");
+  }
+
+  const isAssistedLayout = layoutMode(input) === "assisted";
+  if (!isAssistedLayout && auxiliaryTextSlots.length === 0) {
+    throw new Error(
+      "manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion",
+    );
   }
 
   const isThreeDPie = mainChartSlot.componentName === "ThreeDPieChart";
@@ -2047,7 +2088,6 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     getModuleDataRows(input) ??
     getChartDataRowsFromProps(slotProps(mainChartSlot)) ??
     deriveDataRowsFromAuxiliaryTexts(auxiliaryTextSlots);
-  const isAssistedLayout = layoutMode(input) === "assisted";
   const reserveDefaultSideSummary =
     isAssistedLayout &&
     !isCartesianChart &&
@@ -2120,7 +2160,9 @@ export function generateChartPanelTreeSchema(rawInput: ModuleInput): EditorGroup
     id: input.logicalId,
     componentName: "__Group__",
     structVersion: "0.0.0",
-    props: {},
+    props: {
+      style: input.style,
+    },
     title:
       typeof input.title === "string" && input.title.trim() !== ""
         ? input.title

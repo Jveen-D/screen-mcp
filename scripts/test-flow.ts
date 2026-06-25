@@ -17,6 +17,7 @@ import {
   validateDashboardSpec,
 } from "../src/core/dashboard.js";
 import { generateScreenModuleFromPrompt } from "../src/core/promptModule.js";
+import { svgDecorationDefaultProps } from "../src/components/svg-decoration/defaultProps.js";
 import type { JsonObject } from "../src/types/component.js";
 
 function readToolJson(result: Awaited<ReturnType<Client["callTool"]>>) {
@@ -460,9 +461,9 @@ const chartDataOriginalRows = chartDataConstant.originalData as JsonObject[];
 
 assert.equal(schema.componentName, "PieChart");
 assert.equal(chartData.sourceType, "constant");
-assert.equal(chartDataRows[0]?.name, "类目1");
-assert.equal(chartDataRows[0]?.type, "系列");
-assert.equal(chartDataRows[0]?.value, 101);
+assert.equal(chartDataRows[0]?.name, "直销");
+assert.equal(chartDataRows[0]?.type, "渠道");
+assert.equal(chartDataRows[0]?.value, 128);
 assert.deepEqual(chartDataOriginalRows, chartDataRows);
 assert.equal("title" in option, false);
 assert.equal(legend.left, "center");
@@ -480,6 +481,50 @@ assertRandomizedId(
 assert.equal(schema.props.logicalId, schema.businessElementId);
 assert.equal(schema.parentBusinessElementId, aiProps.parentLogicalId);
 assert.deepEqual(props.entryAnimiation, { type: "", isShow: false });
+
+assert.throws(
+  () =>
+    generateComponentsSchema({
+      componentName: "PieChart",
+      logicalId: "missing_real_data_pie",
+      parentLogicalId: "screen_group",
+      style: {
+        left: 0,
+        top: 0,
+        width: 320,
+        height: 240,
+        position: "absolute",
+      },
+    } satisfies JsonObject),
+  /direct component generation will not fall back to default 类目\/系列 demo rows/,
+  "direct chart component generation should reject missing real chartData when defaults are demo rows",
+);
+
+assert.throws(
+  () =>
+    generateComponentsSchema({
+      componentName: "RingChart",
+      logicalId: "default_demo_ring",
+      parentLogicalId: "screen_group",
+      chartData: {
+        constant: {
+          data: [
+            { name: "类目1", type: "系列", value: 101 },
+            { name: "类目2", type: "系列", value: 71 },
+          ],
+        },
+      },
+      style: {
+        left: 0,
+        top: 0,
+        width: 320,
+        height: 240,
+        position: "absolute",
+      },
+    } satisfies JsonObject),
+  /not default 类目\/系列 demo rows/,
+  "direct chart component generation should reject explicit default demo chartData rows",
+);
 
 const longComponentIdSchema = generateComponentsSchema({
   ...aiProps,
@@ -703,6 +748,232 @@ const indicatorConstantData = Array.isArray(indicatorConstant.data) ? indicatorC
 assert.equal(asChartObject(indicatorConstantData[0]).value, 9876, "Indicator textValue should sync to chartData");
 const indicatorIndicator = Array.isArray(indicatorChartData.indicator) ? indicatorChartData.indicator : [];
 assert.equal(asChartObject(indicatorIndicator[0]).fieldName, "value", "Indicator indicator fieldName should be value");
+
+const indicatorWideSchema = generateComponentsSchema({
+  componentName: "Indicator",
+  logicalId: "indicator_wide_test",
+  parentLogicalId: "sales_group",
+  name: "测试长号翻牌器",
+  titleVisible: true,
+  textValue: 128642,
+  separation: true,
+  prefix: false,
+  suffix: true,
+  suffixTitle: "单",
+  numberStyle: {
+    fontSize: 42,
+    letterSpacing: 1,
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 320,
+    height: 80,
+  },
+});
+assert.equal(
+  (indicatorWideSchema.props.style as JsonObject).width,
+  360,
+  "Indicator should widen dense KPI layouts to avoid digit wrapping",
+);
+
+const indicatorShortSchema = generateComponentsSchema({
+  componentName: "Indicator",
+  logicalId: "indicator_short_test",
+  parentLogicalId: "sales_group",
+  name: "测试短号翻牌器",
+  textValue: 9876,
+  prefix: false,
+  suffix: false,
+  separation: false,
+  numberStyle: {
+    fontSize: 42,
+    letterSpacing: 1,
+  },
+  style: {
+    position: "absolute",
+    left: 100,
+    top: 100,
+    width: 320,
+    height: 80,
+  },
+});
+assert.equal(
+  (indicatorShortSchema.props.style as JsonObject).width,
+  320,
+  "Indicator should not widen short simple layouts unnecessarily",
+);
+
+const compactRingSchema = generateComponentsSchema({
+  componentName: "RingChart",
+  logicalId: "compact_ring_test",
+  parentLogicalId: "chart_group",
+  name: "紧凑环图",
+  chartData: {
+    indicator: [
+      {
+        fieldDataConfig: {
+          chartDisplayName: "收入",
+        },
+      },
+    ],
+    constant: {
+      data: [
+        { name: "直营门店", type: "渠道", value: 42 },
+        { name: "电商平台", type: "渠道", value: 28 },
+        { name: "经销伙伴", type: "渠道", value: 18 },
+        { name: "企业客户", type: "渠道", value: 12 },
+      ],
+    },
+  },
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 568,
+    height: 142,
+  },
+  option: {
+    legend: {
+      show: true,
+      top: "bottom",
+      left: "center",
+      offsetY: -8,
+    },
+    series: [
+      {
+        radius: ["36%", "64%"],
+        center: ["50%", "44%"],
+        label: {
+          show: true,
+          position: "outside",
+        },
+        labelLine: {
+          show: true,
+          length: 8,
+          length2: 5,
+        },
+      },
+    ],
+  },
+});
+const compactRingOption = asChartObject(compactRingSchema.props.option);
+const compactRingSeries = Array.isArray(compactRingOption.series)
+  ? asChartObject(compactRingOption.series[0])
+  : {};
+assert.deepEqual(
+  compactRingSeries.center,
+  ["50%", "40%"],
+  "RingChart should move compact outside-label layouts upward when bottom legend is enabled",
+);
+assert.deepEqual(
+  compactRingSeries.radius,
+  ["36%", "54%"],
+  "RingChart should shrink compact outside-label layouts to leave room for legend and labels",
+);
+assert.equal(
+  asChartObject(compactRingSeries.labelLine).length,
+  6,
+  "RingChart should cap compact labelLine length",
+);
+assert.equal(
+  asChartObject(compactRingSeries.labelLine).length2,
+  4,
+  "RingChart should cap compact labelLine horizontal length",
+);
+
+const denseRingSchema = generateComponentsSchema({
+  componentName: "RingChart",
+  logicalId: "dense_ring_test",
+  parentLogicalId: "chart_group",
+  name: "窄面板多项环图",
+  chartData: {
+    indicator: [
+      {
+        fieldDataConfig: {
+          chartDisplayName: "占比",
+        },
+      },
+    ],
+    constant: {
+      data: [
+        { name: "华东", type: "销售", value: 101 },
+        { name: "华南", type: "销售", value: 71 },
+        { name: "华北", type: "销售", value: 121 },
+        { name: "西南", type: "销售", value: 95 },
+        { name: "西北", type: "销售", value: 141 },
+        { name: "东北", type: "销售", value: 96 },
+      ],
+    },
+  },
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 384,
+    height: 182,
+  },
+  option: {
+    legend: {
+      show: true,
+      top: "bottom",
+      left: "center",
+      offsetY: -6,
+      itemGap: 18,
+      itemWidth: 16,
+      itemHeight: 8,
+      textStyle: {
+        fontSize: 12,
+      },
+    },
+    series: [
+      {
+        radius: ["36%", "64%"],
+        center: ["50%", "44%"],
+        label: {
+          show: true,
+          position: "outside",
+          fontSize: 13,
+          formatter: "{b}: {c}",
+        },
+        labelLine: {
+          show: true,
+          length: 14,
+          length2: 10,
+        },
+      },
+    ],
+  },
+});
+const denseRingOption = asChartObject(denseRingSchema.props.option);
+const denseRingLegend = asChartObject(denseRingOption.legend);
+const denseRingSeries = Array.isArray(denseRingOption.series)
+  ? asChartObject(denseRingOption.series[0])
+  : {};
+assert.deepEqual(
+  denseRingSeries.center,
+  ["50%", "38%"],
+  "RingChart should move dense narrow outside-label layouts higher above bottom legend",
+);
+assert.deepEqual(
+  denseRingSeries.radius,
+  ["36%", "46%"],
+  "RingChart should shrink dense narrow outside-label layouts more aggressively",
+);
+assert.equal(asChartObject(denseRingSeries.labelLine).length, 6);
+assert.equal(asChartObject(denseRingSeries.labelLine).length2, 3);
+assert.equal(asChartObject(denseRingSeries.label).fontSize, 11);
+assert.equal(
+  asChartObject(denseRingSeries.label).formatter,
+  "{b}",
+  "RingChart should remove values from dense outside labels so legend and labels do not collide",
+);
+assert.equal(denseRingLegend.offsetY, -2);
+assert.equal(denseRingLegend.itemGap, 10);
+assert.equal(denseRingLegend.itemWidth, 12);
+assert.equal(denseRingLegend.itemHeight, 7);
+assert.equal(asChartObject(denseRingLegend.textStyle).fontSize, 11);
 
 // Gauge: value should sync to datasource.constantData[0].value
 const gaugeCapability = getComponentCapability("Gauge");
@@ -1366,8 +1637,38 @@ const defaultLineBoxTextStyle = defaultLineBoxTextSchema.props.style as JsonObje
 assert.equal(defaultLineBoxTextStyle.height, 20);
 assert.equal(defaultLineBoxTextStyle.lineHeight, 1);
 
+const themedTextSchema = generateComponentsSchema({
+  componentName: "SingleText",
+  logicalId: "themed_text",
+  parentLogicalId: "sales_group",
+  textContent: "主题输入不会进入输出",
+  theme: {
+    name: "test-theme",
+    colors: {
+      background: "#000000",
+    },
+  },
+  style: {
+    position: "absolute",
+    left: 80,
+    top: 190,
+    width: 220,
+    height: 18,
+    fontSize: 18,
+  },
+});
+assert.equal(
+  themedTextSchema.props.theme,
+  undefined,
+  "compiler-only theme should not be emitted in final component props",
+);
+
 const svgCapability = getComponentCapability("SvgDecoration");
 assert.ok(Array.isArray(svgCapability.aiWritableProps));
+const svgDefaultProps = svgDecorationDefaultProps as JsonObject;
+assert.equal(svgDefaultProps.svgSource, "custom");
+assert.equal(svgDefaultProps.svgPreset, "");
+assert.equal(svgDefaultProps.svgContent, "");
 const safeSvg =
   '<svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 L100 0" stroke="#00E5FF" fill="none"/></svg>';
 const svgSchema = generateComponentsSchema({
@@ -1411,7 +1712,9 @@ const unsafeSvgSchema = generateComponentsSchema({
   svgSource: "custom",
   svgContent: "<svg><script>alert(1)</script></svg>",
 });
-assert.equal(unsafeSvgSchema.props.svgSource, "preset");
+assert.equal(unsafeSvgSchema.props.svgSource, "custom");
+assert.equal(unsafeSvgSchema.props.svgPreset, "");
+assert.equal(unsafeSvgSchema.props.svgContent, "");
 
 const svgChartSchema = generateComponentsSchema({
   componentName: "SvgDecoration",
@@ -1428,7 +1731,9 @@ const svgChartSchema = generateComponentsSchema({
   svgContent:
     '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 10 A40 40 0 0 1 90 50" fill="none"/><path d="M90 50 A40 40 0 0 1 50 90" fill="none"/></svg>',
 });
-assert.equal(svgChartSchema.props.svgSource, "preset");
+assert.equal(svgChartSchema.props.svgSource, "custom");
+assert.equal(svgChartSchema.props.svgPreset, "");
+assert.equal(svgChartSchema.props.svgContent, "");
 
 const svgTextSchema = generateComponentsSchema({
   componentName: "SvgDecoration",
@@ -1445,7 +1750,44 @@ const svgTextSchema = generateComponentsSchema({
   svgContent:
     '<svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg"><text x="20" y="60">风险总量 386</text></svg>',
 });
-assert.equal(svgTextSchema.props.svgSource, "preset");
+assert.equal(svgTextSchema.props.svgSource, "custom");
+assert.equal(svgTextSchema.props.svgPreset, "");
+assert.equal(svgTextSchema.props.svgContent, "");
+
+const emptySvgSchema = generateComponentsSchema({
+  componentName: "SvgDecoration",
+  logicalId: "empty_svg",
+  parentLogicalId: "sales_group",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 120,
+    height: 64,
+  },
+  svgSource: "custom",
+  svgContent: "",
+});
+assert.equal(emptySvgSchema.props.svgSource, "custom");
+assert.equal(emptySvgSchema.props.svgPreset, "");
+assert.equal(emptySvgSchema.props.svgContent, "");
+
+const explicitPresetSvgSchema = generateComponentsSchema({
+  componentName: "SvgDecoration",
+  logicalId: "explicit_preset_svg",
+  parentLogicalId: "sales_group",
+  style: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 120,
+    height: 64,
+  },
+  svgSource: "preset",
+  svgPreset: "icon-Frame3",
+});
+assert.equal(explicitPresetSvgSchema.props.svgSource, "preset");
+assert.equal(explicitPresetSvgSchema.props.svgPreset, "icon-Frame3");
 
 const panelSchemas = generateComponentsSchemas([
   imageSchema.props,
@@ -1600,6 +1942,10 @@ assert.ok(
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("分工展示")),
   "ChartPanel should guide information role separation",
+);
+assert.ok(
+  moduleLayoutRules.some((rule) => rule.includes("至少应显式提供 1 条辅助文本")),
+  "ChartPanel should require an explicit business auxiliary text layer",
 );
 assert.ok(
   moduleLayoutRules.some((rule) => rule.includes("数据复读")),
@@ -1977,6 +2323,29 @@ assert.deepEqual(moduleDecoration.props.entryAnimiation, {
   isShow: true,
   type: "animate__fadeInLeft",
 });
+const emptyDecorationModuleSchemas = generateModuleSchema({
+  ...chartPanelInput,
+  logicalId: "chart_panel_empty_svg_decoration",
+  slots: {
+    ...(chartPanelInput.slots as JsonObject),
+    decorations: [
+      {
+        componentName: "SvgDecoration",
+        props: {
+          primaryColor: "#00E5FF",
+        },
+      },
+    ],
+  },
+} satisfies JsonObject);
+const emptyModuleDecoration = emptyDecorationModuleSchemas.find(
+  (item) => item.componentName === "SvgDecoration" && item.props.name === "模块装饰1",
+);
+assert.equal(
+  emptyModuleDecoration,
+  undefined,
+  "module should drop empty explicit decoration slots instead of emitting invisible placeholders",
+);
 const moduleDecorationStyle = moduleDecoration.props.style as JsonObject;
 assert.equal(moduleDecorationStyle.left, 372);
 assert.equal(moduleDecorationStyle.top, 116);
@@ -2061,6 +2430,21 @@ assert.equal(
   moduleSchemas.some((item) => item.props.name === "底部结构线"),
   false,
   "manual ChartPanel should not synthesize bottom structure lines",
+);
+
+assert.throws(
+  () =>
+    generateModuleSchema({
+      ...chartPanelInput,
+      layoutMode: "manual",
+      logicalId: "manual_panel_missing_auxiliary_text",
+      slots: {
+        ...(chartPanelInput.slots as JsonObject),
+        auxiliaryTexts: [],
+      },
+    } satisfies JsonObject),
+  /manual ChartPanel must include slots\.auxiliaryTexts/,
+  "direct manual ChartPanel generation should reject missing auxiliary business text",
 );
 
 const noResourcePanelInput = {
@@ -3039,7 +3423,10 @@ assertRandomizedId(
 );
 assert.equal(moduleTreeSchema.componentName, "__Group__");
 assert.equal(moduleTreeSchema.structVersion, "0.0.0");
-assert.deepEqual(moduleTreeSchema.props, {});
+assert.equal((moduleTreeSchema.props.style as JsonObject).left, 48);
+assert.equal((moduleTreeSchema.props.style as JsonObject).top, 96);
+assert.equal((moduleTreeSchema.props.style as JsonObject).width, 520);
+assert.equal((moduleTreeSchema.props.style as JsonObject).height, 360);
 assert.equal(moduleTreeSchema.title, "销售渠道占比");
 assert.equal(moduleTreeSchema.isHidden, false);
 assert.equal(moduleTreeSchema.isLocked, false);
@@ -3210,6 +3597,10 @@ assert.deepEqual(
 const freeformTree = generateModuleTreeSchema(freeformModuleInput);
 assert.equal(freeformTree.componentName, "__Group__");
 assert.equal(freeformTree.title, "核心指标");
+assert.equal((freeformTree.props.style as JsonObject).left, 600);
+assert.equal((freeformTree.props.style as JsonObject).top, 100);
+assert.equal((freeformTree.props.style as JsonObject).width, 360);
+assert.equal((freeformTree.props.style as JsonObject).height, 180);
 assert.deepEqual(
   freeformTree.children.map((item) => item.title),
   ["标题", "主内容", "装饰", "背景"],
@@ -3239,6 +3630,131 @@ assert.ok(
     .filter((item) => item.componentName !== "__Group__")
     .every((item) => (nodeProps(item).parentLogicalId as string | undefined) === freeformTree.id),
   "FreeformModule child parentLogicalId should reference randomized module group id",
+);
+
+const titleBackdropTree = generateDashboardSchema({
+  logicalId: "title_backdrop_dashboard",
+  title: "标题承托大屏",
+  canvas: {
+    width: 800,
+    height: 240,
+  },
+  grouping: {
+    mode: "semantic",
+    singleChildGroup: true,
+  },
+  groups: [
+    {
+      logicalId: "header_group",
+      title: "顶部标题区",
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 96,
+      },
+      components: [
+        {
+          componentName: "SvgDecoration",
+          logicalId: "header_title_backdrop",
+          name: "标题背景框",
+          svgSource: "custom",
+          svgContent:
+            '<svg viewBox="0 0 800 96" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="798" height="94" fill="rgba(0,0,0,.24)" stroke="currentColor"/></svg>',
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 800,
+            height: 96,
+            zIndex: 503,
+          },
+        },
+        {
+          componentName: "SvgDecoration",
+          logicalId: "header_panel_frame",
+          name: "面板边框",
+          svgSource: "custom",
+          svgContent:
+            '<svg viewBox="0 0 800 96" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="796" height="92" fill="rgba(0,0,0,.12)" stroke="currentColor"/></svg>',
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 800,
+            height: 96,
+            zIndex: 502,
+          },
+        },
+        {
+          componentName: "SvgDecoration",
+          logicalId: "filled_panel_frame",
+          name: "重点商机面板边框",
+          svgSource: "custom",
+          svgContent:
+            '<svg viewBox="0 0 800 96" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="796" height="92" fill="rgba(8,33,58,.78)" stroke="currentColor"/></svg>',
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 800,
+            height: 96,
+            zIndex: 504,
+          },
+        },
+        {
+          componentName: "SingleText",
+          logicalId: "header_title_text",
+          name: "主标题",
+          textContent: "销售经营态势大屏",
+          style: {
+            position: "absolute",
+            left: 180,
+            top: 24,
+            width: 440,
+            height: 36,
+            fontSize: 36,
+            lineHeight: 1,
+            zIndex: 501,
+          },
+        },
+      ],
+    },
+  ],
+} as JsonObject);
+const titleBackdropHeader = titleBackdropTree.children.find(
+  (item) => item.title === "顶部标题区",
+) as JsonObject | undefined;
+assert.ok(titleBackdropHeader, "DashboardSpec should compile the explicit header group");
+const titleBackdropHeaderChildren = Array.isArray(titleBackdropHeader.children)
+  ? titleBackdropHeader.children as JsonObject[]
+  : [];
+assert.deepEqual(
+  titleBackdropHeaderChildren.map((item) => item.title),
+  ["标题", "背景"],
+  "Title backdrops should be grouped below title text instead of covering it",
+);
+assert.equal(
+  titleBackdropHeaderChildren.at(-1)?.title,
+  "背景",
+  "Title backdrop group should stay on the bottom layer",
+);
+const titleBackdropBackgroundGroup = titleBackdropHeaderChildren.at(-1) as JsonObject;
+const titleBackdropBackgroundChildren = Array.isArray(titleBackdropBackgroundGroup.children)
+  ? titleBackdropBackgroundGroup.children as JsonObject[]
+  : [];
+assert.deepEqual(
+  titleBackdropBackgroundChildren.map((item) => nodeProps(item).name),
+  ["标题背景框", "面板边框", "重点商机面板边框"],
+  "Title backdrop and filled panel frame decorations should be treated as background carriers",
+);
+assert.ok(
+  titleBackdropBackgroundChildren.every((item) => {
+    const style = nodeProps(item).style as JsonObject;
+    return style.zIndex === 0;
+  }),
+  "Semantic background carriers should not keep high zIndex values that can cover text or charts",
 );
 
 const dashboardSpec = {
@@ -3285,6 +3801,49 @@ const dashboardSpec = {
         width: 1280,
         height: 720,
       },
+    },
+  ],
+  groups: [
+    {
+      logicalId: "dashboard_header_group",
+      title: "顶部信息组",
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 1280,
+        height: 88,
+      },
+      components: [
+        {
+          componentName: "SvgDecoration",
+          logicalId: "dashboard_header_decoration",
+          name: "顶部结构线",
+          svgSource: "custom",
+          svgContent:
+            '<svg viewBox="0 0 1280 88" xmlns="http://www.w3.org/2000/svg"><path d="M40 72H1240" stroke="#28E0B9" stroke-width="2"/></svg>',
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 1280,
+            height: 88,
+          },
+        },
+        {
+          componentName: "SingleImage",
+          logicalId: "dashboard_header_background",
+          name: "顶部背景",
+          imageBase64: "data:image/png;base64,HEADERBACKGROUND",
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 1280,
+            height: 88,
+          },
+        },
+      ],
     },
   ],
   modules: [
@@ -3343,6 +3902,15 @@ const dashboardSpec = {
             },
           },
         ],
+        auxiliaryTexts: [
+          {
+            componentName: "SingleText",
+            props: {
+              name: "风险结论",
+              textContent: "高风险占比 14.3%，优先跟进高风险区域",
+            },
+          },
+        ],
       },
     },
     {
@@ -3357,6 +3925,45 @@ const dashboardSpec = {
 const dashboardValidation = validateDashboardSpec(dashboardSpec);
 assert.equal(dashboardValidation.valid, true, "DashboardSpec should validate");
 assert.deepEqual(dashboardValidation.errors, []);
+const missingAuxiliaryTextValidation = validateDashboardSpec({
+  logicalId: "missing_auxiliary_text_dashboard",
+  modules: [
+    {
+      moduleName: "ChartPanel",
+      logicalId: "missing_auxiliary_panel",
+      title: "缺少辅助文本面板",
+      style: {
+        position: "absolute",
+        left: 24,
+        top: 80,
+        width: 420,
+        height: 280,
+      },
+      slots: {
+        mainChart: {
+          componentName: "LineChart",
+          props: {
+            chartData: {
+              constant: {
+                data: [
+                  { name: "一月", type: "销售额", value: 42 },
+                  { name: "二月", type: "销售额", value: 58 },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+  ],
+} as JsonObject);
+assert.equal(missingAuxiliaryTextValidation.valid, false);
+assert.ok(
+  (missingAuxiliaryTextValidation.errors as string[]).some((error) =>
+    error.includes("slots.auxiliaryTexts"),
+  ),
+  "DashboardSpec validation should reject manual ChartPanel modules without auxiliary business text",
+);
 const invalidGroupingValidation = validateDashboardSpec({
   ...dashboardSpec,
   grouping: { mode: "template" },
@@ -3366,12 +3973,368 @@ assert.ok(
   (invalidGroupingValidation.errors as string[]).includes("grouping.mode must be semantic or none"),
   "DashboardSpec validation should reject unknown grouping modes",
 );
+const flatComponentValidation = validateDashboardSpec({
+  logicalId: "flat_component_dashboard",
+  components: Array.from({ length: 9 }, (_, index) => ({
+    componentName: "SingleText",
+    logicalId: `flat_text_${index + 1}`,
+    textContent: `散装组件${index + 1}`,
+    style: {
+      position: "absolute",
+      left: index * 10,
+      top: index * 10,
+      width: 100,
+      height: 20,
+    },
+  })),
+} as JsonObject);
+assert.equal(flatComponentValidation.valid, true);
+assert.ok(
+  (flatComponentValidation.warnings as string[]).some((warning) =>
+    warning.includes("DashboardSpec.groups or modules"),
+  ),
+  "DashboardSpec validation should warn when many top-level components are not grouped",
+);
+const missingGroupStyleSpec = {
+  logicalId: "missing_group_style_dashboard",
+  groups: [
+    {
+      logicalId: "floating_group",
+      title: "未定位组件组",
+      components: [
+        {
+          componentName: "SingleText",
+          logicalId: "floating_group_title",
+          textContent: "未定位组件组",
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 180,
+            height: 24,
+          },
+        },
+      ],
+    },
+  ],
+} as JsonObject;
+const missingGroupStyleValidation = validateDashboardSpec(missingGroupStyleSpec);
+assert.equal(missingGroupStyleValidation.valid, false);
+assert.ok(
+  (missingGroupStyleValidation.errors as string[]).includes(
+    "groups[0] missing complete style left/top/width/height",
+  ),
+  "DashboardSpec validation should reject explicit groups without complete style",
+);
+assert.throws(
+  () => generateDashboardSchema(missingGroupStyleSpec),
+  /groups\[0\] missing complete style left\/top\/width\/height/u,
+  "DashboardSpec compiler should reject unpositioned explicit groups",
+);
+const emptyGroupSvgValidation = validateDashboardSpec({
+  logicalId: "empty_group_svg_dashboard",
+  groups: [
+    {
+      logicalId: "decorated_group",
+      title: "空装饰组件组",
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 320,
+        height: 120,
+      },
+      components: [
+        {
+          componentName: "SvgDecoration",
+          logicalId: "empty_group_decoration",
+          name: "空装饰",
+          svgSource: "custom",
+          svgContent: "",
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 320,
+            height: 120,
+          },
+        },
+      ],
+    },
+  ],
+} as JsonObject);
+assert.equal(emptyGroupSvgValidation.valid, false);
+assert.ok(
+  (emptyGroupSvgValidation.errors as string[]).some((error) =>
+    error.includes("groups[0].components[0] SvgDecoration must include non-empty svgContent or svgPreset"),
+  ),
+  "DashboardSpec validation should reject empty SvgDecoration components",
+);
+const emptyModuleSvgValidation = validateDashboardSpec({
+  logicalId: "empty_module_svg_dashboard",
+  modules: [
+    {
+      moduleName: "ChartPanel",
+      logicalId: "empty_svg_chart_panel",
+      title: "空装饰模块",
+      style: {
+        position: "absolute",
+        left: 24,
+        top: 80,
+        width: 420,
+        height: 280,
+      },
+      slots: {
+        mainChart: {
+          componentName: "PieChart",
+          props: {
+            chartData: {
+              constant: {
+                data: [{ name: "A", type: "分类", value: 1 }],
+              },
+            },
+          },
+        },
+        decorations: [
+          {
+            componentName: "SvgDecoration",
+            props: {
+              name: "空模块装饰",
+              svgSource: "custom",
+              svgContent: "",
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as JsonObject);
+assert.equal(emptyModuleSvgValidation.valid, false);
+assert.ok(
+  (emptyModuleSvgValidation.errors as string[]).some((error) =>
+    error.includes("modules[0].slots.decorations[0] SvgDecoration must include non-empty svgContent or svgPreset"),
+  ),
+  "DashboardSpec validation should reject empty module decoration slots",
+);
+const placeholderTextValidation = validateDashboardSpec({
+  logicalId: "placeholder_text_dashboard",
+  components: [
+    {
+      componentName: "SingleText",
+      logicalId: "placeholder_text",
+      textContent: "辅助信息",
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 180,
+        height: 18,
+      },
+    },
+  ],
+} as JsonObject);
+assert.equal(placeholderTextValidation.valid, false);
+assert.ok(
+  (placeholderTextValidation.errors as string[]).some((error) =>
+    error.includes("SingleText textContent must be real business copy"),
+  ),
+  "DashboardSpec validation should reject visible placeholder text",
+);
+const missingChartDataValidation = validateDashboardSpec({
+  logicalId: "missing_chart_data_dashboard",
+  modules: [
+    {
+      moduleName: "ChartPanel",
+      logicalId: "missing_chart_data_panel",
+      title: "缺少数据图表",
+      style: {
+        position: "absolute",
+        left: 24,
+        top: 80,
+        width: 420,
+        height: 280,
+      },
+      slots: {
+        mainChart: {
+          componentName: "PieChart",
+          props: {},
+        },
+      },
+    },
+  ],
+} as JsonObject);
+assert.equal(missingChartDataValidation.valid, false);
+assert.ok(
+  (missingChartDataValidation.errors as string[]).some((error) =>
+    error.includes("must include explicit chartData.constant.data"),
+  ),
+  "DashboardSpec validation should reject chart slots that would fall back to demo data",
+);
+const defaultDemoChartDataValidation = validateDashboardSpec({
+  logicalId: "default_demo_chart_data_dashboard",
+  components: [
+    {
+      componentName: "PieChart",
+      logicalId: "default_demo_pie",
+      chartData: {
+        constant: {
+          data: [
+            { name: "类目1", type: "系列", value: 101 },
+            { name: "类目2", type: "系列", value: 71 },
+          ],
+        },
+      },
+      style: {
+        position: "absolute",
+        left: 24,
+        top: 80,
+        width: 320,
+        height: 240,
+      },
+    },
+  ],
+} as JsonObject);
+assert.equal(defaultDemoChartDataValidation.valid, false);
+assert.ok(
+  (defaultDemoChartDataValidation.errors as string[]).some((error) =>
+    error.includes("not default 类目/系列 demo rows"),
+  ),
+  "DashboardSpec validation should reject default demo chart rows",
+);
+const fallbackBackgroundDashboardSpec = {
+  logicalId: "fallback_background_dashboard",
+  title: "背景补齐大屏",
+  canvas: { width: 1280, height: 720 },
+  grouping: {
+    mode: "semantic",
+    singleChildGroup: true,
+  },
+  theme: {
+    background: "#04111F",
+    panelBackground: "rgba(8,30,50,0.74)",
+    primaryColor: "#16D9FF",
+    textColor: "#EAF7FF",
+  },
+  groups: [
+    {
+      logicalId: "bare_header_group",
+      title: "顶部区域",
+      style: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 1280,
+        height: 88,
+      },
+      components: [
+        {
+          componentName: "SingleText",
+          logicalId: "bare_header_title",
+          name: "主标题",
+          textContent: "背景补齐大屏",
+          style: {
+            position: "absolute",
+            left: 420,
+            top: 24,
+            width: 440,
+            height: 32,
+            fontSize: 32,
+            lineHeight: 1,
+          },
+        },
+      ],
+    },
+  ],
+  modules: [
+    {
+      moduleName: "ChartPanel",
+      logicalId: "bare_chart_panel",
+      title: "无显式背景面板",
+      style: {
+        position: "absolute",
+        left: 40,
+        top: 120,
+        width: 520,
+        height: 320,
+      },
+      slots: {
+        title: {
+          componentName: "SingleText",
+          props: {
+            textContent: "无显式背景面板",
+          },
+        },
+        mainChart: {
+          componentName: "LineChart",
+          props: {
+            chartData: {
+              constant: {
+                data: [
+                  { name: "一月", type: "销售额", value: 42 },
+                  { name: "二月", type: "销售额", value: 58 },
+                ],
+              },
+            },
+          },
+        },
+        auxiliaryTexts: [
+          {
+            componentName: "SingleText",
+            props: {
+              name: "面板结论",
+              textContent: "二月销售额较一月提升 38.1%",
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as JsonObject;
+const fallbackBackgroundTree = generateDashboardSchema(fallbackBackgroundDashboardSpec);
+const fallbackBackgroundNodes = flattenEditorNodes(fallbackBackgroundTree as unknown as JsonObject);
+assert.ok(
+  fallbackBackgroundNodes.some((item) => hasPropName(item, "全屏背景")),
+  "DashboardSpec compiler should add a real full-screen background component when none is provided",
+);
+assert.ok(
+  fallbackBackgroundNodes.some((item) => hasPropName(item, "分组背景")),
+  "DashboardSpec compiler should add a real background carrier for bare explicit groups",
+);
+assert.ok(
+  fallbackBackgroundNodes.some((item) => hasPropName(item, "模块背景")),
+  "DashboardSpec compiler should add a real background carrier for bare modules",
+);
+const fallbackRootBackgroundGroup = fallbackBackgroundTree.children.at(-1);
+assert.equal(
+  fallbackRootBackgroundGroup?.title,
+  "背景",
+  "DashboardSpec fallback full-screen background should be in the bottom background group",
+);
+const fallbackBareModule = fallbackBackgroundTree.children.find(
+  (item) => item.componentName === "__Group__" && item.title === "无显式背景面板",
+);
+assert.ok(fallbackBareModule, "DashboardSpec should include bare module group");
+assert.ok(Array.isArray(fallbackBareModule.children), "bare module group should include children");
+assert.equal(
+  fallbackBareModule.children.at(-1)?.title,
+  "背景",
+  "DashboardSpec fallback module background should be in the module background group",
+);
 const dashboardTree = generateDashboardSchema(dashboardSpec);
 assert.equal(dashboardTree.componentName, "__Group__");
 assert.equal(dashboardTree.title, "运营洞察大屏");
 assert.equal((dashboardTree.props.style as JsonObject).width, 1280);
 assert.equal((dashboardTree.props.style as JsonObject).height, 720);
-assert.equal(dashboardTree.children.at(-1)?.componentName, "SingleImage");
+assert.equal(
+  dashboardTree.props.theme,
+  undefined,
+  "DashboardSpec root props should not carry compiler-only theme",
+);
+assert.equal(
+  dashboardTree.children.at(-1)?.title,
+  "背景",
+  "DashboardSpec root semantic background group should be last",
+);
 const dashboardNodes = flattenEditorNodes(dashboardTree as unknown as JsonObject);
 assert.ok(
   dashboardNodes.some((item) => item.componentName === "PieChart"),
@@ -3380,6 +4343,40 @@ assert.ok(
 assert.ok(
   dashboardNodes.some((item) => hasPropName(item, "AI自定义标题线")),
   "DashboardSpec compiler should preserve LLM-authored decorations",
+);
+assert.equal(
+  dashboardNodes.some((item) => {
+    const props = item.props;
+    return typeof props === "object" &&
+      props !== null &&
+      !Array.isArray(props) &&
+      (props as JsonObject).theme !== undefined;
+  }),
+  false,
+  "DashboardSpec compiler should strip repeated theme objects from all output nodes",
+);
+const dashboardHeaderGroup = dashboardTree.children.find(
+  (item) => item.componentName === "__Group__" && item.title === "顶部信息组",
+);
+assert.ok(dashboardHeaderGroup, "DashboardSpec should compile explicit component groups");
+assert.ok(
+  Array.isArray(dashboardHeaderGroup.children),
+  "DashboardSpec explicit component group should include children",
+);
+assert.ok(
+  dashboardHeaderGroup.children.every((item) => item.componentName === "__Group__"),
+  "DashboardSpec explicit component groups should inherit semantic grouping",
+);
+assert.equal(
+  dashboardHeaderGroup.children.at(-1)?.title,
+  "背景",
+  "DashboardSpec explicit component group should keep background subgroup last",
+);
+assert.ok(
+  flattenEditorNodes(dashboardHeaderGroup as unknown as JsonObject)
+    .filter((item) => item.componentName !== "__Group__")
+    .every((item) => (nodeProps(item).parentLogicalId as string | undefined) === dashboardHeaderGroup.id),
+  "DashboardSpec explicit component group children should reference group id",
 );
 const dashboardRiskModule = dashboardTree.children.find(
   (item) => item.componentName === "__Group__" && item.title === "风险等级分析",
@@ -3392,6 +4389,12 @@ assert.ok(
 assert.ok(
   dashboardRiskModule.children.every((item) => item.componentName === "__Group__"),
   "DashboardSpec grouping should be inherited by ChartPanel modules",
+);
+assert.ok(
+  flattenEditorNodes(dashboardRiskModule as unknown as JsonObject).some((item) =>
+    hasPropName(item, "模块背景"),
+  ),
+  "DashboardSpec should add a module background when ChartPanel has no explicit background carrier",
 );
 const dashboardKpiModule = dashboardTree.children.find(
   (item) => item.componentName === "__Group__" && item.title === "核心指标",
@@ -3520,7 +4523,7 @@ try {
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-23.01-layering-assets",
+    "2026-06-24.06-no-demo-chart-data-direct-tools",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -3579,8 +4582,8 @@ try {
     "diagnostics should expose side summary color anchor fingerprint",
   );
   assert.ok(
-    (diagnostics.rulesFingerprint as string[]).includes("default-svg-fallback-only"),
-    "diagnostics should expose default SVG fallback-only fingerprint",
+    (diagnostics.rulesFingerprint as string[]).includes("no-svg-preset-fallback"),
+    "diagnostics should expose no SVG preset fallback fingerprint",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("single-text-line-box"),
@@ -3637,6 +4640,62 @@ try {
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-grouping-inheritance"),
     "diagnostics should expose DashboardSpec grouping inheritance fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-group-style-required"),
+    "diagnostics should expose DashboardSpec group style requirement fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("no-empty-svg-decoration"),
+    "diagnostics should expose empty SVG decoration rejection fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-root-background-component"),
+    "diagnostics should expose root background carrier fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("module-background-carrier-fallback"),
+    "diagnostics should expose module background carrier fallback fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("svg-background-grouping"),
+    "diagnostics should expose SVG background grouping fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("compiler-theme-stripped"),
+    "diagnostics should expose compiler-only theme stripping fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("module-group-style-props"),
+    "diagnostics should expose module group style fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-placeholder-text-rejected"),
+    "diagnostics should expose placeholder text rejection fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-chart-data-required"),
+    "diagnostics should expose dashboard chart data requirement fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("chartpanel-auxiliary-text-required"),
+    "diagnostics should expose ChartPanel auxiliary text requirement fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("direct-chart-demo-data-rejected"),
+    "diagnostics should expose direct chart demo data rejection fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("module-chartpanel-auxiliary-text-required"),
+    "diagnostics should expose direct module ChartPanel auxiliary text requirement fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("ringchart-dense-legend-label-layout"),
+    "diagnostics should expose dense RingChart legend and label layout fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("filled-panel-frame-background"),
+    "diagnostics should expose filled panel frame background grouping fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,
@@ -3858,7 +4917,10 @@ try {
   const toolModuleTreeSchema = readToolJson(moduleTreeSchemaResult);
   assert.equal(toolModuleTreeSchema.componentName, "__Group__");
   assert.equal(toolModuleTreeSchema.structVersion, "0.0.0");
-  assert.deepEqual(toolModuleTreeSchema.props, {});
+  assert.equal((toolModuleTreeSchema.props.style as JsonObject).left, 48);
+  assert.equal((toolModuleTreeSchema.props.style as JsonObject).top, 96);
+  assert.equal((toolModuleTreeSchema.props.style as JsonObject).width, 520);
+  assert.equal((toolModuleTreeSchema.props.style as JsonObject).height, 360);
   assert.equal(toolModuleTreeSchema.children.length, 5);
   assert.equal(toolModuleTreeSchema.children[2].componentName, "PieChart");
   assert.equal(toolModuleTreeSchema.children[3].componentName, "SvgDecoration");
@@ -3895,7 +4957,23 @@ try {
   const toolDashboardNodes = flattenEditorNodes(toolDashboardTree as JsonObject);
   assert.equal(toolDashboardTree.componentName, "__Group__");
   assert.equal(toolDashboardTree.title, "运营洞察大屏");
-  assert.equal(toolDashboardTree.children.at(-1)?.componentName, "SingleImage");
+  assert.equal(
+    toolDashboardTree.children.at(-1)?.title,
+    "背景",
+    "DashboardSpec MCP compiler should keep root background group last",
+  );
+  const toolDashboardHeaderGroup = toolDashboardTree.children.find(
+    (item: JsonObject) => item.componentName === "__Group__" && item.title === "顶部信息组",
+  ) as JsonObject | undefined;
+  assert.ok(
+    toolDashboardHeaderGroup,
+    "DashboardSpec MCP compiler should compile explicit component groups",
+  );
+  assert.equal(
+    (toolDashboardHeaderGroup.children as JsonObject[]).at(-1)?.title,
+    "背景",
+    "DashboardSpec MCP compiler should keep explicit group background last",
+  );
   assert.ok(
     toolDashboardNodes.some((item) => item.componentName === "PieChart"),
     "DashboardSpec MCP compiler should include module chart nodes",

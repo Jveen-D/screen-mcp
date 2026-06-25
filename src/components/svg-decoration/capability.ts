@@ -7,7 +7,7 @@ export const svgDecorationCapability: JsonObject = {
     "只用于大屏角标、线条、边框、科技纹理、图标和发光装饰的 SVG 组件，不能承载真实图表或业务文本。AI 始终拥有设计权，可主动生成装饰性 SVG；仅当用户明确禁止装饰时才可省略。",
 
   aiRole:
-    "AI 负责自主设计安全的装饰性 svgContent，并设置位置、尺寸、颜色、翻转和发光。只要有助于大屏视觉，就应主动用 custom svgContent 生成边框、角标、结构线、网格、扫描线或光效装饰；除非用户明确禁止装饰，否则不应留白底。MCP 负责补齐默认 props，并会拒绝非装饰性 SVG。",
+    "AI 负责自主设计安全的装饰性 svgContent，并设置位置、尺寸、颜色、翻转和发光。只要有助于大屏视觉，就应主动用 custom svgContent 生成边框、角标、结构线、网格、扫描线或光效装饰；除非用户明确禁止装饰，否则不应留白底。MCP 负责补齐默认 props，并会清空不安全或非装饰性 svgContent，不会回退固定 preset 图标。",
 
   requiredProps: [
     {
@@ -41,12 +41,12 @@ export const svgDecorationCapability: JsonObject = {
       path: "svgSource",
       type: "enum",
       values: ["preset", "custom"],
-      description: "SVG 来源。AI 主动设计时优先使用 custom；preset 仅用于已知的小尺寸图标点缀。",
+      description: "SVG 来源。AI 主动设计时优先使用 custom；preset 仅在明确选择已知小尺寸图标且 svgPreset 非空时使用。",
     },
     {
       path: "svgPreset",
       type: "string",
-      description: "预设 SVG 图标 ID，例如 icon-Frame3。",
+      description: "预设 SVG 图标 ID，例如 icon-Frame3。没有明确图标 ID 时不要填写 preset；MCP 不提供默认 preset 图标。",
     },
     {
       path: "svgContent",
@@ -111,9 +111,11 @@ export const svgDecorationCapability: JsonObject = {
   mergeRules: [
     "对象按 key 深合并。",
     "数组按下标深合并。",
-    "svgSource 为 custom 时必须提供安全静态 svgContent。",
-    "MCP 会拒绝包含脚本、事件属性、foreignObject 或外链资源的 svgContent。",
-    "MCP 会拒绝包含 <text> 或明显图表弧线的 custom svgContent；这类内容必须改用文本组件或图表组件。",
+    "svgSource 为 custom 时必须提供安全静态 svgContent；空内容会保留为 custom 空装饰，不会回退 preset。",
+    "MCP 会清空包含脚本、事件属性、foreignObject 或外链资源的 svgContent。",
+    "MCP 会清空包含 <text> 或明显图表弧线的 custom svgContent；这类内容必须改用文本组件或图表组件。",
+    "svgSource 为 preset 时必须显式提供非空 svgPreset；否则会转为空 custom 装饰，避免出现默认图标。",
+    "在 DashboardSpec 中，空 SvgDecoration 会被视为结构错误；需要装饰时必须提供非空 svgContent 或显式非空 svgPreset。",
     "SvgDecoration 只能作为装饰层，不得作为承载完整模块内容的画布。",
     "AI 始终保有装饰设计权：只要设计需要，就可以添加 SvgDecoration；只有当用户明确说'不要装饰'、'极简'、'无装饰'时才可省略。",
   ],
@@ -122,6 +124,7 @@ export const svgDecorationCapability: JsonObject = {
     "科技风深色主题下，应主动生成可见的装饰元素：使用主题色描边、低透明填充、弱发光和连续结构线，不能只改背景色或完全省略装饰。",
     "装饰必须肉眼可见但不抢主信息：标题、主图表和关键数据必须始终在最上层可读。",
     "优先使用 custom svgContent 设计贴合模块主题的装饰；preset 仅用于小尺寸图标点缀。",
+    "禁止依赖空 SvgDecoration 或默认 preset 图标作为模块装饰；需要装饰时必须由 AI 写出具体 custom svgContent。",
     "避免使用完全透明或依赖继承色的 SVG；应显式设置 primaryColor/secondaryColor 和适当 opacity。",
     "同一模块内的装饰语言应统一：角标、底边线、标题承托使用相似的描边粗细、圆角/切角风格和色值。",
     "除非用户明确禁止，否则每个面板/模块至少应包含一种可见装饰：标题承托、面板边框、角标、结构线或网格纹理中的一种。",
@@ -144,8 +147,9 @@ export const svgDecorationCapability: JsonObject = {
         },
         rotate: 0,
         opacity: 0.9,
-        svgSource: "preset",
-        svgPreset: "icon-Frame3",
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 120 64" xmlns="http://www.w3.org/2000/svg"><path d="M8 56V18L24 4h88" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/><path d="M72 4h28l12 12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".9"/><circle cx="18" cy="46" r="3" fill="currentColor" opacity=".85"/></svg>',
         svgFit: "contain",
         primaryColor: "#00E5FF",
         secondaryColor: "#1B5CFF",

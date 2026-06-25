@@ -30,6 +30,9 @@ const GROUP_ORDER: { key: GroupBucketKey; suffix: string; title: string }[] = [
   { key: "background", suffix: "background", title: "背景" },
 ];
 
+const SVG_BACKGROUND_TITLE_PATTERN =
+  /背景|底板|底座|底图|标题承托|标题装饰|标题背景|^(?:面板|模块|卡组)边框$|background|backdrop|title[-_ ]?badge|^(?:panel|module|card)[-_ ]?(?:bg|frame|border)$/i;
+
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -79,6 +82,16 @@ function nodeTitle(child: EditorTreeNode): string {
   return "";
 }
 
+function svgContentHasVisibleFill(child: EditorTreeNode): boolean {
+  const props = child.props;
+  if (!isJsonObject(props) || typeof props.svgContent !== "string") {
+    return false;
+  }
+
+  return /fill=(["'])(?!none\b|transparent\b|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)|rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0\s*\))[^"']+\1/iu
+    .test(props.svgContent);
+}
+
 function createEditorGroup(
   parentId: string,
   suffix: string,
@@ -107,8 +120,11 @@ function bucketForChild(child: EditorTreeNode): GroupBucketKey {
   }
 
   if (componentName === "SvgDecoration") {
-    if (/标题承托|标题装饰|title[-_ ]?badge|标题背景/.test(title)) {
-      return "title";
+    if (
+      SVG_BACKGROUND_TITLE_PATTERN.test(title) ||
+      (/边框|frame|border/i.test(title) && svgContentHasVisibleFill(child))
+    ) {
+      return "background";
     }
 
     return "decorations";
@@ -137,6 +153,33 @@ function bucketForChild(child: EditorTreeNode): GroupBucketKey {
   return "mainContent";
 }
 
+function asLayerZIndex(value: JsonValue | undefined): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function normalizeBackgroundChild(child: EditorTreeNode): EditorTreeNode {
+  const props = child.props;
+  if (!isJsonObject(props) || !isJsonObject(props.style)) {
+    return child;
+  }
+
+  const currentZIndex = asLayerZIndex(props.style.zIndex);
+  const zIndex = currentZIndex === undefined
+    ? 0
+    : Math.min(currentZIndex, 0);
+
+  return {
+    ...child,
+    props: {
+      ...props,
+      style: {
+        ...props.style,
+        zIndex,
+      },
+    },
+  };
+}
+
 export function groupEditorTreeChildren(
   children: EditorTreeNode[],
   options: SemanticGroupingOptions,
@@ -154,7 +197,8 @@ export function groupEditorTreeChildren(
   );
 
   for (const child of children) {
-    buckets[bucketForChild(child)].push(child);
+    const bucket = bucketForChild(child);
+    buckets[bucket].push(bucket === "background" ? normalizeBackgroundChild(child) : child);
   }
 
   const groupedChildren: EditorTreeNode[] = [];

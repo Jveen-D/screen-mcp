@@ -185,7 +185,7 @@ function chartBaseWritableProps(): JsonObject[] {
       path: "chartData.constant.data",
       type: "array<{name:string,type?:string,value:number}>",
       description:
-        "常量数据行。AI 只允许填写 data 数组，每行使用 name、value，可选 type；MCP 会补齐 originalData、fieldList、dimension、indicator、sourceType 等完整 chartData 结构。",
+        "常量数据行。有分类/序列数据的图表必须提供真实业务 data 数组，每行使用 name、value，可选 type；MCP 会补齐 originalData、fieldList、dimension、indicator、sourceType 等完整 chartData 结构。禁止省略数据让组件回退到默认“类目N/系列”演示数据。",
       itemShape: {
         name: "分类名称，对应饼图扇区名称。",
         type: "系列名称，可省略，默认使用“系列”。",

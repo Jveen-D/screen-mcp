@@ -30,20 +30,33 @@ function isNonDecorativeSvg(svgContent: string): boolean {
 
 export function normalizeSvgDecorationProps(props: JsonObject): JsonObject {
   const svgSource = props.svgSource;
+  if (svgSource === "preset") {
+    const svgPreset = typeof props.svgPreset === "string" ? props.svgPreset.trim() : "";
+    if (svgPreset !== "") {
+      props.svgPreset = svgPreset;
+      return props;
+    }
+
+    props.svgSource = "custom";
+    props.svgPreset = "";
+    props.svgContent = "";
+    return props;
+  }
+
   if (svgSource !== "custom") {
     return props;
   }
 
   const svgContent = props.svgContent;
   if (typeof svgContent !== "string" || !svgContent.trim()) {
-    props.svgSource = "preset";
+    props.svgPreset = "";
+    props.svgContent = "";
     return props;
   }
 
   if (isUnsafeSvg(svgContent) || isNonDecorativeSvg(svgContent)) {
-    props.svgSource = "preset";
-    const defaultPreset = "icon-Frame3";
-    props.svgPreset = typeof props.svgPreset === "string" ? props.svgPreset : defaultPreset;
+    props.svgPreset = "";
+    props.svgContent = "";
     return props;
   }
 

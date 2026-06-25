@@ -162,7 +162,9 @@ export function generateFreeformModuleTreeSchema(rawInput: ModuleInput): EditorG
     id: input.logicalId,
     componentName: "__Group__",
     structVersion: "0.0.0",
-    props: {},
+    props: {
+      style: input.style,
+    },
     title:
       typeof input.title === "string" && input.title.trim() !== ""
         ? input.title

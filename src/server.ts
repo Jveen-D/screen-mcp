@@ -29,7 +29,7 @@ import {
 import type { EditorTreeNode, JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-23.01-layering-assets";
+const RULES_VERSION = "2026-06-24.06-no-demo-chart-data-direct-tools";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -40,7 +40,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, optionally call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM. Module grouping is common: set grouping.mode='semantic' and grouping.singleChildGroup=true when you want semantic sections grouped; earlier siblings render above later siblings, so main content must be above decorations/background and backgrounds must stay last. Do not guess or select existing project asset paths; use imageSrc only when the user explicitly provides a path. Hard constraints: Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
+      "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. Use DashboardSpec.groups for LLM-declared related top-level component regions such as headers, KPI rows, and custom mixed panels; every DashboardSpec.groups item must declare a complete absolute style left/top/width/height and should not be used as an unpositioned bucket. Do not flatten many unrelated elements into DashboardSpec.components. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; DashboardSpec and direct module generation for manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion. Module/grouping is common: set grouping.mode='semantic' and grouping.singleChildGroup=true when you want semantic sections grouped; earlier siblings render above later siblings, so main content must be above decorations/background and background groups must stay last. __Group__ is only an editor grouping container and is not a visual background; module root groups may carry style only for editor positioning. DashboardSpec compilation adds real SvgDecoration background carriers for the full canvas and bare groups/modules when no explicit background carrier exists. DashboardSpec and direct chart component generation must carry real chartData.constant.data, or supported ChartPanel dataItems, and SingleText must carry real textContent; do not rely on demo categories or placeholder copy. Theme is compile-time context and is stripped from final component props. SvgDecoration decorations should use LLM-authored custom svgContent unless a non-empty preset id is explicitly chosen; MCP does not fall back to a default preset icon and rejects empty decoration placeholders in DashboardSpec. Do not guess or select existing project asset paths; use imageSrc only when the user explicitly provides a path. Hard constraints: Indicator width should be at least 280px and text lineHeight should be 1; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.",
   },
 );
 
@@ -92,7 +92,7 @@ function serverDiagnostics(): JsonObject {
       "bottom-conclusion-muted-weight",
       "light-structure-restore",
       "side-summary-color-anchors",
-      "default-svg-fallback-only",
+      "no-svg-preset-fallback",
       "single-text-line-box",
       "pie-main-area-alignment",
       "visible-pie-labels",
@@ -118,6 +118,22 @@ function serverDiagnostics(): JsonObject {
       "dashboard-grouping-inheritance",
       "main-content-above-decoration",
       "no-inferred-existing-assets",
+      "dashboard-explicit-component-groups",
+      "background-group-bottom-layer",
+      "dashboard-group-style-required",
+      "no-empty-svg-decoration",
+      "dashboard-root-background-component",
+      "module-background-carrier-fallback",
+      "svg-background-grouping",
+      "compiler-theme-stripped",
+      "module-group-style-props",
+      "dashboard-placeholder-text-rejected",
+      "dashboard-chart-data-required",
+      "chartpanel-auxiliary-text-required",
+      "direct-chart-demo-data-rejected",
+      "module-chartpanel-auxiliary-text-required",
+      "ringchart-dense-legend-label-layout",
+      "filled-panel-frame-background",
     ],
     process: {
       pid: process.pid,
@@ -197,6 +213,7 @@ const dashboardSpecInput = z
       .optional(),
     theme: z.record(z.unknown()).optional(),
     components: z.array(z.record(z.unknown())).optional(),
+    groups: z.array(z.record(z.unknown())).optional(),
     modules: z.array(z.record(z.unknown())).optional(),
   })
   .passthrough();
@@ -434,7 +451,7 @@ server.registerTool(
   {
     title: "Validate Dashboard Spec",
     description:
-      "Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, layout, components, and optional grouping. Returns errors and warnings such as missing fields, invalid grouping mode, out-of-canvas modules, or overlapping top-level regions.",
+      "Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, explicit component groups, layout, components, and optional grouping. Returns errors and warnings such as missing fields, invalid grouping mode, unpositioned explicit groups, empty SvgDecoration placeholders, placeholder SingleText copy, missing chart data, missing ChartPanel auxiliaryTexts, too many ungrouped components, out-of-canvas modules, or overlapping top-level regions.",
     inputSchema: dashboardSpecInput,
     annotations: {
       readOnlyHint: true,
@@ -456,7 +473,7 @@ server.registerTool(
   {
     title: "Generate Dashboard Schema",
     description:
-      "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, chart choices, layout coordinates, copy, backgrounds, decorations, and optional grouping before calling this tool. DashboardSpec.grouping is inherited by modules that do not define their own grouping. This tool compiles and validates the spec; it does not infer a full-screen layout from a prompt or apply a fixed dashboard template.",
+      "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, explicit component groups, chart choices, layout coordinates, copy, backgrounds, decorations, and optional grouping before calling this tool. DashboardSpec.groups can wrap LLM-declared related components, but each explicit group must include complete absolute style left/top/width/height; DashboardSpec.grouping is inherited by groups/modules that do not define their own grouping. This tool compiles and validates the spec, rejects empty SvgDecoration placeholders, placeholder text, missing/demo chart data, and manual ChartPanel modules without auxiliaryTexts, strips compile-time theme from output props, adds real SvgDecoration background carriers for bare canvas/groups/modules, and does not infer a full-screen layout from a prompt or apply a fixed dashboard template.",
     inputSchema: dashboardSpecInput,
     annotations: {
       readOnlyHint: false,

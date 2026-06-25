@@ -82,6 +82,22 @@ function getChartDataRows(props: JsonObject): JsonValue[] | undefined {
   return cloneJson(constant.data);
 }
 
+function isDefaultDemoRow(row: JsonValue): boolean {
+  if (!isJsonObject(row)) {
+    return false;
+  }
+
+  const name = typeof row.name === "string" ? row.name.trim() : "";
+  const type = typeof row.type === "string" ? row.type.trim() : "";
+
+  return /^类目\d+$/u.test(name) &&
+    (type === "" || /^系列[\d一二三四五六七八九十]*$/u.test(type) || type === "进度");
+}
+
+export function hasDefaultDemoChartRows(rows: JsonValue[] | undefined): boolean {
+  return Array.isArray(rows) && rows.length > 0 && rows.every(isDefaultDemoRow);
+}
+
 function getChartDataIndicatorDisplayName(props: JsonObject): string | undefined {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -139,6 +155,12 @@ function applySingleTextLineBoxDefaults(props: JsonObject): JsonObject {
   return nextProps;
 }
 
+function stripCompilerOnlyProps(props: JsonObject): JsonObject {
+  const nextProps = cloneJson(props);
+  delete nextProps.theme;
+  return nextProps;
+}
+
 function applyChartDataRows(
   props: JsonObject,
   rows: JsonValue[] | undefined,
@@ -181,6 +203,24 @@ function applyChartDataRows(
   }
 }
 
+function assertNoDefaultChartDataFallback(
+  componentName: string,
+  rows: JsonValue[] | undefined,
+): void {
+  if (hasDefaultDemoChartRows(rows)) {
+    throw new Error(
+      `${componentName} chartData.constant.data must use real business categories, not default 类目/系列 demo rows`,
+    );
+  }
+
+  const defaultRows = getChartDataRows(getComponentDefinition(componentName).defaultProps);
+  if ((!rows || rows.length === 0) && hasDefaultDemoChartRows(defaultRows)) {
+    throw new Error(
+      `${componentName} must include explicit chartData.constant.data with real business categories; direct component generation will not fall back to default 类目/系列 demo rows`,
+    );
+  }
+}
+
 export function generateComponentProps(aiProps: JsonObject): JsonObject {
   const componentName = assertRequiredString(aiProps, "componentName");
   const logicalId = assertRequiredString(aiProps, "logicalId");
@@ -204,6 +244,9 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
   const indicatorDisplayName = isChartComponent
     ? getChartDataIndicatorDisplayName(sanitizedAiProps)
     : undefined;
+  if (isChartComponent) {
+    assertNoDefaultChartDataFallback(componentName, chartDataRows);
+  }
   const mergeableAiProps = isChartComponent ? removeChartData(sanitizedAiProps) : sanitizedAiProps;
   const mergedProps = deepMerge(definition.defaultProps, mergeableAiProps);
 
@@ -213,7 +256,7 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
     mergedProps.chartData = cloneJson(definition.defaultProps.chartData);
   }
 
-  return definition.normalizeProps?.(mergedProps) ?? mergedProps;
+  return stripCompilerOnlyProps(definition.normalizeProps?.(mergedProps) ?? mergedProps);
 }
 
 function isContainerChild(componentName: string): "earth3DId" | "mapId" | null {
@@ -329,12 +372,15 @@ export function sortComponentSchemas(schemas: ComponentSchema[]): ComponentSchem
   });
 }
 
+function isBottomLayerEditorNode(node: EditorTreeNode): boolean {
+  return node.componentName === "SingleImage" ||
+    (node.componentName === "__Group__" && node.title === "背景");
+}
+
 export function sortEditorTreeChildren(node: EditorTreeNode): EditorTreeNode {
   if (Array.isArray(node.children)) {
     const sortedChildren = [...node.children].sort((left, right) => {
-      const leftIsImage = left.componentName === "SingleImage";
-      const rightIsImage = right.componentName === "SingleImage";
-      return Number(leftIsImage) - Number(rightIsImage);
+      return Number(isBottomLayerEditorNode(left)) - Number(isBottomLayerEditorNode(right));
     });
     node.children = sortedChildren.map(sortEditorTreeChildren);
   }

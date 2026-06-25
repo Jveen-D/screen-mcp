@@ -19,10 +19,9 @@ export const svgDecorationDefaultProps: JsonObject = {
   },
   targetUrl: "",
   openBrowser: false,
-  svgSource: "preset",
-  svgPreset: "icon-Frame3",
-  svgContent:
-    '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">\n  <path d="M160 512h176l80-192h192l80 192h176M160 680h724" fill="none" stroke="#22d3ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="80" />\n</svg>',
+  svgSource: "custom",
+  svgPreset: "",
+  svgContent: "",
   svgFit: "contain",
   primaryColor: "",
   secondaryColor: "",

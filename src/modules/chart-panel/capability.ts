@@ -108,7 +108,7 @@ export const chartPanelCapability: JsonObject = {
       required: false,
       multiple: false,
       description:
-        "背景图，通常铺满整个模块。imageSrc 只能使用用户明确提供的路径，AI 不要猜测或选择现有素材库资源；无素材时可用 SvgDecoration/style 表达面板结构，只有确实需要图片纹理时才生成短 base64。ChartPanel 不再提供默认背景。",
+        "背景图，通常铺满整个模块。imageSrc 只能使用用户明确提供的路径，AI 不要猜测或选择现有素材库资源；无素材时可用 SvgDecoration/style 表达面板结构，只有确实需要图片纹理时才生成短 base64。DashboardSpec 缺省时会补轻量背景承载，但 AI 仍应主动设计背景语言。",
     },
     title: {
       supportedComponents: ["SingleText"],
@@ -134,7 +134,7 @@ export const chartPanelCapability: JsonObject = {
       required: false,
       multiple: true,
       description:
-        "辅助文本，可用于中心摘要、侧边信息卡文字、指标数值、占比和底部结论说明。所有业务文本必须用 SingleText，不要写入 SVG。",
+        "辅助文本，用于中心摘要、侧边信息卡文字、指标数值、占比和底部结论说明。常规 ChartPanel 应至少提供 1 条真实业务辅助文本；如果模块没有辅助信息，manual 模式不会自动生成。所有业务文本必须用 SingleText，不要写入 SVG。",
     },
   },
   layoutRules: [
@@ -148,7 +148,7 @@ export const chartPanelCapability: JsonObject = {
     "饼图布局应优先通过 series.center 和 series.radius 控制实际饼图位置和大小，而不是通过缩小 PieChart.style.width/height 来留出空白；圆心上移、外半径放大、内半径调整都是合法手段。",
 
     "最终用户通常只会说“生成风险大屏”“做一个销售模块”这类简短需求；LLM 或上层编排必须先补齐合理布局、数据同源、标题承托、图例空间、侧边摘要和装饰层级，再把明确 slots 交给 MCP 编译。",
-    "当用户没有显式提供 slots.background、slots.decorations 时，AI 必须主动设计并传入；MCP 不再自动生成背景、标题承托、结构装饰。中心总数、侧边 Top 项等辅助文本仍会自动生成，但承载它们的容器/色标/装饰必须由 AI 提供。",
+    "当用户没有显式提供 slots.background、slots.decorations 时，AI 必须主动设计并传入；DashboardSpec 编译层只会在缺少背景承载时补同主题轻量背景，不会替代 AI 设计标题承托、侧边容器、结构线等装饰。中心总数、侧边 Top 项等辅助文本仍会自动生成，但承载它们的容器/色标/装饰必须由 AI 提供。",
     "最终用户通常不会主动提入场动画；MCP 应默认设计克制的入场动画，让模块出现更有层次，但不能为了炫技让所有元素使用强动效。",
     "ChartPanel 默认动画策略：背景默认不启用入场动画；标题、标题承托和结构装饰使用 animate__fadeInLeft；主图表使用 animate__zoomIn；侧边信息和底部结论使用 animate__fadeInLeft。",
     "入场动画只使用 entryAnimiation.isShow 和 entryAnimiation.type；可选 type 包括 animate__lightSpeedInRight、animate__fadeInLeft、animate__zoomIn、animate__rollIn、animate__jackInTheBox、animate__heartBeat、animate__bounceInDown、animate__rubberBand、animate__bounce。",
@@ -163,7 +163,7 @@ export const chartPanelCapability: JsonObject = {
     "background 默认铺满模块区域，并作为数组最后一项输出。",
     "科技风背景必须使用深色系，例如 #020A18、#061A2E、#07182F 或 rgba(4,16,32,0.92)，禁止大面积高饱和纯色背景。",
     "禁止使用 green、lime、red、yellow、bright purple 等大面积高饱和纯色作为面板背景。",
-    "background 应由 AI 主动设计：可使用用户明确提供的 imageSrc/imageBase64、SvgDecoration 或 style 背景；禁止自行选择现有素材库路径，只有确实需要图片纹理时才生成短 base64。MCP 不再提供默认背景。",
+    "background 应由 AI 主动设计：可使用用户明确提供的 imageSrc/imageBase64、SvgDecoration 或 style 背景；禁止自行选择现有素材库路径，只有确实需要图片纹理时才生成短 base64。DashboardSpec 缺少背景承载时，MCP 可补同主题轻量 SvgDecoration 背景，但不会覆盖显式背景。",
     "每个大屏在开始编排时应先由 AI 设计一套装饰语言（标题承托、底部结构线、侧边摘要容器、角标、面板背景等），并在同一大屏的所有 ChartPanel 模块中复用，确保风格统一但不同大屏之间不会雷同。",
     "当上层编排或 AI 已经提供 slots.decorations、slots.background 时，MCP 必须优先使用提供的设计，禁止用固定模板强行替换或重复追加。",
     "不要让模块退化为裸内容；每个模块都应由 LLM 提供经过设计的背景、边界或明显的 SVG 结构装饰。简单场景可以使用 style.backgroundColor 加 SvgDecoration，不必强制 SingleImage。",
@@ -218,7 +218,7 @@ export const chartPanelCapability: JsonObject = {
     "右侧信息卡两行摘要必须给正文预留足够宽度：默认卡片宽度应接近模块宽度的 36%，正文区域宽度不低于 180px，字号可降到 13px，避免“主要获客”“18.5%”这类短词和百分比被拆行。",
 
     "客户来源、获客、引流、渠道类场景要使用业务语义摘要：线上广告可解释为主要获客，老客户推荐可解释为口碑转化，门店自然到访可解释为自然流量，活动引流可解释为活动引流。",
-    "模块必须使用真实组件表达真实内容：主图表必须使用 slots.mainChart 的 PieChart；业务文本必须使用 title 或 auxiliaryTexts 的 SingleText；SvgDecoration 只允许做装饰。",
+    "模块必须使用真实组件表达真实内容：主图表必须使用 slots.mainChart 的图表组件；业务文本必须使用 title 或 auxiliaryTexts 的 SingleText；常规 ChartPanel 至少应显式提供 1 条辅助文本，承载关键洞察、中心指标、侧边摘要或底部结论，不能让所有模块只剩标题和主图；SvgDecoration 只允许做装饰。",
     "当需要直接复制到编辑器时，优先调用 generate_module_tree_schema；它会返回 __Group__ 根节点，children 内放完整子组件节点。",
     "禁止用 SvgDecoration 的 svgContent 手绘饼图、环形图、信息卡正文、标题、数值、占比或结论说明。",
     "不要因为禁止 SVG 承载真实内容而省略 SvgDecoration；合格的 LLM-authored ChartPanel 至少应包含标题承托、面板边框、侧边信息卡外框、分割线或连接线中的一种装饰结构。",
@@ -228,7 +228,7 @@ export const chartPanelCapability: JsonObject = {
     "结论与重点摘要必须作为空间整体考虑：若重点摘要在右侧，结论可放在摘要上方；若重点摘要移到底部，结论应放在摘要上方或左侧，始终靠近摘要而不是固定在某一侧。",
 
     "需要沉淀的是结构原则而不是固定图形：标题要有承托、摘要要有容器和色标、底部要有收束、背景要有弱边界，但具体 SVG 形态、路径长度、角标样式和线条组合必须由 AI 自主设计。",
-    "MCP 不再自动生成标题承托、面板背景、侧边摘要容器、底部结构线等装饰；所有装饰必须由 AI 通过 slots.decorations 和 slots.background 提供。结构原则仍保留，但具体 SVG 形态必须由 AI 自主设计。",
+    "MCP 不再自动生成标题承托、侧边摘要容器、底部结构线等业务装饰；DashboardSpec 只会在缺省时补轻量背景承载。所有具体装饰必须由 AI 通过 slots.decorations 和 slots.background 提供，具体 SVG 形态必须由 AI 自主设计。",
     "模块不允许裸标题、裸图表、裸说明文字；AI 必须提供至少标题承托、面板边界/背景、侧边信息卡容器或分割线等可见装饰，不能回退成普通深色空卡片。",
     "侧边摘要卡行距要收敛，三条两行摘要不应撑成过高空框；色标只承担颜色锚点，不承载文字，必须贴近对应摘要行帮助关联饼图、legend 和右侧解释。",
     "侧边摘要色标（SvgDecoration）必须与对应摘要文本行严格对齐：色标的 top 等于摘要文本的 top，色标的 height 等于摘要文本的字号；禁止色标与文本出现上下错位或用固定 12px 高度硬编码。",

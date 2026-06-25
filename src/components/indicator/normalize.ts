@@ -94,6 +94,18 @@ function estimateTextWidth(text: string, fontSize: number): number {
   return width;
 }
 
+function shouldApplyWideFloor(props: JsonObject, numberText: string): boolean {
+  const numberStyle = isJsonObject(props.numberStyle) ? props.numberStyle : {};
+  const fontSize = asNumber(numberStyle.fontSize, 48);
+  const hasDenseKpiLayout =
+    props.prefix === true ||
+    props.suffix === true ||
+    props.separation === true ||
+    props.hasBackground === true;
+
+  return hasDenseKpiLayout && fontSize >= 40 && numberText.length >= 6;
+}
+
 function estimateIndicatorMinWidth(props: JsonObject): number {
   const decimal = asIntegerInRange(props.decimal, 0, 4, 0);
   const textValue = asNumber(props.textValue, 1234);
@@ -134,7 +146,13 @@ function estimateIndicatorMinWidth(props: JsonObject): number {
 
   // 额外余量：容器内边距、ant-row gutter 等
   const buffer = hasBackground ? 48 : 32;
-  return Math.ceil(numberWidth + prefixWidth + suffixWidth + buffer);
+  const contentWidth = Math.ceil(numberWidth + prefixWidth + suffixWidth + buffer);
+
+  if (shouldApplyWideFloor(props, numberText)) {
+    return Math.max(contentWidth, 360);
+  }
+
+  return contentWidth;
 }
 
 function normalizeStyleWidth(props: JsonObject): void {
