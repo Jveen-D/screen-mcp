@@ -379,7 +379,7 @@ export const funnelChartCapability: JsonObject = {
   ],
   visualRules: [
     "data 每条记录必须包含 { name, value }，name 为漏斗层级名称，value 为对应数值。",
-    "漏斗图适合展示多阶段转化、层级递减或递增的数据，如访问→点击→咨询→订单。",
+    "漏斗图适合展示多阶段转化、层级递减或递增的数据，如步骤A→步骤B→步骤C→步骤D。",
     "sort 为 descending 时数值最大的层级位于漏斗顶部，适合展示漏斗流失；ascending 则相反。",
     "建议为相邻层级配置对比明显但不刺眼的颜色，可使用同色系渐变或主题色组合。",
     "标签内容较多或层级名较长时，可调整 labelConfig.position 为 outside 或减小 fontSize，避免标签重叠。",
@@ -388,7 +388,7 @@ export const funnelChartCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风漏斗图配置示例",
+      title: "漏斗图配置示例",
       props: {
         componentName: "FunnelChart",
         logicalId: "theme_funnel_chart",
@@ -404,11 +404,11 @@ export const funnelChartCapability: JsonObject = {
           backgroundColor: "transparent",
         },
         data: [
-          { name: "访问", value: 100 },
-          { name: "点击", value: 80 },
-          { name: "咨询", value: 60 },
-          { name: "订单", value: 40 },
-          { name: "成交", value: 20 },
+          { name: "步骤A", value: 100 },
+          { name: "步骤B", value: 80 },
+          { name: "步骤C", value: 60 },
+          { name: "步骤D", value: 40 },
+          { name: "步骤E", value: 20 },
         ],
         sort: "descending",
         legendConfig: {
@@ -470,11 +470,11 @@ export const funnelChartCapability: JsonObject = {
         },
         customSeriesConfigs: [
           {
-            matchSeriesName: "成交",
+            matchSeriesName: "步骤E",
             customColor: "#00E5FF",
           },
           {
-            matchSeriesName: "访问",
+            matchSeriesName: "步骤A",
             customColor: "#0066FF",
           },
         ],

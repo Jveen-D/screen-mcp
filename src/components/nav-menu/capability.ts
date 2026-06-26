@@ -135,7 +135,7 @@ export const navMenuCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风侧边导航",
+      title: "侧边导航配置示例",
       props: {
         componentName: "NavMenu",
         logicalId: "theme_nav_menu",

@@ -1,8 +1,8 @@
 export const singleImageCapability = {
     componentName: "SingleImage",
     displayName: "图片",
-    description: "用于大屏面板背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。",
-    aiRole: "AI 负责图片组件的位置、尺寸和图片来源。MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
+    description: "用于大屏面板背景、全屏背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。imageSrc 只能使用用户明确提供的路径，AI 不要猜测或选择现有素材库资源；没有素材时可用 style/SvgDecoration 表达轻量背景，只有确实需要图片纹理时才生成短 base64。",
+    aiRole: "AI 负责图片组件的位置、尺寸和图片来源选择；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。AI 不应自行选择项目现有素材路径。",
     requiredProps: [
         {
             path: "componentName",
@@ -42,12 +42,12 @@ export const singleImageCapability = {
         {
             path: "imageSrc",
             type: "string",
-            description: "图片资源路径。用于素材库或服务端已存在图片。",
+            description: "图片资源路径。只能在用户明确提供具体路径时填写；AI 不要自行编造或选择现有素材库路径。",
         },
         {
             path: "imageBase64",
             type: "string",
-            description: "base64 图片内容。只有用户明确提供图片内容时才填写；填写后 imageUseMode 必须为 base64。",
+            description: "base64 图片内容。优先使用用户提供的 base64；AI 自行生成时必须保持短小，只用于确实需要图片纹理/光效的场景。填写后 imageUseMode 必须为 base64。",
         },
         {
             path: "imageShowType",
@@ -83,7 +83,8 @@ export const singleImageCapability = {
     mergeRules: [
         "对象按 key 深合并。",
         "数组按下标深合并。",
-        "AI 不应凭空生成 base64，只能使用用户提供的 base64 或素材路径。",
+        "用户明确提供的 imageSrc/imageBase64 优先使用；无素材时优先考虑 style.backgroundColor 或 SvgDecoration，禁止自行选择现有素材库路径，只有确实需要图片纹理时才生成短 base64。",
+        "禁止生成不可访问的外部图片链接或照片级真实图片；自行生成的 base64 内容应为短小的矢量风格渐变、网格、光效或纹理。",
         "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
         "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
     ],
@@ -108,7 +109,7 @@ export const singleImageCapability = {
                     borderColor: "rgba(0,0,0,0)",
                 },
                 imageUseMode: "upload",
-                imageSrc: "group1/M00/panel-bg-tech.png",
+                imageSrc: "<user-provided-image-src>",
                 imageShowType: "noRepeat",
                 opacity: 1,
             },

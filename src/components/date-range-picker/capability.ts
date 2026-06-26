@@ -116,7 +116,7 @@ export const dateRangePickerCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风日期范围选择",
+      title: "日期范围选择配置示例",
       props: {
         componentName: "DateRangePicker",
         logicalId: "theme_date_range_picker",

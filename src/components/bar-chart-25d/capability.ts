@@ -59,7 +59,7 @@ export const barChart25DCapability: JsonObject = {
       path: "chartData.indicator[0].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "指标在图例/提示中的业务显示名。必须根据指标业务含义设置，如“销售额”“完成量”“订单数”，严禁保留默认值“value”。",
+        "指标在图例/提示中的业务显示名。必须根据指标业务含义设置，如“指标值”“完成量”“数量”，严禁保留默认值“value”。",
     },
     {
       path: "option.grid",
@@ -262,7 +262,7 @@ export const barChart25DCapability: JsonObject = {
   visualRules: [
     "chartData.dimension 必须包含两个维度：name（X 轴分类）和 type（系列名），缺一不可。",
     "chartData.constant.data 每条记录必须包含 { name, type, value }，其中 name 对应 X 轴分类，type 作为系列名用于分组，value 为数值。",
-    "AI 必须根据业务语义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName（如“销售额”“完成量”“订单数”），禁止保留默认值“value”。",
+    "AI 必须根据业务语义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName（如“指标值”“完成量”“数量”），禁止保留默认值“value”。",
     "2.5D 柱体视觉重量较大，barWidth 建议 12–24 px，不宜过细。",
     "多系列分组时，系列数建议 ≤3，与前端 ChartDataSetter.maxCount 对齐。",
     "图例默认放在顶部（top: 'top'），给柱体主体留出足够的纵向空间。",
@@ -274,12 +274,12 @@ export const barChart25DCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风 2.5D 柱状图配置示例",
+      title: "2.5D 柱状图配置示例",
       props: {
         componentName: "BarChart25D",
         logicalId: "theme_25d_bar_chart",
         parentLogicalId: "screen_group",
-        name: "销售对比图",
+        name: "分类对比图",
         style: {
           left: 80,
           top: 160,
@@ -322,7 +322,7 @@ export const barChart25DCapability: JsonObject = {
                     auFix: "",
                   },
                 },
-                chartDisplayName: "销售额",
+                chartDisplayName: "指标值",
               },
               fieldName: "value",
               fieldDisplayName: "value",

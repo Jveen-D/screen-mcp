@@ -143,7 +143,7 @@ export const radioGroupCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风单选组",
+      title: "单选组配置示例",
       props: {
         componentName: "RadioGroup",
         logicalId: "theme_radio_group",

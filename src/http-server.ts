@@ -28,7 +28,7 @@ import {
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-24.06-no-demo-chart-data-direct-tools";
+const RULES_VERSION = "2026-06-26.01-component-capability-cleanup";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -83,6 +83,7 @@ function createServer() {
         "module-chartpanel-auxiliary-text-required",
         "ringchart-dense-legend-label-layout",
         "filled-panel-frame-background",
+        "component-capability-neutral-examples",
       ],
       startedAt: SERVER_STARTED_AT.toISOString(),
       source: {

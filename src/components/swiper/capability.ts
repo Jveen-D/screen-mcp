@@ -5,7 +5,7 @@ export const swiperCapability: JsonObject = {
   displayName: "轮播图",
   description: "大屏轮播图组件，支持图片列表、切换方向、切换按钮、动画效果和 3D 变换。",
   aiRole:
-    "AI 负责图片列表、切换方向、动画和样式；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责图片列表、切换方向、动画和样式；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。图片路径只能使用用户明确提供的资源。",
   requiredProps: [
     {
       path: "componentName",
@@ -35,7 +35,7 @@ export const swiperCapability: JsonObject = {
     {
       path: "imageSrcList",
       type: "array<string>",
-      description: "轮播图片地址数组。",
+      description: "轮播图片地址数组。只能使用用户明确提供的图片路径，不要编造或选择项目现有素材库路径。",
     },
     {
       path: "imageShowType",
@@ -94,6 +94,7 @@ export const swiperCapability: JsonObject = {
     "数组按下标深合并。",
     "imageShowType 只能为 noRepeat/repeat/xRepeat/yRepeat，非法值重置为 noRepeat。",
     "direction 只能为 horizontal/vertical，非法值重置为 horizontal。",
+    "imageSrcList 只接收用户明确提供的图片路径；没有图片素材时不要生成轮播图占位资源。",
   ],
   visualRules: [
     "轮播图适合用于图片展示、广告位或面板背景。",
@@ -101,7 +102,7 @@ export const swiperCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风轮播",
+      title: "轮播图配置示例",
       props: {
         componentName: "Swiper",
         logicalId: "theme_swiper",
@@ -115,8 +116,8 @@ export const swiperCapability: JsonObject = {
           height: 240,
         },
         imageSrcList: [
-          "group1/M00/banner01.png",
-          "group1/M00/banner02.png",
+          "<user-provided-banner-1>",
+          "<user-provided-banner-2>",
         ],
         direction: "horizontal",
         swiperAnimation: {

@@ -271,12 +271,12 @@ export const pictorialBarChartCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风象形柱图配置示例",
+      title: "象形柱图配置示例",
       props: {
         componentName: "PictorialBarChart",
         logicalId: "theme_pictorial_bar_chart",
         parentLogicalId: "screen_group",
-        name: "销售额象形柱图",
+        name: "指标值象形柱图",
         style: {
           position: "absolute",
           left: 100,
@@ -326,7 +326,7 @@ export const pictorialBarChartCapability: JsonObject = {
           },
         },
         YAxisConf: {
-          name: "销售额",
+          name: "指标值",
           splitLineConf: {
             show: true,
             color: "rgba(0,229,255,0.12)",

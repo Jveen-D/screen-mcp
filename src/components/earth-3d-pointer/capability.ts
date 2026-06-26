@@ -78,7 +78,7 @@ export const earth3dPointerCapability: JsonObject = {
     "earth3DId 由 AI 提供，MCP 仅做字符串兜底，不会修改其值。",
   ],
   visualRules: [
-    "标记点颜色应与 Earth3D 整体科技风主题协调。",
+    "标记点颜色应与 Earth3D 整体主题协调。",
     "data 中必须包含有效的 lng 与 lat 数值。",
     "每个 Earth3D-Pointer 必须通过 earth3DId 关联到唯一的 Earth3D 父组件。",
   ],
@@ -102,8 +102,8 @@ export const earth3dPointerCapability: JsonObject = {
         pointerColor: "#109bff",
         pointerOpacity: 1,
         data: [
-          { lng: 116.4074, lat: 39.9042, title: "北京" },
-          { lng: 121.4737, lat: 31.2304, title: "上海" },
+          { lng: 116.4074, lat: 39.9042, title: "点位A" },
+          { lng: 121.4737, lat: 31.2304, title: "点位B" },
         ],
       },
     },

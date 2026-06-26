@@ -5,7 +5,7 @@ export const audioCapability: JsonObject = {
   displayName: "音频",
   description: "大屏音频组件，支持上传音频文件、控制条、自动播放和循环播放。",
   aiRole:
-    "AI 负责音频文件、播放控制和样式；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责音频文件、播放控制和样式；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。音频文件路径只能使用用户明确提供的资源。",
   requiredProps: [
     {
       path: "componentName",
@@ -35,7 +35,7 @@ export const audioCapability: JsonObject = {
     {
       path: "assetsUploadFile",
       type: "string",
-      description: "上传音频文件路径。",
+      description: "上传音频文件路径。只能使用用户明确提供的资源路径，不要编造或选择项目现有素材库路径。",
     },
     {
       path: "controlBar",

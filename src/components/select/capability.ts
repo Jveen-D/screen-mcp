@@ -121,7 +121,7 @@ export const selectCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风状态下拉",
+      title: "状态下拉配置示例",
       props: {
         componentName: "Select",
         logicalId: "theme_select",

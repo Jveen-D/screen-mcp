@@ -60,7 +60,7 @@ export const stackBarChartCapability: JsonObject = {
       path: "chartData.indicator[0].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "指标在图例/提示中的业务显示名。必须根据指标业务含义设置，如“销售额”“完成量”“订单数”，严禁保留默认值“value”。",
+        "指标在图例/提示中的业务显示名。必须根据指标业务含义设置，如“指标值”“完成量”“数量”，严禁保留默认值“value”。",
     },
     {
       path: "option.grid",
@@ -656,7 +656,7 @@ export const stackBarChartCapability: JsonObject = {
     "chartData.dimension 必须包含两个维度：name（X 轴分类）和 type（系列名），缺一不可。",
     "chartData.constant.data 每条记录必须包含 { name, type, value }，其中 name 对应 X 轴分类，type 作为系列名用于堆叠分组，value 为累计数值。",
     "chartData.constant.data 必须展示多系列堆叠效果，至少包含 2 个不同的 type 值。",
-    "AI 必须根据业务语义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName（如“销售额”“完成量”“订单数”），禁止保留默认值“value”。",
+    "AI 必须根据业务语义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName（如“指标值”“完成量”“数量”），禁止保留默认值“value”。",
     "堆叠柱状图用于展示同一分类下多个系列的累计构成与对比，不要用于展示占比或构成关系；占比需求应使用饼图或环形图。",
     "多系列堆叠柱状图应使用对比色区分不同系列，颜色要具备足够的可辨识性，避免色盲不友好的组合。",
     "堆叠柱状图的 legend 默认放在顶部（top: 'top'），给柱体主体留出足够的纵向空间。",
@@ -670,7 +670,7 @@ export const stackBarChartCapability: JsonObject = {
     "禁止在堆叠柱状图上添加饼图才有的装饰（如中心文本、环形内径、扇区抬升等概念）。",
     "label formatter 中严禁使用 \n、\r、\t 等转义字符，MCP 会自动清理为单个空格；需要换行时应由前端默认处理。",
     "若开启数据标签（label.show: true），必须确保 grid 边距充足：top ≥ 56（防顶部截断），right ≥ 30（防右侧贴边），bottom ≥ 38。",
-    "柱子圆角（itemStyle.borderRadius）适合科技风大屏，增强视觉层次；建议 2–6px，过大会影响数据可读性。",
+    "柱子圆角（itemStyle.borderRadius）适合需要强化视觉层次的大屏；建议 2–6px，过大会影响数据可读性。",
     "itemStyle 用于自定义柱子外观，可设置填充色、边框色、圆角和阴影；柱体较宽时视觉权重会明显提升，需与间距保持协调。",
     "模块高度较小时应压缩 grid 边距：高度 < 280 时建议 top 40、bottom 28；高度 ≥ 280 时建议 top 56、bottom 40，确保柱体有足够纵向空间。",
     "底部结论文字不应紧贴底部 SVG 装饰，MCP 会自动保持安全间距；AI 无需额外调整辅助文本位置。",
@@ -678,12 +678,12 @@ export const stackBarChartCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风堆叠柱状图配置示例",
+      title: "堆叠柱状图配置示例",
       props: {
         componentName: "StackBarChart",
         logicalId: "theme_stack_bar_chart",
         parentLogicalId: "screen_group",
-        name: "销售构成图",
+        name: "分类构成图",
         style: {
           left: 80,
           top: 160,
@@ -726,7 +726,7 @@ export const stackBarChartCapability: JsonObject = {
                     auFix: "",
                   },
                 },
-                chartDisplayName: "销售额",
+                chartDisplayName: "指标值",
               },
               fieldName: "value",
               fieldDisplayName: "value",

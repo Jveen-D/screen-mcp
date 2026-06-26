@@ -478,18 +478,18 @@ export const lineChartCapability: JsonObject = {
     "若开启数据点标签（label.show: true），必须确保 grid 边距充足：top ≥ 56（防顶部截断），right ≥ 30（防右侧贴边），bottom ≥ 38。",
     "markPoint 用于标记极值时，label 应保持极简，避免复杂 formatter；优先使用默认样式或仅设置 color/fontSize。",
     "markLine 适合标注平均值或阈值参考线，使用低对比度虚线（如 rgba(250,204,21,0.38)），避免与主折线视觉冲突。",
-    "发光效果（lineStyle.shadowBlur + shadowColor）适合科技风大屏，增强折线视觉层次；shadowBlur 建议 8–16，shadowColor 使用线条同色半透明。",
+    "发光效果（lineStyle.shadowBlur + shadowColor）适合需要强化视觉层次的大屏；shadowBlur 建议 8–16，shadowColor 使用线条同色半透明。",
     "itemStyle 用于自定义数据点外观，可设置填充色、边框色和阴影；当 symbolSize 较大时，itemStyle 的视觉权重会明显提升，需与线宽保持协调。",
     "areaStyle.color 支持线性渐变对象（type: 'linear', colorStops），用于创造从上到下渐隐的面积填充效果，增强趋势感知。",
   ],
   examples: [
     {
-      title: "科技风折线图配置示例",
+      title: "折线图配置示例",
       props: {
         componentName: "LineChart",
         logicalId: "theme_line_chart",
         parentLogicalId: "screen_group",
-        name: "销售趋势图",
+        name: "指标趋势图",
         style: {
           left: 80,
           top: 160,

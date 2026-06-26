@@ -474,7 +474,7 @@ export const radarChartCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风雷达图配置示例",
+      title: "雷达图配置示例",
       props: {
         componentName: "RadarChart",
         logicalId: "theme_radar_chart",

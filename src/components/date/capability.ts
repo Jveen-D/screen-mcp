@@ -64,7 +64,7 @@ export const dateCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风时间",
+      title: "时间配置示例",
       props: {
         componentName: "Date",
         logicalId: "theme_date",

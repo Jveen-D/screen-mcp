@@ -105,7 +105,7 @@ export const indicatorCapability: JsonObject = {
       children: [
         { path: "numberStyle.fontFamily", type: "string", description: "字体族。" },
         { path: "numberStyle.fontSize", type: "number", description: "字号（px），建议 32~72，需保证组件高度足够。" },
-        { path: "numberStyle.color", type: "string", description: "字体颜色，建议科技风高亮色如 #00E5FF。" },
+        { path: "numberStyle.color", type: "string", description: "字体颜色，建议使用与大屏主题一致的高亮色。" },
         { path: "numberStyle.fontWeight", type: "enum", values: ["normal", "bold", "bolder"], description: "粗细。" },
         { path: "numberStyle.fontStyle", type: "enum", values: ["normal", "italic", "oblique"], description: "斜体。" },
         { path: "numberStyle.letterSpacing", type: "number", description: "数字间隙（px），推荐 0~4。" },

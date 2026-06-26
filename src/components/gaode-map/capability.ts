@@ -75,14 +75,14 @@ export const gaodeMapCapability: JsonObject = {
   ],
   visualRules: [
     "GaodeMap 通常作为大屏地理底图，尺寸建议覆盖主要展示区域。",
-    "地图风格（defaultStyleId/customStyleId）应服务于整体主题，如 darkblue 适合科技风。",
+    "地图风格（defaultStyleId/customStyleId）应服务于整体主题，避免与大屏主色和底色冲突。",
     "子组件通过 children 数组嵌套在 GaodeMap 下，MCP 会自动同步 mapId 与 parentBusinessElementId。",
     "如果单独生成 GaodeMap 子组件，才需要手动填写 mapId 等于父组件 logicalId。",
 
   ],
   examples: [
     {
-      title: "科技风 2D 高德地图",
+      title: "2D 高德地图配置示例",
       props: {
         componentName: "GaodeMap",
         logicalId: "theme_gaode_map",

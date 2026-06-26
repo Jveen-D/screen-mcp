@@ -35,7 +35,7 @@ export const weatherCapability: JsonObject = {
     {
       path: "cityCode",
       type: "array<string>",
-      description: "城市编码数组，默认 [\"11\", \"1101\", \"110101\"]（北京市东城区）。",
+      description: "城市编码数组，缺失时使用组件内置默认编码；需要具体城市时应由用户或上层设计明确提供。",
     },
     { path: "style", type: "object", description: "位置、尺寸、字体、颜色、对齐、图标大小。" },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。默认 0。" },
@@ -59,7 +59,7 @@ export const weatherCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风天气",
+      title: "天气配置示例",
       props: {
         componentName: "Weather",
         logicalId: "theme_weather",

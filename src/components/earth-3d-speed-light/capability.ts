@@ -72,7 +72,7 @@ export const earth3dSpeedLightCapability: JsonObject = {
   ],
   visualRules: [
     "扫描线位置应落在 Earth3D 可见区域内。",
-    "扫描线颜色应服务于数据告警或高亮语义。",
+    "扫描线颜色应服务于异常状态或高亮语义。",
     "每个 Earth3D-SpeedLight 必须通过 earth3DId 关联到唯一的 Earth3D 父组件。",
   ],
   examples: [

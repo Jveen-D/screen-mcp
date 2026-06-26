@@ -59,19 +59,19 @@ export const scatterChartCapability: JsonObject = {
       path: "chartData.indicator[0].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "X 轴指标在图例/提示中的业务显示名。必须根据业务语义设置，如“广告曝光量”“温度”，严禁保留默认值“x”。",
+        "X 轴指标在图例/提示中的业务显示名。必须根据业务语义设置，如“维度X”“温度”，严禁保留默认值“x”。",
     },
     {
       path: "chartData.indicator[1].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "Y 轴指标在图例/提示中的业务显示名。必须根据业务语义设置，如“点击率”“湿度”，严禁保留默认值“y”。",
+        "Y 轴指标在图例/提示中的业务显示名。必须根据业务语义设置，如“维度Y”“湿度”，严禁保留默认值“y”。",
     },
     {
       path: "chartData.indicator[2].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "气泡大小指标在图例/提示中的业务显示名。必须根据业务语义设置，如“销售额”“人口数”，严禁保留默认值“size”。",
+        "气泡大小指标在图例/提示中的业务显示名。必须根据业务语义设置，如“规模”“数量”，严禁保留默认值“size”。",
     },
     {
       path: "option.grid",
@@ -612,7 +612,7 @@ export const scatterChartCapability: JsonObject = {
     "chartData.dimension 必须包含一个维度：series（系列名），用于分组着色。",
     "chartData.indicator 必须包含三个指标：x（X 轴数值）、y（Y 轴数值）、size（气泡大小）。",
     "chartData.constant.data 每条记录必须包含 { x, y, size?, series? }，其中 x、y 缺失时回退为 0，series 缺失时回退为“默认系列”，非法 size 会被删除。",
-    "AI 必须根据业务语义设置 chartData.indicator[0/1/2].fieldDataConfig.chartDisplayName（如“广告曝光量”“点击率”“销售额”），禁止保留默认值“x”“y”“size”。",
+    "AI 必须根据业务语义设置 chartData.indicator[0/1/2].fieldDataConfig.chartDisplayName（如“维度X”“维度Y”“规模”），禁止保留默认值“x”“y”“size”。",
     "散点图用于展示两个连续变量的分布与相关性，不要用于展示分类对比；分类对比需求应使用柱状图。",
     "多系列散点图应使用对比色区分不同系列，颜色要具备足够的可辨识性，避免色盲不友好的组合。",
     "图例默认放在顶部（top: 'top'），给散点主体留出足够的绘制空间。",
@@ -625,12 +625,12 @@ export const scatterChartCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风散点图配置示例",
+      title: "散点图配置示例",
       props: {
         componentName: "ScatterChart",
         logicalId: "theme_scatter_chart",
         parentLogicalId: "screen_group",
-        name: "广告曝光与点击关系图",
+        name: "双指标关系图",
         style: {
           left: 80,
           top: 160,
@@ -664,7 +664,7 @@ export const scatterChartCapability: JsonObject = {
                     auFix: "",
                   },
                 },
-                chartDisplayName: "曝光量",
+                chartDisplayName: "维度X",
               },
               fieldName: "x",
               fieldDisplayName: "x",
@@ -682,7 +682,7 @@ export const scatterChartCapability: JsonObject = {
                     auFix: "",
                   },
                 },
-                chartDisplayName: "点击率",
+                chartDisplayName: "维度Y",
               },
               fieldName: "y",
               fieldDisplayName: "y",
@@ -700,7 +700,7 @@ export const scatterChartCapability: JsonObject = {
                     auFix: "",
                   },
                 },
-                chartDisplayName: "销售额",
+                chartDisplayName: "规模",
               },
               fieldName: "size",
               fieldDisplayName: "size",
@@ -756,7 +756,7 @@ export const scatterChartCapability: JsonObject = {
             bottom: 42,
           },
           xAxis: {
-            name: "曝光量",
+            name: "维度X",
             axisLabel: {
               show: true,
               color: "#BFEFFF",
@@ -771,7 +771,7 @@ export const scatterChartCapability: JsonObject = {
             },
           },
           yAxis: {
-            name: "点击率",
+            name: "维度Y",
             axisLabel: {
               show: true,
               color: "#BFEFFF",

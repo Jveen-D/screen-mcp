@@ -109,7 +109,7 @@ export const datePickerCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风日期选择",
+      title: "日期选择配置示例",
       props: {
         componentName: "DatePicker",
         logicalId: "theme_date_picker",

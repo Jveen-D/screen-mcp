@@ -342,7 +342,7 @@ export const percentageBarCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风百分比条配置示例",
+      title: "百分比条配置示例",
       props: {
         componentName: "PercentageBar",
         logicalId: "theme_percentage_bar",

@@ -351,7 +351,7 @@ export const circularProgressCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风环形进度图配置示例",
+      title: "环形进度图配置示例",
       props: {
         componentName: "CircularProgress",
         logicalId: "theme_circular_progress",

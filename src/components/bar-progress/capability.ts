@@ -59,7 +59,7 @@ export const barProgressCapability: JsonObject = {
       path: "chartData.indicator[0].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "指标在图例/提示中的业务显示名。必须根据指标业务含义设置，如“完成率”“进度”“销售额”“完成量”，严禁保留默认值“value”。",
+        "指标在图例/提示中的业务显示名。必须根据指标业务含义设置，如“完成率”“进度”“指标值”“完成量”，严禁保留默认值“value”。",
     },
     {
       path: "option.grid",
@@ -514,7 +514,7 @@ export const barProgressCapability: JsonObject = {
     "chartData.dimension 必须只包含一个维度 name，作为 Y 轴分类。",
     "chartData.indicator 必须只包含一个指标 value，作为 X 轴进度数值。",
     "chartData.constant.data 每条记录必须包含 { name, type, value }，其中 name 为 Y 轴分类，type 通常为单一系列名，value 为进度数值。",
-    "AI 必须根据业务语义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName（如“完成率”“进度”“销售额”），禁止保留默认值“value”。",
+    "AI 必须根据业务语义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName（如“完成率”“进度”“指标值”），禁止保留默认值“value”。",
     "条形进度图用于展示同一指标下不同分类的进度大小对比，不要用于多指标对比或占比构成；占比需求应使用饼图或环形图。",
     "Y 轴分类（name）从上到下按数据顺序排列，inverse 固定为 true，确保第一条数据在最上方。",
     "X 轴默认隐藏 axisLabel，重点通过右侧数据标签和 tooltip 展示数值。",
@@ -529,7 +529,7 @@ export const barProgressCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风条形进度图配置示例",
+      title: "条形进度图配置示例",
       props: {
         componentName: "BarProgress",
         logicalId: "theme_bar_progress",

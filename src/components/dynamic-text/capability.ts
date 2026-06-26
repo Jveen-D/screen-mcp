@@ -4,7 +4,7 @@ export const dynamicTextCapability: JsonObject = {
   componentName: "DynamicText",
   displayName: "动态文本",
   description:
-    "用于大屏动态指标展示，可绑定单个数值并显示前后缀，例如“今日访问量：12,345”、“CPU 使用率：78%”。",
+    "用于大屏动态指标展示，可绑定单个数值并显示前后缀，例如“当前指标：12,345”、“CPU 使用率：78%”。",
   aiRole:
     "AI 负责数值、前后缀文案、位置、尺寸、字体和视觉样式。MCP 负责把 textValue 同步到 chartData 并补齐其余 props。",
   requiredProps: [
@@ -40,7 +40,7 @@ export const dynamicTextCapability: JsonObject = {
     {
       path: "prefixTitle",
       type: "string",
-      description: "数值前缀文案，例如“今日访问量：”。",
+      description: "数值前缀文案，例如“当前指标：”。",
     },
     {
       path: "affixTitle",
@@ -107,13 +107,13 @@ export const dynamicTextCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "今日访问量指标",
+      title: "当前指标",
       props: {
         componentName: "DynamicText",
-        logicalId: "today_visit_count",
-        parentLogicalId: "visit_group",
-        name: "今日访问量",
-        prefixTitle: "今日访问量：",
+        logicalId: "current_metric_value",
+        parentLogicalId: "metric_group",
+        name: "当前指标",
+        prefixTitle: "当前指标：",
         affixTitle: "",
         textValue: 12345,
         style: {

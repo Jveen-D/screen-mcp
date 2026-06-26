@@ -130,14 +130,14 @@ export const earth3dCapability: JsonObject = {
   ],
   visualRules: [
     "Earth3D 通常作为大屏底图或核心视觉，尺寸应覆盖主要展示区域。",
-    "纹理、大气、辉光等配置应服务于整体科技风主题，避免高饱和色冲突。",
+    "纹理、大气、辉光等配置应服务于整体主题，避免高饱和色冲突。",
     "子组件通过 children 数组嵌套在 Earth3D 下，MCP 会自动同步 earth3DId 与 parentBusinessElementId。",
     "如果单独生成 Earth3D 子组件，才需要手动填写 earth3DId 等于父组件 logicalId。",
 
   ],
   examples: [
     {
-      title: "科技风 3D 地球",
+      title: "3D 地球配置示例",
       props: {
         componentName: "Earth3D",
         logicalId: "theme_earth_3d",
@@ -168,8 +168,8 @@ export const earth3dCapability: JsonObject = {
             name: "标记点",
             style: { position: "absolute", left: 0, top: 0, width: 0, height: 0, zIndex: 509 },
             data: [
-              { lng: 116.4074, lat: 39.9042, title: "北京" },
-              { lng: 121.4737, lat: 31.2304, title: "上海" },
+              { lng: 116.4074, lat: 39.9042, title: "点位A" },
+              { lng: 121.4737, lat: 31.2304, title: "点位B" },
             ],
           },
         ],

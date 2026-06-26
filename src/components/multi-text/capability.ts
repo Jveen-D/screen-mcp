@@ -98,7 +98,7 @@ export const multiTextCapability: JsonObject = {
         logicalId: "sales_panel_conclusion",
         parentLogicalId: "sales_group",
         name: "底部结论",
-        textContent: "重点关注：线上渠道占比持续提升，\n建议加大移动端投放力度。",
+        textContent: "重点关注：分类A占比持续提升，\n建议继续跟踪变化趋势。",
         style: {
           position: "absolute",
           left: 80,

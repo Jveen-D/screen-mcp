@@ -130,7 +130,7 @@ export const ringChartCapability: JsonObject = {
       path: "chartData.indicator[0].fieldDataConfig.chartDisplayName",
       type: "string",
       description:
-        "指标在图例、提示框等处的业务语义显示名。AI 必须根据实际业务含义设置，如“销售额”“客户数”“完成量”，不能保留默认值“value”。",
+        "指标在图例、提示框等处的业务语义显示名。AI 必须根据实际业务含义设置，如“指标值”“数量”“完成量”，不能保留默认值“value”。",
     },
     {
       path: "borderGap",
@@ -299,7 +299,7 @@ export const ringChartCapability: JsonObject = {
   ],
   visualRules: [
     "环形图适合展示占比、构成关系；中心空洞明显时，应放置总数、核心指标或摘要，避免无意义留白。",
-    "色彩要服务主题：风险、等级、状态类可以使用同一色系的明暗层级；业务来源、渠道、品类类可以使用主色、辅色、强调色和低饱和补色组合；避免直接使用 ECharts 默认杂色感。",
+    "色彩要服务主题：等级、状态类可以使用同一色系的明暗层级；类别、分类、品类类可以使用主色、辅色、强调色和低饱和补色组合；避免直接使用 ECharts 默认杂色感。",
     "扇区分割线要和视觉风格匹配：强科技面板可用更明显的发光或高亮分割；轻量信息面板应使用克制描边，避免边框抢占主体。",
     "外部 label 应形成统一标注系统：字号、字重、颜色、连接线长度要成组设计，而不是只把默认标签打开。",
     "当模块里已经有侧边信息卡、摘要卡或明细卡时，环形图 label 应承担定位和识别功能，优先显示名称和值；占比、解释性文字和优先级说明交给信息卡，避免同一信息在主图和卡片中同等强度重复。",
@@ -309,7 +309,7 @@ export const ringChartCapability: JsonObject = {
     "legend 的位置要承担结构功能：放在标题下方时用于承接标题和图表；放在底部时必须和图表主体、外部 label、底部装饰留出足够距离；放在侧边时要给主图留出足够空间。",
     "处理环形图挤压时优先联动三类能力：legend.offsetX/offsetY 微调图例、series[0].center 调整圆心、series[0].radius 调整内外半径。不要只依赖扩大组件、隐藏 legend、关闭 label 或限制数据项个数。",
     "当 RingChart 宽度小于 420px、高度小于 220px 或数据项不少于 5 项，且同时使用底部 legend 与外部 label 时，应主动缩小 outerRadius、上移 centerY、压缩 legend itemGap 和 labelLine，避免 label 与 legend 重叠。",
-    "AI 必须根据指标业务含义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName，如“销售额”“客户数”“完成量”，不能保留默认值“value”；该名称会用于图例和提示框展示。",
+    "AI 必须根据指标业务含义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName，如“指标值”“数量”“完成量”，不能保留默认值“value”；该名称会用于图例和提示框展示。",
     "标签较多或分类名较长时，应适当设置 option.series[0].labelLine.length（建议 8-16），避免引出线过短导致标签与图形主体重叠。",
     "内环、外环装饰与环形文字属于增强表达，应与整体视觉风格统一；不需要装饰时保持关闭，避免过度堆砌。",
   ],

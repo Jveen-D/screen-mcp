@@ -133,12 +133,12 @@ export const singleImageCapability: JsonObject = {
       },
     },
     {
-      title: "全屏科技风背景图",
+      title: "全屏背景图配置示例",
       props: {
         componentName: "SingleImage",
         logicalId: "fullscreen_tech_bg",
         parentLogicalId: "root",
-        name: "全屏科技风背景",
+        name: "全屏背景",
         style: {
           position: "absolute",
           left: 0,

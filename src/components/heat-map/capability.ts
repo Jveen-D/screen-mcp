@@ -248,7 +248,7 @@ export const heatMapCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风热力图配置示例",
+      title: "热力图配置示例",
       props: {
         componentName: "HeatMap",
         logicalId: "theme_heat_map",

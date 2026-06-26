@@ -111,7 +111,7 @@ export const optionButtonCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风操作按钮",
+      title: "操作按钮配置示例",
       props: {
         componentName: "optionButton",
         logicalId: "theme_option_button",

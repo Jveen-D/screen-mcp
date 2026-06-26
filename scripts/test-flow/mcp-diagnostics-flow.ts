@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-24.06-no-demo-chart-data-direct-tools",
+    "2026-06-26.01-component-capability-cleanup",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -187,6 +187,10 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("filled-panel-frame-background"),
     "diagnostics should expose filled panel frame background grouping fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("component-capability-neutral-examples"),
+    "diagnostics should expose component capability cleanup fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

@@ -663,7 +663,7 @@ export const barChartCapability: JsonObject = {
     "禁止在柱状图上添加饼图才有的装饰（如中心文本、环形内径、扇区抬升等概念）。",
     "label formatter 中严禁使用 \n、\r、\t 等转义字符，MCP 会自动清理为单个空格；需要换行时应由前端默认处理。",
     "若开启数据标签（label.show: true），必须确保 grid 边距充足：top ≥ 56（防顶部截断），right ≥ 30（防右侧贴边），bottom ≥ 38。",
-    "柱子圆角（itemStyle.borderRadius）适合科技风大屏，增强视觉层次；建议 2–6px，过大会影响数据可读性。",
+    "柱子圆角（itemStyle.borderRadius）适合需要强化视觉层次的大屏；建议 2–6px，过大会影响数据可读性。",
     "itemStyle 用于自定义柱子外观，可设置填充色、边框色、圆角和阴影；柱体较宽时视觉权重会明显提升，需与间距保持协调。",
     "模块高度较小时应压缩 grid 边距：高度 < 280 时建议 top 40、bottom 28；高度 ≥ 280 时建议 top 56、bottom 40，确保柱体有足够纵向空间。",
     "底部结论文字不应紧贴底部 SVG 装饰，MCP 会自动保持安全间距；AI 无需额外调整辅助文本位置。",
@@ -672,12 +672,12 @@ export const barChartCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风柱状图配置示例",
+      title: "柱状图配置示例",
       props: {
         componentName: "BarChart",
         logicalId: "theme_bar_chart",
         parentLogicalId: "screen_group",
-        name: "销售对比图",
+        name: "分类对比图",
         style: {
           left: 80,
           top: 160,

@@ -570,7 +570,7 @@ export const scrollListCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风滚动表格配置示例",
+      title: "滚动表格配置示例",
       props: {
         componentName: "ScrollList",
         logicalId: "theme_scroll_list",
@@ -592,8 +592,8 @@ export const scrollListCapability: JsonObject = {
           { field: "status", label: "完成情况" },
         ],
         data: [
-          { region: "北京", rate: 92.5, status: "超预期" },
-          { region: "上海", rate: 85.3, status: "达标" },
+          { region: "区域A", rate: 92.5, status: "超预期" },
+          { region: "区域B", rate: 85.3, status: "达标" },
           { region: "杭州", rate: 78.6, status: "达标" },
           { region: "深圳", rate: 65.2, status: "未达标" },
           { region: "成都", rate: 54.8, status: "未达标" },

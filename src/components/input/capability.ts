@@ -136,7 +136,7 @@ export const inputCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风搜索输入框",
+      title: "搜索输入框配置示例",
       props: {
         componentName: "Input",
         logicalId: "theme_search_input",

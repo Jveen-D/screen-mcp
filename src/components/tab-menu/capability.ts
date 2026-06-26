@@ -147,7 +147,7 @@ export const tabMenuCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风顶部 Tab",
+      title: "顶部 Tab 配置示例",
       props: {
         componentName: "TabMenu",
         logicalId: "theme_tab_menu",

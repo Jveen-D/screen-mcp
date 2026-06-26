@@ -5,7 +5,7 @@ export const videoCapability: JsonObject = {
   displayName: "视频",
   description: "大屏视频组件，支持 HLS/H.265 等视频源、自动播放、循环、静音和控件显示。",
   aiRole:
-    "AI 负责视频源、播放行为和样式；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责视频源、播放行为和样式；MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。视频路径只能使用用户明确提供的资源。",
   requiredProps: [
     {
       path: "componentName",
@@ -35,12 +35,12 @@ export const videoCapability: JsonObject = {
     {
       path: "videoUrl",
       type: "string",
-      description: "视频链接地址。",
+      description: "视频链接地址。只能使用用户明确提供的可访问资源，不要编造外部链接。",
     },
     {
       path: "uploadVideoUrl",
       type: "string",
-      description: "上传后的视频地址。",
+      description: "上传后的视频地址。只能使用用户明确提供的资源路径，不要选择项目现有素材库路径。",
     },
     {
       path: "videoType",
@@ -99,12 +99,12 @@ export const videoCapability: JsonObject = {
   ],
   examples: [
     {
-      title: "科技风监控视频",
+      title: "视频配置示例",
       props: {
         componentName: "Video",
         logicalId: "theme_video",
         parentLogicalId: "media_group",
-        name: "监控视频",
+        name: "视频",
         style: {
           position: "absolute",
           left: 100,
