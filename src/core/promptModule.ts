@@ -134,34 +134,7 @@ function normalizeStyle(value: JsonValue | undefined): JsonObject {
   };
 }
 
-function inferTheme(prompt: string): JsonObject {
-  if (/红色|红|投诉|告警|预警|报警/.test(prompt)) {
-    return {
-      primaryColor: "#FF2D4F",
-      secondaryColor: "#FF8A3D",
-      accentColor: "#FFD166",
-      textColor: "#FFF3F3",
-    };
-  }
-
-  if (/绿色|绿|新能源|光伏|风力|风电|储能|绿电/.test(prompt)) {
-    return {
-      primaryColor: "#25F28A",
-      secondaryColor: "#20C8FF",
-      accentColor: "#FFE35A",
-      textColor: "#E7FFF5",
-    };
-  }
-
-  if (/销售/.test(prompt)) {
-    return {
-      primaryColor: "#00E5FF",
-      secondaryColor: "#7C4DFF",
-      accentColor: "#FFB300",
-      textColor: "#DFF8FF",
-    };
-  }
-
+function inferTheme(_prompt: string): JsonObject {
   return {
     primaryColor: "#00E5FF",
     secondaryColor: "#FFB300",

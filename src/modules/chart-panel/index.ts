@@ -424,48 +424,8 @@ function formatPercent(value: number, total: number): string {
   return `${Number(((value / total) * 100).toFixed(1))}%`;
 }
 
-function isRiskLikePanel(input: ModuleInput, rows: JsonObject[] = []): boolean {
-  const content = [
-    input.logicalId,
-    typeof input.title === "string" ? input.title : "",
-    ...rows.map((row) => (typeof row.name === "string" ? row.name : "")),
-  ].join(" ");
-
-  return /风险|隐患|等级|处置/.test(content) && !isAlarmLikePanel(input, rows);
-}
-
-function isAlarmLikePanel(input: ModuleInput, rows: JsonObject[] = []): boolean {
-  const content = [
-    input.logicalId,
-    typeof input.title === "string" ? input.title : "",
-    ...rows.map((row) => (typeof row.name === "string" ? row.name : "")),
-  ].join(" ");
-
-  return /告警|预警|报警|警情/.test(content);
-}
-
-function isSourceLikePanel(input: ModuleInput, rows: JsonObject[] = []): boolean {
-  const content = [
-    input.logicalId,
-    typeof input.title === "string" ? input.title : "",
-    ...rows.map((row) => (typeof row.name === "string" ? row.name : "")),
-  ].join(" ");
-
-  return /客户|客源|获客|来源|引流|到访|推荐|广告|渠道/.test(content);
-}
-
-function isEnergyLikePanel(input: ModuleInput, rows: JsonObject[] = []): boolean {
-  const content = [
-    input.logicalId,
-    typeof input.title === "string" ? input.title : "",
-    ...rows.map((row) => (typeof row.name === "string" ? row.name : "")),
-  ].join(" ");
-
-  return /新能源|能源|能耗|发电|电力|光伏|风力|风电|储能|绿电|用能|负荷/.test(content);
-}
-
-function summaryRows(input: ModuleInput, rows: JsonObject[]): JsonObject[] {
-  if (rows.length <= 3 || isRiskLikePanel(input, rows)) {
+function summaryRows(_input: ModuleInput, rows: JsonObject[]): JsonObject[] {
+  if (rows.length <= 3) {
     return rows.slice(0, 3);
   }
 
@@ -657,86 +617,6 @@ function createPieLayoutProfile(
   };
 }
 
-function riskActionText(name: string): string {
-  if (/高|重大|严重|红/.test(name)) {
-    return "优先处置";
-  }
-
-  if (/中|较大|橙|黄/.test(name)) {
-    return "限期整改";
-  }
-
-  if (/低|一般|蓝|绿/.test(name)) {
-    return "常规跟踪";
-  }
-
-  return "重点关注";
-}
-
-function alarmActionText(name: string): string {
-  if (/严重|重大|高|红/.test(name)) {
-    return "优先处理";
-  }
-
-  if (/一般|普通|中|黄|橙/.test(name)) {
-    return "持续跟进";
-  }
-
-  if (/提示|提醒|低|蓝|绿/.test(name)) {
-    return "常规关注";
-  }
-
-  return "重点关注";
-}
-
-function sourceActionText(name: string): string {
-  if (/广告|线上|投放|搜索|信息流/.test(name)) {
-    return "主要获客";
-  }
-
-  if (/推荐|老客户|口碑|转介绍/.test(name)) {
-    return "口碑转化";
-  }
-
-  if (/门店|到访|自然|线下/.test(name)) {
-    return "自然流量";
-  }
-
-  if (/活动|引流|展会|直播/.test(name)) {
-    return "活动引流";
-  }
-
-  return "来源贡献";
-}
-
-function energyActionText(name: string): string {
-  if (/光伏|风力|风电|水电|发电/.test(name)) {
-    return "主体供给";
-  }
-
-  if (/储能|电池|调峰/.test(name)) {
-    return "调峰支撑";
-  }
-
-  if (/外购|绿电|购电/.test(name)) {
-    return "补充供给";
-  }
-
-  if (/空调|制冷|供暖/.test(name)) {
-    return "主要负荷";
-  }
-
-  if (/照明/.test(name)) {
-    return "基础能耗";
-  }
-
-  if (/动力|设备|生产/.test(name)) {
-    return "设备负荷";
-  }
-
-  return "结构支撑";
-}
-
 function genericActionText(rows: JsonObject[], name: string): string {
   const sortedRows = [...rows].sort(
     (left, right) => (asFiniteNumber(right.value) ?? 0) - (asFiniteNumber(left.value) ?? 0),
@@ -754,68 +634,16 @@ function genericActionText(rows: JsonObject[], name: string): string {
   return "补充观察";
 }
 
-function summaryActionText(input: ModuleInput, rows: JsonObject[], name: string): string {
-  if (isAlarmLikePanel(input, rows)) {
-    return alarmActionText(name);
-  }
-
-  if (isRiskLikePanel(input, rows)) {
-    return riskActionText(name);
-  }
-
-  if (isSourceLikePanel(input, rows)) {
-    return sourceActionText(name);
-  }
-
-  if (isEnergyLikePanel(input, rows)) {
-    return energyActionText(name);
-  }
-
+function summaryActionText(rows: JsonObject[], name: string): string {
   return genericActionText(rows, name);
 }
 
-function sideSummaryHeaderText(input: ModuleInput, rows: JsonObject[]): string {
-  if (isAlarmLikePanel(input, rows)) {
-    return "重点摘要";
-  }
-
-  if (isRiskLikePanel(input, rows)) {
-    return "处置建议";
-  }
-
+function sideSummaryHeaderText(_input: ModuleInput, _rows: JsonObject[]): string {
   return "重点摘要";
 }
 
 function defaultConclusionText(input: ModuleInput, rows: JsonObject[]): string {
-  if (isAlarmLikePanel(input, rows)) {
-    const total = totalDataValue(rows);
-    const severeRow = rows.find((row) => {
-      const name = typeof row.name === "string" ? row.name : "";
-      return /严重|重大|高|红/.test(name);
-    });
-    const severeName = typeof severeRow?.name === "string" ? severeRow.name : "严重告警";
-    const severeValue = asFiniteNumber(severeRow?.value) ?? 0;
-
-    return `当前共 ${formatNumber(total)} 条告警，${severeName}占 ${formatPercent(severeValue, total)}，建议优先处理`;
-  }
-
-  if (isRiskLikePanel(input, rows)) {
-    return "处置优先级：高风险项优先闭环，中风险项限期整改，低风险项常规跟踪";
-  }
-
   const total = totalDataValue(rows);
-  const sortedRows = [...rows].sort(
-    (left, right) => (asFiniteNumber(right.value) ?? 0) - (asFiniteNumber(left.value) ?? 0),
-  );
-  const topRow = sortedRows[0];
-  const bottomRow = sortedRows[sortedRows.length - 1];
-  const topName = typeof topRow?.name === "string" ? topRow.name : "重点项";
-  const bottomName = typeof bottomRow?.name === "string" ? bottomRow.name : "低占比项";
-
-  if (isSourceLikePanel(input, rows) && rows.length > 1) {
-    return `${topName}贡献最高，${bottomName}仍有提升空间`;
-  }
-
   const firstRow = summaryRows(input, rows)[0];
   const firstName = typeof firstRow?.name === "string" ? firstRow.name : "重点项";
   const firstValue = asFiniteNumber(firstRow?.value) ?? 0;
@@ -823,15 +651,7 @@ function defaultConclusionText(input: ModuleInput, rows: JsonObject[]): string {
   return `重点关注：${firstName}占比 ${formatPercent(firstValue, total)}，持续跟踪变化`;
 }
 
-function centerSummaryLabel(input: ModuleInput, rows: JsonObject[]): string {
-  if (isAlarmLikePanel(input, rows)) {
-    return "告警总数";
-  }
-
-  if (isRiskLikePanel(input, rows)) {
-    return "风险总数";
-  }
-
+function centerSummaryLabel(_input: ModuleInput, _rows: JsonObject[]): string {
   return "总数";
 }
 
@@ -840,17 +660,12 @@ function shouldUseTwoLineSideSummary(
   rows: JsonObject[],
   sideWidth: number,
 ): boolean {
-  // 告警类面板因为需要展示处置说明，默认两行；其他面板按实际文本宽度判断是否放得下。
-  if (isAlarmLikePanel(input, rows)) {
-    return true;
-  }
-
   const textWidth = Math.max(sideWidth - 68, 156);
   return summaryRows(input, rows).some((row) => {
     const name = typeof row.name === "string" ? row.name : "分类";
     const value = asFiniteNumber(row.value) ?? 0;
     const total = totalDataValue(rows);
-    const actionText = summaryActionText(input, rows, name);
+    const actionText = summaryActionText(rows, name);
     const singleLineText = `${name} ${formatNumber(value)}  ${formatPercent(value, total)} ${actionText}`;
 
     return estimateTextWidth(singleLineText, 14) > textWidth;
@@ -866,7 +681,7 @@ function sideSummaryTextContent(
   useTwoLine: boolean,
 ): string {
   const mainText = `${name} ${formatNumber(value)}  ${formatPercent(value, total)}`;
-  const actionText = summaryActionText(input, rows, name);
+  const actionText = summaryActionText(rows, name);
 
   return useTwoLine ? `${mainText}\n${actionText}` : `${mainText} ${actionText}`;
 }
@@ -920,7 +735,6 @@ function createDefaultAuxiliaryTextSlots(
   const chartCenterY = chartTop + chartHeight * layoutProfile.centerYRatio;
   const total = totalDataValue(dataRows);
   const sideLayout = createSideSummaryLayout(input, dataRows, 22);
-  const riskLike = isRiskLikePanel(input, dataRows);
   const palette = defaultPalette(theme);
   const rowFontSize = sideLayout.useTwoLineSummary ? 13 : 14;
   const markerWidth = Math.round(rowFontSize * 1.8);
@@ -975,7 +789,7 @@ function createDefaultAuxiliaryTextSlots(
     });
   });
   const sideHeader = createSlot("SingleText", {
-    name: riskLike ? "侧边处置建议标题" : "侧边摘要标题",
+    name: "侧边摘要标题",
     textContent: sideSummaryHeaderText(input, dataRows),
     opacity: 0.9,
     style: {
@@ -1014,7 +828,7 @@ function createDefaultAuxiliaryTextSlots(
           },
         }),
         createSlot("SingleText", {
-          name: riskLike ? `${centerSummaryLabel(input, dataRows)}说明` : "中心指标说明",
+          name: "中心指标说明",
           textContent: centerSummaryLabel(input, dataRows),
           opacity: 0.82,
           style: {
@@ -1067,10 +881,6 @@ function normalizeAuxiliaryTextSlot(
   dataRows: JsonObject[] | undefined,
 ): ModuleSlotInput {
   const rows = dataRows ?? [];
-  if (!isRiskLikePanel(input, rows)) {
-    return slot;
-  }
-
   const props = slotProps(slot);
   const name = typeof props.name === "string" ? props.name : "";
   const textContent = typeof props.textContent === "string" ? props.textContent : "";
@@ -1085,7 +895,7 @@ function normalizeAuxiliaryTextSlot(
     ...slot,
     props: {
       ...props,
-      name: name.replace(/等级图例|风险图例|图例/g, "摘要") || "侧边处置建议",
+      name: name.replace(/等级图例|风险图例|图例/g, "摘要") || "侧边摘要",
       textContent:
         textContent.trim() === ""
           ? headerText
