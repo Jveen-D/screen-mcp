@@ -12,9 +12,9 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   const chartPanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "sales_channel_panel",
+    logicalId: "category_share_panel",
     parentLogicalId: "root",
-    title: "销售渠道占比",
+    title: "分类占比",
     style: {
       left: 48,
       top: 96,
@@ -39,7 +39,7 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
       title: {
         componentName: "SingleText",
         props: {
-          textContent: "销售渠道占比",
+          textContent: "分类占比",
         },
       },
       mainChart: {
@@ -48,9 +48,9 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
           chartData: {
             constant: {
               data: [
-                { name: "直销", type: "渠道", value: 128 },
-                { name: "代理", type: "渠道", value: 96 },
-                { name: "线上", type: "渠道", value: 76 },
+                { name: "分类A", type: "分类", value: 128 },
+                { name: "分类B", type: "分类", value: 96 },
+                { name: "分类C", type: "分类", value: 76 },
               ],
             },
           },
@@ -80,7 +80,7 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
         {
           componentName: "SingleText",
           props: {
-            textContent: "高等级风险占比 29.0%，处置优先级：红 / 橙",
+            textContent: "重点分类占比 29.0%，需要持续关注",
           },
         },
       ],
@@ -164,7 +164,7 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   const moduleTextDatasource = moduleSchemas[0]?.props.datasource as JsonObject;
   const moduleTextConstantData = moduleTextDatasource.constantData as JsonObject[];
   const moduleTitleEntryAnimation = moduleSchemas[0]?.props.entryAnimiation as JsonObject;
-  assert.equal(moduleTextConstantData[0]?.text, "销售渠道占比");
+  assert.equal(moduleTextConstantData[0]?.text, "分类占比");
   assert.deepEqual(moduleTitleEntryAnimation, {
     isShow: true,
     type: "animate__fadeInLeft",
@@ -186,7 +186,7 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   const moduleAuxTextEntryAnimation = moduleAuxText.props.entryAnimiation as JsonObject;
   assert.equal(
     moduleAuxTextConstantData[0]?.text,
-    "高等级风险占比 29.0%，处置优先级：红 / 橙",
+    "重点分类占比 29.0%，需要持续关注",
   );
   assert.deepEqual(moduleAuxTextEntryAnimation, {
     isShow: true,
@@ -260,9 +260,9 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   assert.equal(moduleChartOption.backgroundColor, "transparent");
   assert.equal(moduleChartData.sourceType, "constant");
   assert.deepEqual(moduleChartRows, [
-    { name: "直销", type: "渠道", value: 128 },
-    { name: "代理", type: "渠道", value: 96 },
-    { name: "线上", type: "渠道", value: 76 },
+    { name: "分类A", type: "分类", value: 128 },
+    { name: "分类B", type: "分类", value: 96 },
+    { name: "分类C", type: "分类", value: 76 },
   ]);
   assert.deepEqual(moduleChartEntryAnimation, {
     isShow: true,
@@ -353,9 +353,9 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
 
   const sideTextDerivedDataInput = {
     moduleName: "ChartPanel",
-    logicalId: "risk_level_panel",
+    logicalId: "status_text_panel",
     parentLogicalId: "root",
-    title: "风险等级分析",
+    title: "状态分布分析",
     style: {
       left: 120,
       top: 120,
@@ -379,31 +379,31 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
         {
           componentName: "SingleText",
           props: {
-            textContent: "风险总数 126",
+            textContent: "状态总数 126",
           },
         },
         {
           componentName: "SingleText",
           props: {
-            textContent: "高风险 18",
+            textContent: "状态A 18",
           },
         },
         {
           componentName: "SingleText",
           props: {
-            textContent: "中风险 37",
+            textContent: "状态B 37",
           },
         },
         {
           componentName: "SingleText",
           props: {
-            textContent: "低风险 71",
+            textContent: "状态C 71",
           },
         },
         {
           componentName: "SingleText",
           props: {
-            textContent: "处置优先级：高风险项优先闭环，中风险项限期跟踪",
+            textContent: "状态A需要优先关注，状态B保持跟踪",
           },
         },
       ],
@@ -417,19 +417,19 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   const sideTextDerivedChartData = sideTextDerivedChart.props.chartData as JsonObject;
   const sideTextDerivedConstant = sideTextDerivedChartData.constant as JsonObject;
   assert.deepEqual(sideTextDerivedConstant.data, [
-    { name: "高风险", type: "系列", value: 18 },
-    { name: "中风险", type: "系列", value: 37 },
-    { name: "低风险", type: "系列", value: 71 },
+    { name: "状态A", type: "系列", value: 18 },
+    { name: "状态B", type: "系列", value: 37 },
+    { name: "状态C", type: "系列", value: 71 },
   ]);
 
   const moduleDataItemsInput = {
     ...sideTextDerivedDataInput,
-    logicalId: "risk_level_data_items_panel",
+    logicalId: "status_data_items_panel",
     dataItems: [
-      { name: "重大风险", type: "风险", value: 34 },
-      { name: "较大风险", type: "风险", value: 78 },
-      { name: "一般风险", type: "风险", value: 156 },
-      { name: "低风险", type: "风险", value: 118 },
+      { name: "状态D", type: "状态", value: 34 },
+      { name: "状态E", type: "状态", value: 78 },
+      { name: "状态F", type: "状态", value: 156 },
+      { name: "状态G", type: "状态", value: 118 },
     ],
   } satisfies JsonObject;
   const moduleDataItemsSchemas = generateModuleSchema(moduleDataItemsInput);
@@ -440,10 +440,10 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   const moduleDataItemsChartData = moduleDataItemsChart.props.chartData as JsonObject;
   const moduleDataItemsConstant = moduleDataItemsChartData.constant as JsonObject;
   assert.deepEqual(moduleDataItemsConstant.data, [
-    { name: "重大风险", type: "风险", value: 34 },
-    { name: "较大风险", type: "风险", value: 78 },
-    { name: "一般风险", type: "风险", value: 156 },
-    { name: "低风险", type: "风险", value: 118 },
+    { name: "状态D", type: "状态", value: 34 },
+    { name: "状态E", type: "状态", value: 78 },
+    { name: "状态F", type: "状态", value: 156 },
+    { name: "状态G", type: "状态", value: 118 },
   ]);
   return { chartPanelInput };
 }

@@ -80,8 +80,8 @@ export function runModuleCapabilityTests(): void {
     "ChartPanel should guide title structure without heavy filled title slabs",
   );
   assert.ok(
-    moduleLayoutRules.some((rule) => rule.includes("最终用户通常只会说")),
-    "ChartPanel should cover terse end-user prompts",
+    moduleLayoutRules.some((rule) => rule.includes("上层需求可能很简略")),
+    "ChartPanel should cover terse upstream requirements",
   );
   assert.ok(
     moduleLayoutRules.some((rule) => rule.includes("MCP 不再自动生成标题承托")),
@@ -246,8 +246,8 @@ export function runModuleCapabilityTests(): void {
     "ChartPanel should keep side summary color anchors visible",
   );
   assert.ok(
-    moduleLayoutRules.some((rule) => rule.includes("告警、预警、设备异常")),
-    "ChartPanel should avoid reusing risk wording for alarm-like copy",
+    moduleLayoutRules.some((rule) => rule.includes("不同业务场景不要套用固定结论文案")),
+    "ChartPanel should avoid fixed copy across business contexts",
   );
   assert.ok(
     moduleLayoutRules.some((rule) => rule.includes("两行排版")),

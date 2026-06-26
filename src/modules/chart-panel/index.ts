@@ -107,21 +107,8 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
 }
 
 function inferIndicatorNameFromTitle(title: string): string {
-  if (/销售额|销售金额|营收/.test(title)) return "销售额";
-  if (/销售量|销量/.test(title)) return "销量";
-  if (/客户数|客户量|用户数|用户量/.test(title)) return "客户数";
-  if (/订单数|订单量/.test(title)) return "订单数";
-  if (/完成量|完成额|完成值/.test(title)) return "完成量";
-  if (/绩效|业绩|KPI/.test(title)) return "绩效";
-  if (/投诉|告警|预警|异常/.test(title)) return "数量";
   if (/占比|构成|分布/.test(title)) return "占比";
   if (/趋势|走势|变化/.test(title)) return "数值";
-
-  // 兜底：取标题中最后 2–4 个业务名词，或截取前 6 个字
-  const cleanTitle = title.replace(/^(.*?[：:])/, "").trim();
-  if (cleanTitle.length >= 2 && cleanTitle.length <= 6) {
-    return cleanTitle;
-  }
 
   return "";
 }
@@ -504,7 +491,7 @@ function isMergedSideSummarySlot(
   });
 
   return (
-    /重点摘要|处置建议|侧边摘要|摘要/.test(content) &&
+    /重点摘要|建议|侧边摘要|摘要/.test(content) &&
     content.includes(headerText) &&
     matchedRows.length >= 2
   );
@@ -895,11 +882,11 @@ function normalizeAuxiliaryTextSlot(
     ...slot,
     props: {
       ...props,
-      name: name.replace(/等级图例|风险图例|图例/g, "摘要") || "侧边摘要",
+      name: name.replace(/[^，,、|｜\s]*图例/g, "摘要") || "侧边摘要",
       textContent:
         textContent.trim() === ""
           ? headerText
-          : textContent.replace(/等级图例|风险图例|图例/g, headerText),
+          : textContent.replace(/[^，,、|｜\s]*图例/g, headerText),
     },
   };
 }
@@ -919,7 +906,7 @@ function normalizeAuxiliaryTextSlots(
 
   const hasSideSummary = normalizedSlots.some((slot) => {
     const props = slotProps(slot);
-    return typeof props.name === "string" && /^侧边(摘要|处置建议)/.test(props.name);
+    return typeof props.name === "string" && /^侧边(摘要|建议)/.test(props.name);
   });
 
   return hasSideSummary

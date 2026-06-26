@@ -79,7 +79,7 @@ export function runDashboardTitleBackdropTests(): void {
             componentName: "SingleText",
             logicalId: "header_title_text",
             name: "主标题",
-            textContent: "销售经营态势大屏",
+            textContent: "运营指标态势大屏",
             style: {
               position: "absolute",
               left: 180,

@@ -241,8 +241,8 @@ DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真�
   "modules": [
     {
       "moduleName": "ChartPanel",
-      "logicalId": "risk_panel",
-      "title": "风险等级分析",
+      "logicalId": "status_panel",
+      "title": "状态分布分析",
       "style": { "position": "absolute", "left": 48, "top": 120, "width": 520, "height": 360 },
       "slots": {
         "mainChart": {
@@ -251,9 +251,9 @@ DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真�
             "chartData": {
               "constant": {
                 "data": [
-                  { "name": "高风险", "type": "风险", "value": 18 },
-                  { "name": "中风险", "type": "风险", "value": 37 },
-                  { "name": "低风险", "type": "风险", "value": 71 }
+                  { "name": "状态A", "type": "状态", "value": 18 },
+                  { "name": "状态B", "type": "状态", "value": 37 },
+                  { "name": "状态C", "type": "状态", "value": 71 }
                 ]
               }
             }
@@ -277,10 +277,10 @@ DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真�
           },
           {
             "componentName": "Indicator",
-            "logicalId": "revenue_indicator",
-            "name": "销售额",
+            "logicalId": "metric_indicator",
+            "name": "指标值",
             "textValue": 128760,
-            "titleName": "销售额",
+            "titleName": "指标值",
             "suffix": true,
             "suffixTitle": "元",
             "style": { "position": "absolute", "left": 620, "top": 170, "width": 300, "height": 92 }
@@ -325,11 +325,12 @@ npm run test:flow
 - `module-*`、`chart-panel-*`、`freeform-*`：覆盖模块能力描述、slots 约束、布局规则、语义分组和模块树编译。
 - `dashboard-*`：覆盖 DashboardSpec 校验、整屏编译、背景承载、层级顺序、`grouping` 继承、编译期 `theme` 剥离等跨模块规则。
 - `mcp-*`：覆盖 MCP 工具暴露、compact/full capability、工具返回结构和完整 schema 输出契约。
-- `chart-prompt-*`、`map-component-*`：覆盖旧单模块 prompt 入口、图表类型推断和地图/地球嵌套子组件编译的回归场景。
+- `mcp-prompt-tools-flow`：只覆盖 prompt 旧入口的 MCP smoke 场景，验证整屏 prompt 工具保持禁用，避免 prompt-only 固定模板回流。
+- `map-component-*`：覆盖地图/地球嵌套子组件编译的回归场景。
 
 不是每条测试都对应单个组件。背景不能遮挡主内容、空 SVG 拒绝、占位文案拒绝、图表演示数据拒绝、ID 随机且不超长等断言对应的是编译器或 validator 的跨组件规则。prompt 相关测试只用于保护旧入口行为，不能反向沉淀为 MCP 内部的行业模板、关键词分流或固定视觉方案。
 
-测试和 capability 说明都不要把行业短语、主题色或固定结论文案当成规则。例如可以验证“侧边摘要保留分类名、数值、占比，并且不叫图例”，但不应要求“新能源必须输出主体供给”“客户来源必须输出主要获客”“红色科技风必须使用某个固定色值”。这类设计判断应由 LLM 根据用户语义完成，MCP 只校验结构、数据同源、层级和安全边界。
+测试和 capability 说明都不要把行业短语、主题色或固定结论文案当成规则。例如可以验证“侧边摘要保留分类名、数值、占比，并且不叫图例”，但不应要求“某个行业词必须输出某句固定结论”“某个主题名必须使用某个固定色值”。这类设计判断应由 LLM 根据用户语义完成，MCP 只校验结构、数据同源、层级和安全边界。
 
 ## 设计约束
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { generateComponentsSchema } from "../../src/core/schema.js";
-import { asChartObject, isJsonObject } from "./chart-prompt-helpers.js";
+import { asChartObject, isJsonObject } from "./helpers.js";
 
 export function runMapComponentIntegrationTests(): void {
   // Earth3D parent + nested children schema generation
@@ -22,8 +22,8 @@ export function runMapComponentIntegrationTests(): void {
         logicalId: "earth_pointer_test",
         name: "测试标记点",
         data: [
-          { lng: 116.4074, lat: 39.9042, title: "北京" },
-          { lng: 121.4737, lat: 31.2304, title: "上海" },
+          { lng: 116.4074, lat: 39.9042, title: "点位A" },
+          { lng: 121.4737, lat: 31.2304, title: "点位B" },
         ],
         style: {
           position: "absolute",
@@ -50,7 +50,7 @@ export function runMapComponentIntegrationTests(): void {
     ? earthPointerDatasource.constantData
     : [];
   assert.equal(earthPointerConstantData.length, 2, "Earth3D-Pointer data should sync to datasource");
-  assert.equal(asChartObject(earthPointerConstantData[0]).title, "北京", "Earth3D-Pointer first row title should sync");
+  assert.equal(asChartObject(earthPointerConstantData[0]).title, "点位A", "Earth3D-Pointer first row title should sync");
   assert.equal(earthPointerDatasource.sourceType, "constant", "Earth3D-Pointer datasource sourceType should be constant");
 
   // GaodeMap parent + nested children schema generation

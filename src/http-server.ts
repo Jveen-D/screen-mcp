@@ -20,7 +20,6 @@ import {
   getModuleCapability,
   listModules,
 } from "./core/modules.js";
-import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
 import { generateFullScreenFromPrompt } from "./core/fullScreenPromptModule.js";
 import {
   generateDashboardSchema,
@@ -119,18 +118,6 @@ function createServer() {
     })
     .passthrough();
 
-  const promptModuleInput = z
-    .object({
-      prompt: z.string().min(1),
-      logicalId: z.string().min(1).optional(),
-      parentLogicalId: z.string().min(1).optional(),
-      title: z.string().min(1).optional(),
-      style: z.record(z.unknown()).optional(),
-      dataItems: z.array(z.record(z.unknown())).optional(),
-      theme: z.record(z.unknown()).optional(),
-    })
-    .passthrough();
-
   const fullScreenPromptInput = z
     .object({
       prompt: z.string().min(1),
@@ -177,7 +164,6 @@ function createServer() {
   server.registerTool("get_module_capability", { title: "Get Module Capability", description: "Return an AI-readable module capability map. Defaults to compact; pass detail:'full' only when exact examples or full rule text are needed.", inputSchema: moduleCapabilityDetailInput, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }, async ({ moduleName, detail }) => { try { return asToolContent(detail === "full" ? getModuleCapability(moduleName) : getCompactModuleCapability(moduleName)); } catch (error) { return handleToolError(error); } });
   server.registerTool("generate_module_schema", { title: "Generate Module Schema", description: "Generate component schemas from one explicit module input. Use ChartPanel for chart panels and FreeformModule for arbitrary mixed modules.", inputSchema: moduleInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateModuleSchema(input as JsonObject)); } catch (error) { return handleToolError(error); } });
   server.registerTool("generate_module_tree_schema", { title: "Generate Dashboard Module Tree Schema", description: "Generate one editor-ready __Group__ module tree from explicit module slots. Supports common semantic grouping and bottom-layer SingleImage sorting.", inputSchema: moduleInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateModuleTreeSchema(input as JsonObject)); } catch (error) { return handleToolError(error); } });
-  server.registerTool("generate_screen_module_from_prompt", { title: "Generate Screen Module From User Prompt", description: "Use this first for terse end-user requests such as 生成销售大屏, 做个风险等级分析.", inputSchema: promptModuleInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateScreenModuleFromPrompt(input as JsonObject)); } catch (error) { return handleToolError(error); } });
   server.registerTool("validate_dashboard_spec", { title: "Validate Dashboard Spec", description: "Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, explicit component groups, layout, components, and optional grouping. Reports unpositioned explicit groups, empty SvgDecoration placeholders, placeholder text, missing/demo chart data, and missing ChartPanel auxiliaryTexts.", inputSchema: dashboardSpecInput, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(validateDashboardSpec(input as JsonObject)); } catch (error) { return handleToolError(error); } });
   server.registerTool("generate_dashboard_schema", { title: "Generate Dashboard Schema", description: "Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. DashboardSpec.groups can wrap LLM-declared related components, but each explicit group must include complete absolute style left/top/width/height; DashboardSpec.grouping is inherited by groups/modules that do not define their own grouping. This tool compiles and validates the spec, rejects empty SvgDecoration placeholders, placeholder text, missing/demo chart data, and manual ChartPanel modules without auxiliaryTexts, strips compile-time theme from output props, adds real SvgDecoration background carriers for bare canvas/groups/modules, and does not infer a full-screen layout from a prompt or apply a fixed dashboard template.", inputSchema: dashboardSpecInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateDashboardSchema(input as JsonObject)); } catch (error) { return handleToolError(error); } });
   server.registerTool("generate_full_screen_from_prompt", { title: "Generate Full Screen Dashboard From Prompt", description: "Disabled for production generation because prompt-only full-screen generation encourages fixed templates. Create a DashboardSpec with LLM-chosen theme, modules, layout, and slots, then call generate_dashboard_schema.", inputSchema: fullScreenPromptInput, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }, async (input) => { try { return asToolContent(generateFullScreenFromPrompt(input as JsonObject)); } catch (error) { return handleToolError(error); } });

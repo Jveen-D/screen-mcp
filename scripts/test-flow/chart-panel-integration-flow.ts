@@ -7,9 +7,9 @@ export function runChartPanelIntegrationTests(): void {
   const threeDPanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "risk_3d_panel",
+    logicalId: "status_3d_panel",
     parentLogicalId: "root",
-    title: "风险等级3D分析",
+    title: "状态分布3D分析",
     style: {
       left: 48,
       top: 96,
@@ -30,9 +30,9 @@ export function runChartPanelIntegrationTests(): void {
           chartData: {
             constant: {
               data: [
-                { name: "重大风险", type: "风险", value: 12 },
-                { name: "较大风险", type: "风险", value: 28 },
-                { name: "一般风险", type: "风险", value: 56 },
+                { name: "状态A", type: "状态", value: 12 },
+                { name: "状态B", type: "状态", value: 28 },
+                { name: "状态C", type: "状态", value: 56 },
               ],
             },
           },
@@ -102,9 +102,9 @@ export function runChartPanelIntegrationTests(): void {
   const lineChartPanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "sales_line_panel",
+    logicalId: "metric_line_panel",
     parentLogicalId: "root",
-    title: "季度销售趋势",
+    title: "季度指标趋势",
     style: {
       left: 48,
       top: 96,
@@ -134,9 +134,9 @@ export function runChartPanelIntegrationTests(): void {
           },
           option: {
             grid: { left: 40, top: 50, bottom: 40, right: 30 },
-            tooltip: { formatter: "{b}<br/>销售额：{c} 万" },
+            tooltip: { formatter: "{b}<br/>指标值：{c}" },
             xAxis: { type: "category", data: ["Q1", "Q2", "Q3", "Q4"] },
-            yAxis: { type: "value", name: "销售额(万)", min: 0, max: 300, nameTextStyle: { color: "#BDEEFF" } },
+            yAxis: { type: "value", name: "指标值", min: 0, max: 300, nameTextStyle: { color: "#BDEEFF" } },
             series: [
               {
                 name: "2024",
@@ -183,7 +183,7 @@ export function runChartPanelIntegrationTests(): void {
   assert.ok(Array.isArray(lineXAxis.data) || Array.isArray(lineChartDataConstant?.data), "LineChart should have xAxis data or chartData");
   const lineYAxis = lineMainChartOption.yAxis as JsonObject;
   assert.equal(lineYAxis.type, "value", "LineChart yAxis type should default to value");
-  assert.equal((lineYAxis.name as string | undefined), "销售额(万)", "LineChart yAxis name should be preserved");
+  assert.equal((lineYAxis.name as string | undefined), "指标值", "LineChart yAxis name should be preserved");
   assert.equal(lineYAxis.min, 0, "LineChart yAxis min should be preserved");
   assert.equal(lineYAxis.max, 300, "LineChart yAxis max should be preserved");
   assert.equal((lineYAxis.nameTextStyle as JsonObject)?.color, "#BDEEFF", "LineChart yAxis nameTextStyle should be preserved");
@@ -200,7 +200,7 @@ export function runChartPanelIntegrationTests(): void {
     lineMainSeries.markLine !== null && typeof lineMainSeries.markLine === "object" && !Array.isArray(lineMainSeries.markLine),
     "LineChart markLine should be preserved",
   );
-  assert.equal((lineMainChartOption.tooltip as JsonObject)?.formatter, "{b}<br/>销售额：{c} 万", "LineChart tooltip formatter should be preserved");
+  assert.equal((lineMainChartOption.tooltip as JsonObject)?.formatter, "{b}<br/>指标值：{c}", "LineChart tooltip formatter should be preserved");
   const lineModuleTree = generateModuleTreeSchema(lineChartPanelInput);
   assert.equal(lineModuleTree.componentName, "__Group__");
   assert.ok(

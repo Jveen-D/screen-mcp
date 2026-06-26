@@ -247,8 +247,8 @@ export function runPieComponentFlowTests(): PieComponentFlowFixtures {
 
   assert.equal(schema.componentName, "PieChart");
   assert.equal(chartData.sourceType, "constant");
-  assert.equal(chartDataRows[0]?.name, "直销");
-  assert.equal(chartDataRows[0]?.type, "渠道");
+  assert.equal(chartDataRows[0]?.name, "分类A");
+  assert.equal(chartDataRows[0]?.type, "分类");
   assert.equal(chartDataRows[0]?.value, 128);
   assert.deepEqual(chartDataOriginalRows, chartDataRows);
   assert.equal("title" in option, false);
@@ -348,10 +348,10 @@ export function runPieComponentFlowTests(): PieComponentFlowFixtures {
         originalData: [{ name: "Original should be regenerated", value: 1 }],
         fieldList: [{ fieldName: "bad", fieldDisplayName: "bad", fieldType: "LONGTEXT" }],
         data: [
-          { name: "重大风险", value: 34 },
-          { name: "较大风险", type: "风险", value: "78" },
-          { name: "一般风险", type: "风险", value: 156 },
-          { name: "低风险", type: "风险", value: 118 },
+          { name: "分类A", value: 34 },
+          { name: "分类B", type: "分类", value: "78" },
+          { name: "分类C", type: "分类", value: 156 },
+          { name: "分类D", type: "分类", value: 118 },
         ],
       },
       dimension: [{ fieldName: "bad_dimension" }],
@@ -395,10 +395,10 @@ export function runPieComponentFlowTests(): PieComponentFlowFixtures {
     forbiddenOverrideChartData.indicator as JsonObject[];
   assert.equal(forbiddenOverrideChartData.sourceType, "constant");
   assert.deepEqual(forbiddenOverrideRows, [
-    { name: "重大风险", type: "系列", value: 34 },
-    { name: "较大风险", type: "风险", value: 78 },
-    { name: "一般风险", type: "风险", value: 156 },
-    { name: "低风险", type: "风险", value: 118 },
+    { name: "分类A", type: "系列", value: 34 },
+    { name: "分类B", type: "分类", value: 78 },
+    { name: "分类C", type: "分类", value: 156 },
+    { name: "分类D", type: "分类", value: 118 },
   ]);
   assert.deepEqual(forbiddenOverrideOriginalRows, forbiddenOverrideRows);
   assert.deepEqual(

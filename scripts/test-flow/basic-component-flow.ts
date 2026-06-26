@@ -37,8 +37,8 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const imageSchema = generateComponentsSchema({
     componentName: "SingleImage",
     logicalId: "panel_bg_image",
-    parentLogicalId: "sales_group",
-    name: "销售面板背景",
+    parentLogicalId: "panel_group",
+    name: "分类面板背景",
     style: {
       position: "absolute",
       left: 48,
@@ -63,10 +63,10 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   assert.ok(Array.isArray(textCapability.aiForbiddenProps));
   const textSchema = generateComponentsSchema({
     componentName: "SingleText",
-    logicalId: "sales_panel_title",
-    parentLogicalId: "sales_group",
-    name: "销售面板标题",
-    textContent: "销售渠道占比",
+    logicalId: "category_panel_title",
+    parentLogicalId: "panel_group",
+    name: "分类面板标题",
+    textContent: "分类占比",
     datasource: {
       sourceType: "api",
     },
@@ -87,10 +87,10 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const textDatasource = textSchema.props.datasource as JsonObject;
   const textConstantData = textDatasource.constantData as JsonObject[];
   assert.equal(textSchema.componentName, "SingleText");
-  assert.equal(textSchema.props.textContent, "销售渠道占比");
+  assert.equal(textSchema.props.textContent, "分类占比");
   assert.deepEqual(textSchema.props.entryAnimiation, { isShow: false, type: "" });
   assert.equal(textDatasource.sourceType, "externalConstant");
-  assert.equal(textConstantData[0]?.text, "销售渠道占比");
+  assert.equal(textConstantData[0]?.text, "分类占比");
   const textStyle = textSchema.props.style as JsonObject;
   assert.equal(textStyle.lineHeight, 1.09);
 
@@ -99,7 +99,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const defaultLineBoxTextSchema = generateComponentsSchema({
     componentName: "SingleText",
     logicalId: "single_line_label",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     textContent: "单行标签",
     style: {
       position: "absolute",
@@ -117,7 +117,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const themedTextSchema = generateComponentsSchema({
     componentName: "SingleText",
     logicalId: "themed_text",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     textContent: "主题输入不会进入输出",
     theme: {
       name: "test-theme",
@@ -151,7 +151,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const svgSchema = generateComponentsSchema({
     componentName: "SvgDecoration",
     logicalId: "panel_corner_svg",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     name: "右上角科技装饰",
     style: {
       width: 120,
@@ -178,7 +178,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const unsafeSvgSchema = generateComponentsSchema({
     componentName: "SvgDecoration",
     logicalId: "unsafe_svg",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     style: {
       position: "absolute",
       left: 0,
@@ -196,7 +196,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const svgChartSchema = generateComponentsSchema({
     componentName: "SvgDecoration",
     logicalId: "svg_chart_misuse",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     style: {
       position: "absolute",
       left: 0,
@@ -215,7 +215,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const svgTextSchema = generateComponentsSchema({
     componentName: "SvgDecoration",
     logicalId: "svg_text_misuse",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     style: {
       position: "absolute",
       left: 0,
@@ -225,7 +225,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
     },
     svgSource: "custom",
     svgContent:
-      '<svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg"><text x="20" y="60">风险总量 386</text></svg>',
+      '<svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg"><text x="20" y="60">指标总量 386</text></svg>',
   });
   assert.equal(svgTextSchema.props.svgSource, "custom");
   assert.equal(svgTextSchema.props.svgPreset, "");
@@ -234,7 +234,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const emptySvgSchema = generateComponentsSchema({
     componentName: "SvgDecoration",
     logicalId: "empty_svg",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     style: {
       position: "absolute",
       left: 0,
@@ -252,7 +252,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const explicitPresetSvgSchema = generateComponentsSchema({
     componentName: "SvgDecoration",
     logicalId: "explicit_preset_svg",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "panel_group",
     style: {
       position: "absolute",
       left: 0,

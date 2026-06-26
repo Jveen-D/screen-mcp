@@ -62,20 +62,20 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
       .every((item) => (nodeProps(item).parentLogicalId as string | undefined) === dashboardHeaderGroup.id),
     "DashboardSpec explicit component group children should reference group id",
   );
-  const dashboardRiskModule = dashboardTree.children.find(
-    (item) => item.componentName === "__Group__" && item.title === "风险等级分析",
+  const dashboardChartModule = dashboardTree.children.find(
+    (item) => item.componentName === "__Group__" && item.title === "状态分布分析",
   );
-  assert.ok(dashboardRiskModule, "DashboardSpec should include the ChartPanel module group");
+  assert.ok(dashboardChartModule, "DashboardSpec should include the ChartPanel module group");
   assert.ok(
-    Array.isArray(dashboardRiskModule.children),
+    Array.isArray(dashboardChartModule.children),
     "DashboardSpec ChartPanel module should include children",
   );
   assert.ok(
-    dashboardRiskModule.children.every((item) => item.componentName === "__Group__"),
+    dashboardChartModule.children.every((item) => item.componentName === "__Group__"),
     "DashboardSpec grouping should be inherited by ChartPanel modules",
   );
   assert.ok(
-    flattenEditorNodes(dashboardRiskModule as unknown as JsonObject).some((item) =>
+    flattenEditorNodes(dashboardChartModule as unknown as JsonObject).some((item) =>
       hasPropName(item, "模块背景"),
     ),
     "DashboardSpec should add a module background when ChartPanel has no explicit background carrier",

@@ -73,8 +73,8 @@ export function runDashboardFallbackBackgroundTests(): void {
               chartData: {
                 constant: {
                   data: [
-                    { name: "一月", type: "销售额", value: 42 },
-                    { name: "二月", type: "销售额", value: 58 },
+                    { name: "一月", type: "指标值", value: 42 },
+                    { name: "二月", type: "指标值", value: 58 },
                   ],
                 },
               },
@@ -85,7 +85,7 @@ export function runDashboardFallbackBackgroundTests(): void {
               componentName: "SingleText",
               props: {
                 name: "面板结论",
-                textContent: "二月销售额较一月提升 38.1%",
+                textContent: "二月指标值较一月提升 38.1%",
               },
             },
           ],

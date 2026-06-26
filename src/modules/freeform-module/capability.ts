@@ -141,9 +141,9 @@ export const freeformModuleCapability: JsonObject = {
             {
               componentName: "Indicator",
               logicalId: "revenue_indicator",
-              name: "销售额",
+              name: "指标值",
               textValue: 128760,
-              titleName: "销售额",
+              titleName: "指标值",
               suffix: true,
               suffixTitle: "元",
               style: {

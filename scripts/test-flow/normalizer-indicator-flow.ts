@@ -12,7 +12,7 @@ export function runIndicatorNormalizerTests(): void {
   const indicatorSchema = generateComponentsSchema({
     componentName: "Indicator",
     logicalId: "indicator_test",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "indicator_group",
     name: "测试翻牌器",
     textValue: 9876,
     style: {
@@ -34,7 +34,7 @@ export function runIndicatorNormalizerTests(): void {
   const indicatorWideSchema = generateComponentsSchema({
     componentName: "Indicator",
     logicalId: "indicator_wide_test",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "indicator_group",
     name: "测试长号翻牌器",
     titleVisible: true,
     textValue: 128642,
@@ -63,7 +63,7 @@ export function runIndicatorNormalizerTests(): void {
   const indicatorShortSchema = generateComponentsSchema({
     componentName: "Indicator",
     logicalId: "indicator_short_test",
-    parentLogicalId: "sales_group",
+    parentLogicalId: "indicator_group",
     name: "测试短号翻牌器",
     textValue: 9876,
     prefix: false,
@@ -96,16 +96,16 @@ export function runIndicatorNormalizerTests(): void {
       indicator: [
         {
           fieldDataConfig: {
-            chartDisplayName: "收入",
+            chartDisplayName: "指标值",
           },
         },
       ],
       constant: {
         data: [
-          { name: "直营门店", type: "渠道", value: 42 },
-          { name: "电商平台", type: "渠道", value: 28 },
-          { name: "经销伙伴", type: "渠道", value: 18 },
-          { name: "企业客户", type: "渠道", value: 12 },
+          { name: "分类A", type: "分类", value: 42 },
+          { name: "分类B", type: "分类", value: 28 },
+          { name: "分类C", type: "分类", value: 18 },
+          { name: "分类D", type: "分类", value: 12 },
         ],
       },
     },
@@ -180,12 +180,12 @@ export function runIndicatorNormalizerTests(): void {
       ],
       constant: {
         data: [
-          { name: "华东", type: "销售", value: 101 },
-          { name: "华南", type: "销售", value: 71 },
-          { name: "华北", type: "销售", value: 121 },
-          { name: "西南", type: "销售", value: 95 },
-          { name: "西北", type: "销售", value: 141 },
-          { name: "东北", type: "销售", value: 96 },
+          { name: "分类A", type: "分类", value: 101 },
+          { name: "分类B", type: "分类", value: 71 },
+          { name: "分类C", type: "分类", value: 121 },
+          { name: "分类D", type: "分类", value: 95 },
+          { name: "分类E", type: "分类", value: 141 },
+          { name: "分类F", type: "分类", value: 96 },
         ],
       },
     },

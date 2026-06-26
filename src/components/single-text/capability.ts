@@ -103,8 +103,8 @@ export const singleTextCapability: JsonObject = {
         componentName: "SingleText",
         logicalId: "sales_panel_title",
         parentLogicalId: "sales_group",
-        name: "销售面板标题",
-        textContent: "销售渠道占比",
+        name: "分类面板标题",
+        textContent: "分类占比",
         style: {
           position: "absolute",
           left: 80,

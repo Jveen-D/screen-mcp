@@ -13,13 +13,13 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
   const terseUserPanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "terse_risk_level_panel",
+    logicalId: "terse_status_panel",
     parentLogicalId: "root",
-    title: "风险等级分析",
+    title: "状态分布分析",
     dataItems: [
-      { name: "高风险", type: "风险", value: 18 },
-      { name: "中风险", type: "风险", value: 37 },
-      { name: "低风险", type: "风险", value: 71 },
+      { name: "状态A", type: "状态", value: 18 },
+      { name: "状态B", type: "状态", value: 37 },
+      { name: "状态C", type: "状态", value: 71 },
     ],
     style: {
       left: 120,
@@ -86,9 +86,9 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
   const terseChartData = terseChart.props.chartData as JsonObject;
   const terseChartConstant = terseChartData.constant as JsonObject;
   assert.deepEqual(terseChartConstant.data, [
-    { name: "高风险", type: "风险", value: 18 },
-    { name: "中风险", type: "风险", value: 37 },
-    { name: "低风险", type: "风险", value: 71 },
+    { name: "状态A", type: "状态", value: 18 },
+    { name: "状态B", type: "状态", value: 37 },
+    { name: "状态C", type: "状态", value: 71 },
   ]);
   const terseTexts = terseUserPanelSchemas
     .filter((item) => item.componentName === "SingleText")
@@ -106,12 +106,12 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
   assert.equal(terseSideSummary1Style.height, 14);
   assert.equal(terseSideSummary1Style.lineHeight, 1);
   assert.ok(
-    hasTextWithFragments(terseTexts, ["高风险", "18", "14.3%"]),
+    hasTextWithFragments(terseTexts, ["状态A", "18", "14.3%"]),
     "terse input should derive side summary data from dataItems",
   );
   assert.ok(
-    hasTextWithFragments(terseTexts, ["高风险", "14.3%"]),
-    "terse input should derive a real conclusion from risk data",
+    hasTextWithFragments(terseTexts, ["状态A", "14.3%"]),
+    "terse input should derive a real conclusion from data",
   );
   assert.equal(
     terseTexts.some((text) => typeof text === "string" && text.includes("图例")),
@@ -178,17 +178,17 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
     type: "animate__zoomIn",
   });
 
-  const customerSourcePanelInput = {
+  const sourcePanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "customer_source_panel",
+    logicalId: "source_category_panel",
     parentLogicalId: "root",
-    title: "客户来源分析",
+    title: "类别分类分析",
     dataItems: [
-      { name: "线上广告", type: "来源", value: 86 },
-      { name: "老客户推荐", type: "来源", value: 54 },
-      { name: "门店自然到访", type: "来源", value: 37 },
-      { name: "活动引流", type: "来源", value: 23 },
+      { name: "类别A", type: "类别", value: 86 },
+      { name: "类别B", type: "类别", value: 54 },
+      { name: "类别C保留原名", type: "类别", value: 37 },
+      { name: "类别D", type: "类别", value: 23 },
     ],
     style: {
       left: 120,
@@ -216,72 +216,77 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
       },
     },
   } satisfies JsonObject;
-  const customerSourceSchemas = generateModuleSchema(customerSourcePanelInput);
-  const customerSourceTexts = customerSourceSchemas
+  const sourceSchemas = generateModuleSchema(sourcePanelInput);
+  const sourceTexts = sourceSchemas
     .filter((item) => item.componentName === "SingleText")
     .map((item) => item.props.textContent);
   assert.ok(
-    hasTextWithFragments(customerSourceTexts, ["线上广告", "86", "43%"]),
-    "customer source panel should keep source summary data on one line",
+    hasTextWithFragments(sourceTexts, ["类别A", "86", "43%"]),
+    "source category panel should keep source summary data on one line",
   );
   assert.ok(
-    hasTextWithFragments(customerSourceTexts, ["老客户推荐", "54", "27%"]),
-    "customer source panel should preserve customer-source category data",
+    hasTextWithFragments(sourceTexts, ["类别B", "54", "27%"]),
+    "source category panel should preserve source category data",
   );
   assert.ok(
-    hasTextWithFragments(customerSourceTexts, ["门店自然到访", "37", "18.5%"]),
-    "customer source panel should preserve original category names",
+    hasTextWithFragments(sourceTexts, ["类别C保留原名", "37", "18.5%"]),
+    "source category panel should preserve original category names",
   );
   assert.ok(
-    hasTextWithFragments(customerSourceTexts, ["线上广告", "43%"]),
-    "customer source panel should derive a conclusion from source categories",
+    hasTextWithFragments(sourceTexts, ["类别A", "43%"]),
+    "source category panel should derive a conclusion from source categories",
   );
   assert.equal(
-    customerSourceTexts.some((text) => typeof text === "string" && text.includes("门店到访")),
-    false,
-    "customer source panel should not rewrite source category names",
+    sourceTexts.some((text) => typeof text === "string" && text.includes("类别C")),
+    true,
+    "source category panel should keep the original source category label",
   );
-  const customerSideText = customerSourceSchemas.find(
+  assert.equal(
+    sourceTexts.some((text) => typeof text === "string" && text.includes("改写类别C")),
+    false,
+    "source category panel should not rewrite source category names",
+  );
+  const sourceSideText = sourceSchemas.find(
     (item) => item.props.name === "侧边摘要1",
   );
-  const customerChart = customerSourceSchemas.find(
+  const sourceChart = sourceSchemas.find(
     (item) => item.componentName === "PieChart",
   );
-  assert.ok(customerSideText, "customer source panel should include side summary text");
-  assert.ok(customerChart, "customer source panel should include chart");
-  const customerSideTextStyle = customerSideText.props.style as JsonObject;
-  const customerChartOption = customerChart.props.option as JsonObject;
-  const customerChartSeries = customerChartOption.series as JsonObject[];
-  const customerChartLabel = customerChartSeries[0]?.label as JsonObject;
-  const customerChartLabelLine = customerChartSeries[0]?.labelLine as JsonObject;
+  assert.ok(sourceSideText, "source category panel should include side summary text");
+  assert.ok(sourceChart, "source category panel should include chart");
+  const sourceSideTextStyle = sourceSideText.props.style as JsonObject;
+  const sourceChartOption = sourceChart.props.option as JsonObject;
+  const sourceChartSeries = sourceChartOption.series as JsonObject[];
+  const sourceChartLabel = sourceChartSeries[0]?.label as JsonObject;
+  const sourceChartLabelLine = sourceChartSeries[0]?.labelLine as JsonObject;
   assert.ok(
-    !((customerSideText.props.textContent as string | undefined) ?? "").includes("\n"),
-    "customer source side summary should not wrap when the single-line text fits",
+    !((sourceSideText.props.textContent as string | undefined) ?? "").includes("\n"),
+    "source category side summary should not wrap when the single-line text fits",
   );
   assert.ok(
-    (customerSideTextStyle.width as number) >= 220,
-    "customer source side text should avoid breaking short phrases and percentages",
+    (sourceSideTextStyle.width as number) >= 220,
+    "source category side text should avoid breaking short phrases and percentages",
   );
-  assert.equal(customerSideTextStyle.height, 14);
-  assert.equal(customerSideTextStyle.fontSize, 14);
-  assert.equal(customerSideTextStyle.lineHeight, 1);
-  assert.equal(customerChartLabel.fontSize, 11);
-  assert.equal(customerChartLabel.show, true);
-  assert.equal(customerChartLabelLine.length, 8);
-  assert.equal(customerChartLabelLine.length2, 4);
+  assert.equal(sourceSideTextStyle.height, 14);
+  assert.equal(sourceSideTextStyle.fontSize, 14);
+  assert.equal(sourceSideTextStyle.lineHeight, 1);
+  assert.equal(sourceChartLabel.fontSize, 11);
+  assert.equal(sourceChartLabel.show, true);
+  assert.equal(sourceChartLabelLine.length, 8);
+  assert.equal(sourceChartLabelLine.length2, 4);
 
-  const energyPanelInput = {
+  const denseCategoryPanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "energy_usage_panel",
+    logicalId: "dense_category_panel",
     parentLogicalId: "root",
-    title: "园区能耗占比",
+    title: "五项分类占比",
     dataItems: [
-      { name: "空调", type: "能耗", value: 46 },
-      { name: "照明", type: "能耗", value: 22 },
-      { name: "动力设备", type: "能耗", value: 18 },
-      { name: "办公设备", type: "能耗", value: 9 },
-      { name: "其他", type: "能耗", value: 5 },
+      { name: "分类A", type: "分类", value: 46 },
+      { name: "分类B", type: "分类", value: 22 },
+      { name: "分类C", type: "分类", value: 18 },
+      { name: "分类D", type: "分类", value: 9 },
+      { name: "分类E", type: "分类", value: 5 },
     ],
     style: {
       left: 24,
@@ -314,40 +319,40 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
       },
     },
   } satisfies JsonObject;
-  const energyPanelSchemas = generateModuleSchema(energyPanelInput);
-  const energyChart = energyPanelSchemas.find(
+  const denseCategorySchemas = generateModuleSchema(denseCategoryPanelInput);
+  const denseCategoryChart = denseCategorySchemas.find(
     (item) => item.componentName === "PieChart",
   );
-  assert.ok(energyChart, "energy panel should include chart");
-  const energyChartStyle = energyChart.props.style as JsonObject;
-  const energyChartOption = energyChart.props.option as JsonObject;
-  const energyLegend = energyChartOption.legend as JsonObject;
-  const energyLegendTextStyle = energyLegend.textStyle as JsonObject;
-  const energySeries = energyChartOption.series as JsonObject[];
-  const energyFirstSeries = energySeries[0] as JsonObject;
-  const energyLabel = energyFirstSeries.label as JsonObject;
-  const energyLabelLine = energyFirstSeries.labelLine as JsonObject;
+  assert.ok(denseCategoryChart, "dense category panel should include chart");
+  const denseCategoryChartStyle = denseCategoryChart.props.style as JsonObject;
+  const denseCategoryChartOption = denseCategoryChart.props.option as JsonObject;
+  const denseCategoryLegend = denseCategoryChartOption.legend as JsonObject;
+  const denseCategoryLegendTextStyle = denseCategoryLegend.textStyle as JsonObject;
+  const denseCategorySeries = denseCategoryChartOption.series as JsonObject[];
+  const denseCategoryFirstSeries = denseCategorySeries[0] as JsonObject;
+  const denseCategoryLabel = denseCategoryFirstSeries.label as JsonObject;
+  const denseCategoryLabelLine = denseCategoryFirstSeries.labelLine as JsonObject;
   assert.ok(
-    (energyChartStyle.width as number) < 300,
-    "energy test should exercise a narrow chart region with side summary",
+    (denseCategoryChartStyle.width as number) < 300,
+    "dense category test should exercise a narrow chart region with side summary",
   );
   assert.ok(
-    (energyLegend.itemGap as number) <= 14,
-    "narrow energy panel should compact legend gap without locking a template value",
+    (denseCategoryLegend.itemGap as number) <= 14,
+    "narrow category panel should compact legend gap without locking a template value",
   );
   assert.ok(
-    (energyLegendTextStyle.fontSize as number) <= 12,
-    "narrow energy panel should compact legend text without locking a template value",
+    (denseCategoryLegendTextStyle.fontSize as number) <= 12,
+    "narrow category panel should compact legend text without locking a template value",
   );
-  assert.ok(isPercentPair(energyFirstSeries.center), "energy pie center should stay percentage based");
-  assert.ok(isPercentPair(energyFirstSeries.radius), "energy pie radius should stay percentage based");
+  assert.ok(isPercentPair(denseCategoryFirstSeries.center), "category pie center should stay percentage based");
+  assert.ok(isPercentPair(denseCategoryFirstSeries.radius), "category pie radius should stay percentage based");
   assert.ok(
-    (energyLabel.fontSize as number) <= 10,
-    "narrow energy panel should compact external labels without locking a template value",
+    (denseCategoryLabel.fontSize as number) <= 10,
+    "narrow category panel should compact external labels without locking a template value",
   );
   assert.ok(
-    (energyLabelLine.length as number) <= 6 && (energyLabelLine.length2 as number) <= 3,
-    "narrow energy panel should compact label lines without locking a template value",
+    (denseCategoryLabelLine.length as number) <= 6 && (denseCategoryLabelLine.length2 as number) <= 3,
+    "narrow category panel should compact label lines without locking a template value",
   );
   return { terseUserPanelInput };
 }

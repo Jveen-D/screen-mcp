@@ -27,8 +27,8 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
               chartData: {
                 constant: {
                   data: [
-                    { name: "一月", type: "销售额", value: 42 },
-                    { name: "二月", type: "销售额", value: 58 },
+                    { name: "一月", type: "指标值", value: 42 },
+                    { name: "二月", type: "指标值", value: 58 },
                   ],
                 },
               },

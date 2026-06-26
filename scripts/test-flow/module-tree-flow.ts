@@ -8,7 +8,7 @@ export function runModuleTreeFlowTests(chartPanelInput: JsonObject): void {
   const moduleTreeSchema = generateModuleTreeSchema(chartPanelInput);
   assertRandomizedId(
     moduleTreeSchema.id,
-    "sales_channel_panel",
+    "category_share_panel",
     "module tree group id",
   );
   assert.equal(moduleTreeSchema.componentName, "__Group__");
@@ -17,7 +17,7 @@ export function runModuleTreeFlowTests(chartPanelInput: JsonObject): void {
   assert.equal((moduleTreeSchema.props.style as JsonObject).top, 96);
   assert.equal((moduleTreeSchema.props.style as JsonObject).width, 520);
   assert.equal((moduleTreeSchema.props.style as JsonObject).height, 360);
-  assert.equal(moduleTreeSchema.title, "销售渠道占比");
+  assert.equal(moduleTreeSchema.title, "分类占比");
   assert.equal(moduleTreeSchema.isHidden, false);
   assert.equal(moduleTreeSchema.isLocked, false);
   assert.equal(moduleTreeSchema.isGroup, true);
@@ -53,7 +53,7 @@ export function runModuleTreeFlowTests(chartPanelInput: JsonObject): void {
 
   const groupedChartPanelTree = generateModuleTreeSchema({
     ...chartPanelInput,
-    logicalId: "grouped_sales_channel_panel",
+    logicalId: "grouped_category_share_panel",
     grouping: {
       mode: "semantic",
       singleChildGroup: true,

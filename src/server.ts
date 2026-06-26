@@ -20,7 +20,6 @@ import {
   getModuleCapability,
   listModules,
 } from "./core/modules.js";
-import { generateScreenModuleFromPrompt } from "./core/promptModule.js";
 import { generateFullScreenFromPrompt } from "./core/fullScreenPromptModule.js";
 import {
   generateDashboardSchema,
@@ -176,18 +175,6 @@ const moduleInput = z
       zIndex: z.number().optional(),
     }).passthrough(),
     slots: z.record(z.unknown()),
-  })
-  .passthrough();
-
-const promptModuleInput = z
-  .object({
-    prompt: z.string().min(1),
-    logicalId: z.string().min(1).optional(),
-    parentLogicalId: z.string().min(1).optional(),
-    title: z.string().min(1).optional(),
-    style: z.record(z.unknown()).optional(),
-    dataItems: z.array(z.record(z.unknown())).optional(),
-    theme: z.record(z.unknown()).optional(),
   })
   .passthrough();
 
@@ -416,29 +403,6 @@ server.registerTool(
   async (input) => {
     try {
       const tree = generateModuleTreeSchema(input as JsonObject) as EditorTreeNode;
-      return asToolContent(sortEditorTreeChildren(tree));
-    } catch (error) {
-      return handleToolError(error);
-    }
-  },
-);
-
-server.registerTool(
-  "generate_screen_module_from_prompt",
-  {
-    title: "Generate Screen Module From User Prompt",
-    description:
-      "Legacy single-module prompt helper. Prefer DashboardSpec or explicit module slots for production generation; this helper is kept for terse demos and returns an editor-ready __Group__.",
-    inputSchema: promptModuleInput,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: false,
-    },
-  },
-  async (input) => {
-    try {
-      const tree = generateScreenModuleFromPrompt(input as JsonObject) as EditorTreeNode;
       return asToolContent(sortEditorTreeChildren(tree));
     } catch (error) {
       return handleToolError(error);

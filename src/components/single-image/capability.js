@@ -93,8 +93,8 @@ export const singleImageCapability = {
             props: {
                 componentName: "SingleImage",
                 logicalId: "panel_bg_image",
-                parentLogicalId: "sales_group",
-                name: "销售面板背景",
+                parentLogicalId: "panel_group",
+                name: "分类面板背景",
                 style: {
                     position: "absolute",
                     left: 48,

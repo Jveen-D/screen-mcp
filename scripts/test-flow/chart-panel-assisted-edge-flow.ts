@@ -9,13 +9,13 @@ export function runChartPanelAssistedEdgeTests(terseUserPanelInput: ChartPanelAs
     moduleName: "ChartPanel",
     logicalId: "merged_summary_panel",
     parentLogicalId: "root",
-    title: "门店投诉来源分析",
+    title: "类别摘要",
     dataItems: [
-      { name: "产品问题", type: "来源", value: 38 },
-      { name: "物流延迟", type: "来源", value: 27 },
-      { name: "服务态度", type: "来源", value: 19 },
-      { name: "价格争议", type: "来源", value: 11 },
-      { name: "其他", type: "来源", value: 5 },
+      { name: "类别A", type: "类别", value: 38 },
+      { name: "类别B", type: "类别", value: 27 },
+      { name: "类别C", type: "类别", value: 19 },
+      { name: "类别D", type: "类别", value: 11 },
+      { name: "类别E", type: "类别", value: 5 },
     ],
     style: {
       left: 8,
@@ -35,7 +35,7 @@ export function runChartPanelAssistedEdgeTests(terseUserPanelInput: ChartPanelAs
           props: {
             name: "重点摘要",
             textContent:
-              "重点摘要 产品问题 38 38% 主要来源 物流延迟 27 27% 履约关注 服务态度 19 19% 体验短板",
+              "重点摘要 类别A 38 38% 主要构成 类别B 27 27% 继续关注 类别C 19 19% 补充观察",
             style: {
               position: "absolute",
               left: 398,
@@ -57,7 +57,7 @@ export function runChartPanelAssistedEdgeTests(terseUserPanelInput: ChartPanelAs
     (item) =>
       item.props.name === "重点摘要" &&
       typeof item.props.textContent === "string" &&
-      item.props.textContent.includes("物流延迟 27 27%"),
+      item.props.textContent.includes("类别B 27 27%"),
   );
   const mergedSummaryHeader = mergedSummaryTexts.find(
     (item) => item.props.name === "侧边摘要标题",
@@ -80,7 +80,7 @@ export function runChartPanelAssistedEdgeTests(terseUserPanelInput: ChartPanelAs
 
   const customDecorationPanelInput = {
     ...terseUserPanelInput,
-    logicalId: "custom_decoration_risk_panel",
+    logicalId: "custom_decoration_status_panel",
     slots: {
       ...terseUserPanelInput.slots,
       decorations: [
@@ -111,16 +111,16 @@ export function runChartPanelAssistedEdgeTests(terseUserPanelInput: ChartPanelAs
     "ChartPanel should not supplement bottom structure decoration when custom decorations omit it",
   );
 
-  const alarmPanelInput = {
+  const statusPanelInput = {
     moduleName: "ChartPanel",
     layoutMode: "assisted",
-    logicalId: "device_alarm_panel",
+    logicalId: "status_category_panel",
     parentLogicalId: "root",
-    title: "设备告警分类",
+    title: "状态分类",
     dataItems: [
-      { name: "严重告警", type: "告警", value: 12 },
-      { name: "一般告警", type: "告警", value: 46 },
-      { name: "提示告警", type: "告警", value: 83 },
+      { name: "状态A", type: "状态", value: 12 },
+      { name: "状态B", type: "状态", value: 46 },
+      { name: "状态C", type: "状态", value: 83 },
     ],
     style: {
       left: 120,
@@ -148,70 +148,65 @@ export function runChartPanelAssistedEdgeTests(terseUserPanelInput: ChartPanelAs
       },
     },
   } satisfies JsonObject;
-  const alarmPanelSchemas = generateModuleSchema(alarmPanelInput);
-  const alarmTexts = alarmPanelSchemas
+  const statusPanelSchemas = generateModuleSchema(statusPanelInput);
+  const statusTexts = statusPanelSchemas
     .filter((item) => item.componentName === "SingleText")
     .map((item) => item.props.textContent);
-  assert.ok(alarmTexts.includes("141"), "alarm panel should derive total count");
-  assert.ok(alarmTexts.includes("总数"), "alarm panel should include a center total label");
-  assert.ok(alarmTexts.includes("重点摘要"), "alarm panel should use summary heading");
+  assert.ok(statusTexts.includes("141"), "status panel should derive total count");
+  assert.ok(statusTexts.includes("总数"), "status panel should include a center total label");
+  assert.ok(statusTexts.includes("重点摘要"), "status panel should use summary heading");
   assert.ok(
-    hasTextWithFragments(alarmTexts, ["严重告警", "12", "8.5%"]),
-    "alarm panel should derive severe alarm summary data",
-  );
-  assert.ok(
-    hasTextWithFragments(alarmTexts, ["一般告警", "46", "32.6%"]),
-    "alarm panel should derive normal alarm summary data",
+    hasTextWithFragments(statusTexts, ["状态A", "12", "8.5%"]),
+    "status panel should derive first status summary data",
   );
   assert.ok(
-    hasTextWithFragments(alarmTexts, ["提示告警", "83", "58.9%"]),
-    "alarm panel should derive prompt alarm summary data",
+    hasTextWithFragments(statusTexts, ["状态B", "46", "32.6%"]),
+    "status panel should derive second status summary data",
   );
   assert.ok(
-    hasTextWithFragments(alarmTexts, ["严重告警", "8.5%"]),
-    "alarm panel should derive an alarm conclusion from data",
+    hasTextWithFragments(statusTexts, ["状态C", "83", "58.9%"]),
+    "status panel should derive third status summary data",
   );
-  assert.equal(
-    alarmTexts.some((text) => typeof text === "string" && text.includes("风险")),
-    false,
-    "alarm panel should not leak risk-specific wording",
+  assert.ok(
+    hasTextWithFragments(statusTexts, ["状态A", "8.5%"]),
+    "status panel should derive a conclusion from data",
   );
-  const alarmSideContainer = alarmPanelSchemas.find(
+  const statusSideContainer = statusPanelSchemas.find(
     (item) => item.props.name === "侧边摘要容器",
   );
-  const alarmSideFirstText = alarmPanelSchemas.find(
+  const statusSideFirstText = statusPanelSchemas.find(
     (item) => item.props.name === "侧边摘要1",
   );
-  const alarmSideLastText = alarmPanelSchemas.find(
+  const statusSideLastText = statusPanelSchemas.find(
     (item) => item.props.name === "侧边摘要3",
   );
-  const alarmConclusion = alarmPanelSchemas.find(
+  const statusConclusion = statusPanelSchemas.find(
     (item) => item.props.name === "顶部结论",
   );
-  const alarmBottomLine = alarmPanelSchemas.find(
+  const statusBottomLine = statusPanelSchemas.find(
     (item) => item.props.name === "底部结构线",
   );
-  assert.equal(alarmSideContainer, undefined, "alarm panel should not synthesize side summary container");
-  assert.ok(alarmSideFirstText, "alarm panel should include first side summary");
-  assert.ok(alarmSideLastText, "alarm panel should include last side summary");
-  assert.ok(alarmConclusion, "alarm panel should include assisted conclusion");
-  assert.equal(alarmBottomLine, undefined, "alarm panel should not synthesize bottom structure line");
-  const alarmSideFirstStyle = alarmSideFirstText.props.style as JsonObject;
-  const alarmSideLastStyle = alarmSideLastText.props.style as JsonObject;
-  const alarmConclusionStyle = alarmConclusion.props.style as JsonObject;
+  assert.equal(statusSideContainer, undefined, "status panel should not synthesize side summary container");
+  assert.ok(statusSideFirstText, "status panel should include first side summary");
+  assert.ok(statusSideLastText, "status panel should include last side summary");
+  assert.ok(statusConclusion, "status panel should include assisted conclusion");
+  assert.equal(statusBottomLine, undefined, "status panel should not synthesize bottom structure line");
+  const statusSideFirstStyle = statusSideFirstText.props.style as JsonObject;
+  const statusSideLastStyle = statusSideLastText.props.style as JsonObject;
+  const statusConclusionStyle = statusConclusion.props.style as JsonObject;
   assert.ok(
-    (alarmSideFirstStyle.height as number) >= (alarmSideFirstStyle.fontSize as number),
-    "alarm side rows should reserve enough text height",
+    (statusSideFirstStyle.height as number) >= (statusSideFirstStyle.fontSize as number),
+    "status side rows should reserve enough text height",
   );
   assert.ok(
-    (alarmSideLastStyle.top as number) > (alarmSideFirstStyle.top as number),
-    "alarm side summaries should keep ordered row positions",
+    (statusSideLastStyle.top as number) > (statusSideFirstStyle.top as number),
+    "status side summaries should keep ordered row positions",
   );
-  assert.equal(alarmConclusionStyle.lineHeight, 1, "alarm conclusion should use a single-line text box");
+  assert.equal(statusConclusionStyle.lineHeight, 1, "status conclusion should use a single-line text box");
 
   const sideLegendTextInput = {
     ...terseUserPanelInput,
-    logicalId: "side_legend_text_risk_panel",
+    logicalId: "side_legend_text_status_panel",
     slots: {
       ...terseUserPanelInput.slots,
       auxiliaryTexts: [

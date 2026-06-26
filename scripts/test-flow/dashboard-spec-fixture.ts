@@ -93,8 +93,8 @@ export function createDashboardSpec(freeformModuleInput: JsonObject): JsonObject
     modules: [
       {
         moduleName: "ChartPanel",
-        logicalId: "risk_panel",
-        title: "风险等级分析",
+        logicalId: "status_panel",
+        title: "状态分布分析",
         style: {
           position: "absolute",
           left: 40,
@@ -106,7 +106,7 @@ export function createDashboardSpec(freeformModuleInput: JsonObject): JsonObject
           title: {
             componentName: "SingleText",
             props: {
-              textContent: "风险等级分析",
+              textContent: "状态分布分析",
             },
           },
           mainChart: {
@@ -115,9 +115,9 @@ export function createDashboardSpec(freeformModuleInput: JsonObject): JsonObject
               chartData: {
                 constant: {
                   data: [
-                    { name: "高风险", type: "风险", value: 18 },
-                    { name: "中风险", type: "风险", value: 37 },
-                    { name: "低风险", type: "风险", value: 71 },
+                    { name: "状态A", type: "状态", value: 18 },
+                    { name: "状态B", type: "状态", value: 37 },
+                    { name: "状态C", type: "状态", value: 71 },
                   ],
                 },
               },
@@ -150,8 +150,8 @@ export function createDashboardSpec(freeformModuleInput: JsonObject): JsonObject
             {
               componentName: "SingleText",
               props: {
-                name: "风险结论",
-                textContent: "高风险占比 14.3%，优先跟进高风险区域",
+                name: "状态结论",
+                textContent: "状态A占比 14.3%，需要持续关注",
               },
             },
           ],

@@ -40,10 +40,6 @@ export async function runMcpDiscoveryTests({ client }: McpToolContext): Promise<
     "MCP server should expose generate_module_tree_schema",
   );
   assert.ok(
-    tools.tools.some((tool) => tool.name === "generate_screen_module_from_prompt"),
-    "MCP server should expose natural-language screen module entry",
-  );
-  assert.ok(
     tools.tools.some((tool) => tool.name === "validate_dashboard_spec"),
     "MCP server should expose DashboardSpec validation",
   );
@@ -65,19 +61,6 @@ export async function runMcpDiscoveryTests({ client }: McpToolContext): Promise<
       serverInstructions.includes("complete JSON") &&
       serverInstructions.includes("complete JSON returned by the tool"),
     "MCP server instructions should require complete schema output when requested",
-  );
-  const promptEntryTool = tools.tools.find(
-    (tool) => tool.name === "generate_screen_module_from_prompt",
-  );
-  assert.ok(
-    promptEntryTool?.description?.includes("Legacy single-module prompt helper") &&
-      promptEntryTool.description.includes("Prefer DashboardSpec"),
-    "prompt entry tool should be discoverable as a legacy helper while steering production use to DashboardSpec",
-  );
-  assert.ok(
-    promptEntryTool?.description &&
-      promptEntryTool.description.length < 260,
-    "prompt entry tool description should stay compact for faster model routing",
   );
   const moduleTreeTool = tools.tools.find(
     (tool) => tool.name === "generate_module_tree_schema",

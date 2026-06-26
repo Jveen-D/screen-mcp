@@ -15,12 +15,12 @@ export function runDataDisplayNormalizerTests(): void {
     parentLogicalId: "table_group",
     name: "测试基础表格",
     columns: [
-      { field: "region", label: "地区" },
-      { field: "sales", label: "销售额", type: "number" },
+      { field: "region", label: "区域" },
+      { field: "metric", label: "指标值", type: "number" },
     ],
     data: [
-      { region: "北京", sales: 1200 },
-      { region: "上海", sales: 980 },
+      { region: "区域A", metric: 1200 },
+      { region: "区域B", metric: 980 },
     ],
     style: {
       position: "absolute",
@@ -35,7 +35,7 @@ export function runDataDisplayNormalizerTests(): void {
   const baseTableConstant = asChartObject(baseTableChartData.constant);
   const baseTableConstantData = Array.isArray(baseTableConstant.data) ? baseTableConstant.data : [];
   assert.equal(baseTableConstantData.length, 2, "BaseTable data should sync to chartData");
-  assert.equal(asChartObject(baseTableConstantData[0]).region, "北京", "BaseTable first row region should sync");
+  assert.equal(asChartObject(baseTableConstantData[0]).region, "区域A", "BaseTable first row region should sync");
   const baseTableIndicator = Array.isArray(baseTableChartData.indicator) ? baseTableChartData.indicator : [];
   assert.equal(baseTableIndicator.length, 2, "BaseTable indicator should derive from columns");
   assert.ok(Array.isArray(baseTableChartData.dimension) && baseTableChartData.dimension.length === 0, "BaseTable dimension should be empty");
@@ -49,13 +49,13 @@ export function runDataDisplayNormalizerTests(): void {
     parentLogicalId: "list_group",
     name: "测试滚动表格",
     columns: [
-      { field: "region", label: "地区" },
-      { field: "rate", label: "完成率" },
+      { field: "region", label: "区域" },
+      { field: "rate", label: "进度" },
     ],
     data: [
-      { region: "北京", rate: 87.2 },
-      { region: "上海", rate: 80.5 },
-      { region: "广州", rate: 72.3 },
+      { region: "区域A", rate: 87.2 },
+      { region: "区域B", rate: 80.5 },
+      { region: "区域C", rate: 72.3 },
     ],
     style: {
       position: "absolute",
@@ -69,7 +69,7 @@ export function runDataDisplayNormalizerTests(): void {
   const scrollListDatasource = asChartObject(scrollListSchema.props.datasource);
   const scrollListConstantData = Array.isArray(scrollListDatasource.constantData) ? scrollListDatasource.constantData : [];
   assert.equal(scrollListConstantData.length, 3, "ScrollList data should sync to datasource");
-  assert.equal(asChartObject(scrollListConstantData[1]).region, "上海", "ScrollList second row region should sync");
+  assert.equal(asChartObject(scrollListConstantData[1]).region, "区域B", "ScrollList second row region should sync");
   const scrollListFieldMappings = Array.isArray(scrollListDatasource.fieldMappings) ? scrollListDatasource.fieldMappings : [];
   const scrollListFirstMapping = asChartObject(scrollListFieldMappings[0]);
   const scrollListMapFields = Array.isArray(scrollListFirstMapping.mapFields) ? scrollListFirstMapping.mapFields : [];
@@ -85,9 +85,9 @@ export function runDataDisplayNormalizerTests(): void {
     parentLogicalId: "chart_group",
     name: "测试漏斗图",
     data: [
-      { name: "展现", value: 100 },
-      { name: "点击", value: 80 },
-      { name: "访问", value: 60 },
+      { name: "步骤A", value: 100 },
+      { name: "步骤B", value: 80 },
+      { name: "步骤C", value: 60 },
     ],
     style: {
       position: "absolute",
@@ -101,7 +101,7 @@ export function runDataDisplayNormalizerTests(): void {
   const funnelChartDatasource = asChartObject(funnelChartSchema.props.datasource);
   const funnelChartConstantData = Array.isArray(funnelChartDatasource.constantData) ? funnelChartDatasource.constantData : [];
   assert.equal(funnelChartConstantData.length, 3, "FunnelChart data should sync to datasource");
-  assert.equal(asChartObject(funnelChartConstantData[0]).name, "展现", "FunnelChart first data name should sync");
+  assert.equal(asChartObject(funnelChartConstantData[0]).name, "步骤A", "FunnelChart first data name should sync");
   assert.equal(asChartObject(funnelChartConstantData[0]).value, 100, "FunnelChart first data value should sync");
 
   // RadarChart: data should sync to datasource.constantData with s/x/y mapping
