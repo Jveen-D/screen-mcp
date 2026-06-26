@@ -256,4 +256,103 @@ export function runIndicatorNormalizerTests(): void {
   assert.equal(denseRingLegend.itemWidth, 12);
   assert.equal(denseRingLegend.itemHeight, 7);
   assert.equal(asChartObject(denseRingLegend.textStyle).fontSize, 11);
+
+  const centerBandLegendRingSchema = generateComponentsSchema({
+    componentName: "RingChart",
+    logicalId: "center_band_legend_ring_test",
+    parentLogicalId: "chart_group",
+    name: "中心横向图例环图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "分类A", type: "分类", value: 42 },
+          { name: "分类B", type: "分类", value: 28 },
+          { name: "分类C", type: "分类", value: 18 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 360,
+      height: 220,
+    },
+    option: {
+      legend: {
+        show: true,
+        left: "right",
+        top: "center",
+        orient: "horizontal",
+      },
+      series: [
+        {
+          radius: ["36%", "64%"],
+          center: ["50%", "50%"],
+        },
+      ],
+    },
+  });
+  const centerBandLegendRingOption = asChartObject(centerBandLegendRingSchema.props.option);
+  const centerBandLegend = asChartObject(centerBandLegendRingOption.legend);
+  assert.equal(
+    centerBandLegend.left,
+    "center",
+    "RingChart should move horizontal center-band legends to a safe bottom slot",
+  );
+  assert.equal(centerBandLegend.top, "bottom");
+  assert.equal(centerBandLegend.orient, "horizontal");
+
+  const sideLegendRingSchema = generateComponentsSchema({
+    componentName: "RingChart",
+    logicalId: "side_legend_ring_test",
+    parentLogicalId: "chart_group",
+    name: "右侧图例环图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "分类A", type: "分类", value: 42 },
+          { name: "分类B", type: "分类", value: 28 },
+          { name: "分类C", type: "分类", value: 18 },
+          { name: "分类D", type: "分类", value: 12 },
+          { name: "分类E", type: "分类", value: 8 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 416,
+      height: 220,
+    },
+    option: {
+      legend: {
+        show: true,
+        left: "right",
+        top: "center",
+        orient: "vertical",
+      },
+      series: [
+        {
+          radius: ["42%", "62%"],
+          center: ["40%", "50%"],
+        },
+      ],
+    },
+  });
+  const sideLegendRingOption = asChartObject(sideLegendRingSchema.props.option);
+  const sideLegendRingSeries = Array.isArray(sideLegendRingOption.series)
+    ? asChartObject(sideLegendRingOption.series[0])
+    : {};
+  assert.deepEqual(
+    sideLegendRingSeries.center,
+    ["40%", "50%"],
+    "RingChart should keep side legend center stable",
+  );
+  assert.deepEqual(
+    sideLegendRingSeries.radius,
+    ["42%", "64%"],
+    "RingChart should keep enough outer radius for side legend layouts",
+  );
 }

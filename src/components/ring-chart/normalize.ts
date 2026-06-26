@@ -107,6 +107,76 @@ function isValidLegendPosition(left: JsonValue, top: JsonValue): boolean {
   );
 }
 
+function normalizeLegendCenterOverlap(legend: JsonObject): void {
+  if (legend.top !== "center") {
+    return;
+  }
+
+  const orient = typeof legend.orient === "string" ? legend.orient : "horizontal";
+  if (orient === "vertical" && (legend.left === "left" || legend.left === "right")) {
+    return;
+  }
+
+  legend.left = "center";
+  legend.top = "bottom";
+  legend.orient = "horizontal";
+}
+
+function normalizeSideLegendRingLayout(option: JsonObject, style: JsonObject): void {
+  const legend = isJsonObject(option.legend) ? option.legend : {};
+  if (legend.show === false) {
+    return;
+  }
+
+  const orient = typeof legend.orient === "string" ? legend.orient : "horizontal";
+  const isSideLegend =
+    legend.top === "center" &&
+    orient === "vertical" &&
+    (legend.left === "left" || legend.left === "right");
+  if (!isSideLegend) {
+    return;
+  }
+
+  const width = asNumber(style.width, 0);
+  const height = asNumber(style.height, 0);
+  const denseSideLegend = width > 0 && height > 0 && (width < 420 || height < 240);
+  const series = option.series;
+  if (!Array.isArray(series)) {
+    return;
+  }
+
+  const minOuterRadius = denseSideLegend ? 64 : 60;
+  for (const item of series) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+
+    item.center = normalizeStringPair(item.center, ["50%", "50%"]);
+    item.radius = normalizeStringPair(item.radius, [DEFAULT_INNER_RADIUS, DEFAULT_OUTER_RADIUS]);
+
+    const center = item.center as [string, string];
+    const radius = item.radius as [string, string];
+    if (legend.left === "right") {
+      const parsedCenterX = percentNumber(center[0]);
+      center[0] = parsedCenterX === undefined ? "40%" : `${Math.min(parsedCenterX, 40)}%`;
+    } else {
+      const parsedCenterX = percentNumber(center[0]);
+      center[0] = parsedCenterX === undefined ? "60%" : `${Math.max(parsedCenterX, 60)}%`;
+    }
+    radius[1] = `${Math.max(percentNumber(radius[1]) ?? 0, minOuterRadius)}%`;
+
+    const innerRadius = percentNumber(radius[0]);
+    const outerRadius = percentNumber(radius[1]);
+    if (
+      innerRadius !== undefined &&
+      outerRadius !== undefined &&
+      innerRadius >= outerRadius
+    ) {
+      radius[0] = `${Math.max(0, outerRadius - 14)}%`;
+    }
+  }
+}
+
 function cleanFormatter(value: unknown): JsonValue {
   if (typeof value !== "string") {
     return value as JsonValue;
@@ -311,12 +381,15 @@ export function normalizeRingChartProps(props: JsonObject): JsonObject {
   delete option.title;
   normalizeRingSeries(option);
   normalizeLabelFormatters(option);
-  normalizeCompactLegendLabelLayout(props);
 
   const legend = option.legend;
   if (!isJsonObject(legend)) {
     return props;
   }
+
+  normalizeLegendCenterOverlap(legend);
+  normalizeSideLegendRingLayout(option, isJsonObject(props.style) ? props.style : {});
+  normalizeCompactLegendLabelLayout(props);
 
   if (isValidLegendPosition(legend.left, legend.top)) {
     legend.offsetX = asNumber(legend.offsetX, 0);

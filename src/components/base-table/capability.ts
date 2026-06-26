@@ -129,7 +129,8 @@ export const baseTableCapability: JsonObject = {
         {
           path: "headerConfig.lineHeight",
           type: "number",
-          description: "表头行高。",
+          description:
+            "表头行高，按像素理解，不是倍率。不要写 1 这类文本行高；建议至少与字号同级，或直接使用 24~40 之间的可见高度。",
         },
       ],
     },
@@ -143,11 +144,12 @@ export const baseTableCapability: JsonObject = {
           type: "color",
           description: "行背景色。",
         },
-        {
-          path: "rowConfig.rowLineHeight",
-          type: "number",
-          description: "行高。",
-        },
+            {
+              path: "rowConfig.rowLineHeight",
+              type: "number",
+              description:
+                "行高，按像素理解，不是倍率。建议保持在 28~40 之间，并与字体大小匹配。",
+            },
         {
           path: "rowConfig.selectStyle",
           type: "object",
@@ -199,7 +201,8 @@ export const baseTableCapability: JsonObject = {
             {
               path: "rowConfig.selectStyle.lineHeight",
               type: "number",
-              description: "选中行行高。",
+              description:
+                "选中行行高，按像素理解，不是倍率。建议保持在 28~40 之间，并与字体大小匹配。",
             },
           ],
         },
@@ -399,6 +402,7 @@ export const baseTableCapability: JsonObject = {
     "columns/data 在归一化后会被删除，仅保留 chartData 作为最终数据源。",
     "chartData.dimension 固定为空数组。",
     "chartData.sourceType 固定为 'constant'。",
+    "headerConfig.lineHeight、rowConfig.rowLineHeight 和 rowConfig.selectStyle.lineHeight 都按像素处理；如果 AI 误传 1 这类过小值，MCP 会抬升到可见高度。",
   ],
   examples: [
     {

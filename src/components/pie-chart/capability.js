@@ -172,6 +172,7 @@ export const pieChartCapability = {
         "labelLine 应像标注系统的一部分：连接线角度、长度、颜色和标签位置应协调；不要让多条引线随机散开或穿过图形主体。",
         "legend 默认必须保留，除非用户明确要求隐藏。动态数据下 legend 承担完整分类展示和点击切换能力，右侧摘要卡不能替代 legend。",
         "legend 的位置要承担结构功能：放在标题下方时用于承接标题和图表；放在底部时必须和图表主体、外部 label、底部装饰留出足够距离；放在侧边时要给主图留出足够空间。",
+        "legend 不得以横向布局放在图表中心高度；top: 'center' 只适合 left/right 侧边纵向 legend。若 legend 是 horizontal 或未显式 orient，应放在 top/bottom 安全区。",
         "处理饼图挤压时优先联动三类能力：legend.offsetX/offsetY 微调图例、series[0].center 调整圆心、series[0].radius 调整内外半径。不要只依赖扩大组件、隐藏 legend、关闭 label 或限制数据项个数。",
         "底部 legend + 外部 label 的典型策略：先按组件 width、数据项数量、分类名长度、legend.itemGap 估算 legend 是否会换行；如果会换行，应降低 itemGap 和字号、让 legend.offsetY 更负、把 series[0].centerY 上移到约 '36%' 到 '42%'，并把 outerRadius 收到约 '46%' 到 '54%'。",
         "环形图如果中心空洞明显，应考虑由模块层放置中心摘要、总数或核心指标；如果没有中心信息，避免空洞成为无意义留白。",

@@ -28,7 +28,7 @@ import {
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-26.01-component-capability-cleanup";
+const RULES_VERSION = "2026-06-26.03-text-table-ring-safety";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -84,6 +84,10 @@ function createServer() {
         "ringchart-dense-legend-label-layout",
         "filled-panel-frame-background",
         "component-capability-neutral-examples",
+        "pie-legend-center-overlap-guard",
+        "single-text-transparent-background",
+        "base-table-line-height-guard",
+        "ringchart-side-legend-radius-balance",
       ],
       startedAt: SERVER_STARTED_AT.toISOString(),
       source: {

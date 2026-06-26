@@ -426,6 +426,7 @@ export function runPieComponentFlowTests(): PieComponentFlowFixtures {
   const invalidLegendOption = invalidLegendSchema.props.option as JsonObject;
   const normalizedLegend = invalidLegendOption.legend as JsonObject;
   assert.equal(normalizedLegend.left, "center");
-  assert.equal(normalizedLegend.top, "top");
+  assert.equal(normalizedLegend.top, "bottom");
+  assert.equal(normalizedLegend.orient, "horizontal");
   return { aiProps, inputFirstSeries };
 }

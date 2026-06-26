@@ -111,6 +111,42 @@ function ensureEntryAnimation(props: JsonObject): void {
   entryAnimiation.type = asString(entryAnimiation.type, "");
 }
 
+function normalizeLineHeightValue(
+  target: JsonObject,
+  key: string,
+  fontSizeFallback: number,
+  lineHeightFallback: number,
+): void {
+  const fontSize = asNumber(target.fontSize, fontSizeFallback);
+  const minLineHeight = Math.max(24, Math.ceil(fontSize + 8));
+  const lineHeight = asNumber(target[key], lineHeightFallback);
+  target[key] = Math.max(lineHeight, minLineHeight);
+}
+
+function normalizeTableLineHeights(props: JsonObject): void {
+  const headerConfig = props.headerConfig;
+  if (isJsonObject(headerConfig) && headerConfig.isShowHeader !== false) {
+    normalizeLineHeightValue(headerConfig, "lineHeight", 12, 32);
+  }
+
+  const rowConfig = props.rowConfig;
+  if (!isJsonObject(rowConfig)) {
+    return;
+  }
+
+  const columnConfig = props.columnConfig;
+  const ordinaryCol = isJsonObject(columnConfig) && isJsonObject(columnConfig.ordinaryCol)
+    ? columnConfig.ordinaryCol
+    : {};
+  const ordinaryFontSize = asNumber(ordinaryCol.fontSize, 12);
+  normalizeLineHeightValue(rowConfig, "rowLineHeight", ordinaryFontSize, 34);
+
+  const selectStyle = rowConfig.selectStyle;
+  if (isJsonObject(selectStyle)) {
+    normalizeLineHeightValue(selectStyle, "lineHeight", ordinaryFontSize, 34);
+  }
+}
+
 function syncColumnsAndData(props: JsonObject): void {
   const rawColumns = props.columns;
   const rawData = props.data;
@@ -205,6 +241,7 @@ function normalizeExistingChartData(props: JsonObject): void {
 export function normalizeBaseTableProps(props: JsonObject): JsonObject {
   syncColumnsAndData(props);
   normalizeExistingChartData(props);
+  normalizeTableLineHeights(props);
   ensureEntryAnimation(props);
   return props;
 }

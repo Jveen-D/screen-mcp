@@ -37,7 +37,7 @@ export const singleTextDefaultProps: JsonObject = {
     fontSize: 18,
     color: "#fff",
     textAlign: "center",
-    backgroundColor: "#003552",
+    backgroundColor: "rgba(0,0,0,0)",
     fontStyle: "normal",
     fontWeight: "normal",
     letterSpacing: 1,

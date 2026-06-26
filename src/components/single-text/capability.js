@@ -33,7 +33,7 @@ export const singleTextCapability = {
             type: "string",
             description: "单行文本内容。MCP 会同步写入 datasource.constantData[0].text。",
         },
-        { path: "style", type: "object", description: "位置、尺寸、字体、颜色、对齐和背景。" },
+        { path: "style", type: "object", description: "位置、尺寸、字体、颜色、对齐和背景；默认背景透明。" },
         { path: "style.fontFamily", type: "string", description: "字体族。" },
         { path: "style.fontSize", type: "number", description: "字号。" },
         { path: "style.color", type: "color", description: "字体颜色。" },
@@ -90,6 +90,7 @@ export const singleTextCapability = {
         "datasource 永远使用默认结构，MCP 会把 textContent 同步到 datasource.constantData[0].text。",
         "单行文本默认 style.lineHeight = 1，且 style.height 与 style.fontSize 保持一致，便于 AI 精确计算文字盒位置。",
         "style.lineHeight 使用无单位倍率；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
+        "单行文本默认 backgroundColor 透明；需要底板时应由 LLM 显式设计 SvgDecoration 或单独背景组件，不要让文本自己带默认色块。",
     ],
     examples: [
         {

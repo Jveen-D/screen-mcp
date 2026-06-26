@@ -48,6 +48,18 @@ function isValidLegendPosition(left, top) {
     }
     return legendPositionOptions.some(([allowedLeft, allowedTop]) => left === allowedLeft && top === allowedTop);
 }
+function normalizeLegendCenterOverlap(legend) {
+    if (legend.top !== "center") {
+        return;
+    }
+    const orient = typeof legend.orient === "string" ? legend.orient : "horizontal";
+    if (orient === "vertical" && (legend.left === "left" || legend.left === "right")) {
+        return;
+    }
+    legend.left = "center";
+    legend.top = "bottom";
+    legend.orient = "horizontal";
+}
 function normalizePieSeries(option) {
     const series = option.series;
     if (!Array.isArray(series)) {
@@ -121,6 +133,7 @@ export function normalizePieChartProps(props) {
     if (!isJsonObject(legend)) {
         return props;
     }
+    normalizeLegendCenterOverlap(legend);
     if (isValidLegendPosition(legend.left, legend.top)) {
         legend.offsetX = asNumber(legend.offsetX, 0);
         legend.offsetY = asNumber(legend.offsetY, 0);

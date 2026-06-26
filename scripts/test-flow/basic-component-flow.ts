@@ -113,6 +113,7 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   const defaultLineBoxTextStyle = defaultLineBoxTextSchema.props.style as JsonObject;
   assert.equal(defaultLineBoxTextStyle.height, 20);
   assert.equal(defaultLineBoxTextStyle.lineHeight, 1);
+  assert.equal(defaultLineBoxTextStyle.backgroundColor, "rgba(0,0,0,0)");
 
   const themedTextSchema = generateComponentsSchema({
     componentName: "SingleText",

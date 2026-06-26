@@ -22,6 +22,22 @@ export function runDataDisplayNormalizerTests(): void {
       { region: "区域A", metric: 1200 },
       { region: "区域B", metric: 980 },
     ],
+    headerConfig: {
+      fontSize: 13,
+      lineHeight: 1,
+    },
+    rowConfig: {
+      rowLineHeight: 1,
+      selectStyle: {
+        fontSize: 13,
+        lineHeight: 1,
+      },
+    },
+    columnConfig: {
+      ordinaryCol: {
+        fontSize: 13,
+      },
+    },
     style: {
       position: "absolute",
       left: 100,
@@ -39,6 +55,21 @@ export function runDataDisplayNormalizerTests(): void {
   const baseTableIndicator = Array.isArray(baseTableChartData.indicator) ? baseTableChartData.indicator : [];
   assert.equal(baseTableIndicator.length, 2, "BaseTable indicator should derive from columns");
   assert.ok(Array.isArray(baseTableChartData.dimension) && baseTableChartData.dimension.length === 0, "BaseTable dimension should be empty");
+  const baseTableHeaderConfig = asChartObject(baseTableSchema.props.headerConfig);
+  assert.ok(
+    (baseTableHeaderConfig.lineHeight as number) >= 24,
+    "BaseTable header lineHeight should stay visible",
+  );
+  const baseTableRowConfig = asChartObject(baseTableSchema.props.rowConfig);
+  assert.ok(
+    (baseTableRowConfig.rowLineHeight as number) >= 24,
+    "BaseTable rowLineHeight should stay visible",
+  );
+  const baseTableSelectStyle = asChartObject(baseTableRowConfig.selectStyle);
+  assert.ok(
+    (baseTableSelectStyle.lineHeight as number) >= 24,
+    "BaseTable selected row lineHeight should stay visible",
+  );
 
   // ScrollList: columns/data should sync to datasource
   const scrollListCapability = getComponentCapability("ScrollList");

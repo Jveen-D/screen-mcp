@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-26.01-component-capability-cleanup",
+    "2026-06-26.03-text-table-ring-safety",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -191,6 +191,22 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("component-capability-neutral-examples"),
     "diagnostics should expose component capability cleanup fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("pie-legend-center-overlap-guard"),
+    "diagnostics should expose pie legend center-overlap guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("single-text-transparent-background"),
+    "diagnostics should expose single text transparent background fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("base-table-line-height-guard"),
+    "diagnostics should expose base table line-height guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("ringchart-side-legend-radius-balance"),
+    "diagnostics should expose ring chart side-legend radius balance fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,
