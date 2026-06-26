@@ -92,4 +92,89 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
     dashboardKpiModule.children.every((item) => item.componentName === "__Group__"),
     "DashboardSpec grouping should be inherited by FreeformModule modules",
   );
+
+  const coordinateTree = generateDashboardSchema({
+    logicalId: "coordinate_dashboard",
+    title: "坐标归一化大屏",
+    canvas: {
+      width: 800,
+      height: 480,
+    },
+    modules: [
+      {
+        moduleName: "FreeformModule",
+        logicalId: "local_coordinate_panel",
+        title: "局部坐标面板",
+        style: {
+          position: "absolute",
+          left: 320,
+          top: 180,
+          width: 260,
+          height: 160,
+        },
+        slots: {
+          children: [
+            {
+              componentName: "SingleText",
+              logicalId: "local_coordinate_title",
+              textContent: "局部坐标标题",
+              style: {
+                position: "absolute",
+                left: 16,
+                top: 12,
+                width: 160,
+                height: 18,
+                fontSize: 18,
+                lineHeight: 1,
+              },
+            },
+            {
+              componentName: "SingleText",
+              logicalId: "absolute_coordinate_title",
+              textContent: "画布坐标标题",
+              style: {
+                position: "absolute",
+                left: 360,
+                top: 220,
+                width: 160,
+                height: 18,
+                fontSize: 18,
+                lineHeight: 1,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  } as JsonObject);
+  const coordinateNodes = flattenEditorNodes(coordinateTree as unknown as JsonObject);
+  const localText = coordinateNodes.find(
+    (item) => nodeProps(item).textContent === "局部坐标标题",
+  );
+  const localStyle = nodeProps(localText).style as JsonObject;
+  assert.equal(
+    localStyle.left,
+    336,
+    "DashboardSpec should compile clear module-local x to canvas x",
+  );
+  assert.equal(
+    localStyle.top,
+    192,
+    "DashboardSpec should compile clear module-local y to canvas y",
+  );
+
+  const absoluteText = coordinateNodes.find(
+    (item) => nodeProps(item).textContent === "画布坐标标题",
+  );
+  const absoluteStyle = nodeProps(absoluteText).style as JsonObject;
+  assert.equal(
+    absoluteStyle.left,
+    360,
+    "DashboardSpec should not offset children that already use canvas x",
+  );
+  assert.equal(
+    absoluteStyle.top,
+    220,
+    "DashboardSpec should not offset children that already use canvas y",
+  );
 }

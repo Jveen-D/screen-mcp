@@ -200,6 +200,46 @@ function nodeRect(node: EditorTreeNode): Rect | undefined {
   return { id: node.id, left, top, width, height };
 }
 
+function shouldOffsetAsClearLocalStyle(style: JsonObject, rect: Rect): boolean {
+  const left = asFiniteNumber(style.left);
+  const top = asFiniteNumber(style.top);
+  if (left === undefined || top === undefined) {
+    return false;
+  }
+
+  return (rect.left !== 0 && left < rect.left) ||
+    (rect.top !== 0 && top < rect.top);
+}
+
+function offsetStyle(style: JsonObject, rect: Rect): void {
+  const left = asFiniteNumber(style.left);
+  const top = asFiniteNumber(style.top);
+  if (left === undefined || top === undefined) {
+    return;
+  }
+
+  style.left = left + rect.left;
+  style.top = top + rect.top;
+}
+
+function absolutizeClearLocalStyles(node: EditorTreeNode, rect: Rect): void {
+  if (node.componentName !== "__Group__") {
+    const style = nodeStyle(node);
+    if (style && shouldOffsetAsClearLocalStyle(style, rect)) {
+      offsetStyle(style, rect);
+    }
+    return;
+  }
+
+  if (!Array.isArray(node.children)) {
+    return;
+  }
+
+  node.children.forEach((child) => {
+    absolutizeClearLocalStyles(child, rect);
+  });
+}
+
 function nodeTitle(node: EditorTreeNode): string {
   if (typeof node.title === "string" && node.title.trim() !== "") {
     return node.title.trim();
@@ -354,6 +394,10 @@ function compileModule(
 
   const moduleTree = generateModuleTreeSchema(moduleInput);
   const rect = rectFromItem(moduleInput, moduleTree.id);
+  if (rect) {
+    absolutizeClearLocalStyles(moduleTree, rect);
+  }
+
   if (rect && !treeHasBackgroundCarrier(moduleTree.children)) {
     const background = compileBackgroundCarrier(
       `${moduleTree.id}_background`,
@@ -452,6 +496,10 @@ function compileComponentGroup(
 
   const sortedGroup = sortEditorTreeChildren(group) as EditorGroupNode;
   const rect = rectFromItem(item, groupId);
+  if (rect) {
+    absolutizeClearLocalStyles(sortedGroup, rect);
+  }
+
   if (rect && !treeHasBackgroundCarrier(sortedGroup.children)) {
     const background = compileBackgroundCarrier(
       `${groupId}_background`,

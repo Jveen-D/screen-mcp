@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-26.03-text-table-ring-safety",
+    "2026-06-26.04-dashboard-local-coordinate-guard",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -207,6 +207,10 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("ringchart-side-legend-radius-balance"),
     "diagnostics should expose ring chart side-legend radius balance fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-local-coordinate-guard"),
+    "diagnostics should expose DashboardSpec local coordinate guard fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,
