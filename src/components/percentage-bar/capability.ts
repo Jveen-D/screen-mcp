@@ -287,7 +287,7 @@ export const percentageBarCapability: JsonObject = {
     {
       path: "iconIsShow",
       type: "boolean",
-      description: "是否显示图标。",
+      description: "是否显示图标。默认 false；只有用户明确要求百分比条带图标时才设为 true。",
     },
     {
       path: "iconStyle",
@@ -339,6 +339,7 @@ export const percentageBarCapability: JsonObject = {
     "刻度 suffix 默认为 '%'，仅在 displayMode 为百分比时启用更自然。",
     "ratio.displayMode 为 0 时展示 (value - min) / (max - min) 的百分比；为 1 时展示 value 的真实值。",
     "progressBarColor 支持渐变字符串，建议与整体大屏主题色协调。",
+    "默认不显示图标；不要为了装饰自动开启 iconIsShow。只有用户明确要求条形前置图标、标识图形或带图标进度条时才开启。",
   ],
   examples: [
     {

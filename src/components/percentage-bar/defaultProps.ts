@@ -143,6 +143,6 @@ export const percentageBarDefaultProps: JsonObject = {
     rotate: 0,
   },
   headerIcon: null,
-  iconIsShow: true,
+  iconIsShow: false,
   eventConfigures: [],
 };

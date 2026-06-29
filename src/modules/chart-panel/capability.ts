@@ -120,7 +120,7 @@ export const chartPanelCapability: JsonObject = {
       supportedComponents: ["PieChart", "ThreeDPieChart", "LineChart", "BarChart", "RingChart", "StackBarChart", "StackLineChart", "BarChart25D", "BarProgress", "LiquidFill", "RoseChart", "ScatterChart"],
       required: true,
       multiple: false,
-      description: "主图表，默认位于标题下方主体区域。",
+      description: "主图表。图表组件边界应尽量铺满模块区域，实际绘图区通过 option.grid 或 series.center/radius 避开标题、图例、摘要和结论。",
     },
     decorations: {
       supportedComponents: ["SvgDecoration"],
@@ -144,8 +144,9 @@ export const chartPanelCapability: JsonObject = {
     "AI 必须把模块内所有辅助元素（legend、重点摘要、结论）作为整体空间规划，不能只把 legend 压底部、重点摘要挤右上角；当右侧出现大面积空置时，应主动把 legend 改为右侧垂直布局，把重点摘要/结论挪到底部或左侧，避免半边拥挤、半边空白。",
     "模块内部必须保持视觉平衡：主图应位于视觉重心，辅助元素应分散填充四角/四边；禁止所有辅助信息扎堆在同一侧，导致另一侧长期空置。",
     "当 PieChart 数据项较多（≥5 项）或模块高度较大时，优先尝试右侧垂直 legend + 底部重点摘要/结论的组合；legend 在底部横向排布会挤压饼图底部空间，应提前预判并主动调整。",
-    "必须充分利用模块内每一寸空间：不要把饼图容器切小来避免叠压；允许辅助元素与饼图容器适度重叠，只要饼图主体（扇区、中心数值）不被遮挡即可。",
-    "饼图布局应优先通过 series.center 和 series.radius 控制实际饼图位置和大小，而不是通过缩小 PieChart.style.width/height 来留出空白；圆心上移、外半径放大、内半径调整都是合法手段。",
+    "必须充分利用模块内每一寸空间：主图表组件边界应尽量铺满整个模块，不要把图表组件切小来避免叠压；允许辅助元素与图表组件容器适度重叠，只要真实绘图区不被遮挡即可。",
+    "坐标轴类主图（BarChart、StackBarChart、BarChart25D、StackLineChart、BarProgress、ScatterChart、LineChart）应优先让组件 style.left/top/width/height 等于模块区域，再通过 option.grid.top/bottom/left/right 控制实际绘图区避开标题、legend、摘要和结论。",
+    "圆形类主图（PieChart、ThreeDPieChart、RingChart、RoseChart）没有 grid，应优先让组件 style.left/top/width/height 等于模块区域，再通过 series.center 和 series.radius 控制实际饼图位置和大小；圆心上移/左移、外半径放大或收缩、内半径调整都是合法手段。",
 
     "上层需求可能很简略；LLM 或上层编排必须先补齐合理布局、数据同源、标题承托、图例空间、侧边摘要和装饰层级，再把明确 slots 交给 MCP 编译。",
     "当用户没有显式提供 slots.background、slots.decorations 时，AI 必须主动设计并传入；DashboardSpec 编译层只会在缺少背景承载时补同主题轻量背景，不会替代 AI 设计标题承托、侧边容器、结构线等装饰。中心总数、侧边 Top 项等辅助文本仍会自动生成，但承载它们的容器/色标/装饰必须由 AI 提供。",
@@ -179,8 +180,8 @@ export const chartPanelCapability: JsonObject = {
     "当使用横向顶部栏时，应把它当作面板结构的一部分：它可以承接标题、图例和边框语言，但透明度必须克制，主题色只用于描边、短线、点缀和局部高光，避免整块青色或高饱和色填充。",
     "默认科技风标题承托的填充透明度应低于 0.18；如果无法确保协调，优先不用填充，只用线条和光点。",
     "标题前可使用三角光标、短竖线、小圆点、斜切线框、微发光角标等点缀，但必须预留标题文字左边距，不能压住标题文字。",
-    "mainChart 应根据标题、图例和装饰重新计算主体区域：避免图表过小或上方大面积留白；不要固定套用某一张设计稿的 top、height 参数。",
-    "PieChart 的 style.left/top/width/height 可以接近甚至等于模块可用区域，以便 AI 通过 series.center 和 series.radius 精细控制饼图实际大小与位置；不要为了避免叠压就把饼图容器压缩得过小，导致大量空白。",
+    "mainChart 应根据标题、图例和装饰重新计算内部安全区：图表组件边界保持模块级铺满，真实绘图区由 grid 或 center/radius 避让；不要固定套用某一张设计稿的 top、height 参数。",
+    "PieChart 的 style.left/top/width/height 应接近甚至等于模块区域，以便 AI 通过 series.center 和 series.radius 精细控制饼图实际大小与位置；不要为了避免叠压就把饼图容器压缩得过小，导致大量空白。",
     "当 legend、重点摘要、结论等辅助元素与饼图容器重叠时，应通过调整饼图圆心（series.center）和内外半径（series.radius）让饼图主体避开这些元素，而不是把饼图容器切小。",
     "PieChart 的 style.left/top/width/height、中心总数文本、连接线起点必须共用同一个 chartStyle 计算；中心数值和说明必须始终可读，若摘要/legend 叠在饼图上，应确保它们落在环形中心或饼图外侧空白区，不遮挡扇区。",
 

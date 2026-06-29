@@ -115,6 +115,34 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   assert.equal(defaultLineBoxTextStyle.lineHeight, 1);
   assert.equal(defaultLineBoxTextStyle.backgroundColor, "rgba(0,0,0,0)");
 
+  const longHexColorSchema = generateComponentsSchema({
+    componentName: "SingleText",
+    logicalId: "long_hex_text",
+    parentLogicalId: "panel_group",
+    textContent: "颜色归一化",
+    style: {
+      position: "absolute",
+      left: 80,
+      top: 170,
+      width: 240,
+      height: 18,
+      fontSize: 18,
+      color: "#123456789abc",
+      backgroundColor: "#AABBCCDDEE",
+    },
+  });
+  const longHexColorStyle = longHexColorSchema.props.style as JsonObject;
+  assert.equal(
+    longHexColorStyle.color,
+    "#12345678",
+    "compiler should trim overlong hex colors to 8 digits",
+  );
+  assert.equal(
+    longHexColorStyle.backgroundColor,
+    "#AABBCCDD",
+    "compiler should trim overlong hex background colors to 8 digits",
+  );
+
   const themedTextSchema = generateComponentsSchema({
     componentName: "SingleText",
     logicalId: "themed_text",

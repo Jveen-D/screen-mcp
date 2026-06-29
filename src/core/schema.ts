@@ -161,6 +161,26 @@ function stripCompilerOnlyProps(props: JsonObject): JsonObject {
   return nextProps;
 }
 
+function normalizeLongHexColors(value: JsonValue): JsonValue {
+  if (typeof value === "string") {
+    return value.replace(/#[0-9a-fA-F]{9,}\b/gu, (match) => match.slice(0, 9));
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeLongHexColors);
+  }
+
+  if (!isJsonObject(value)) {
+    return value;
+  }
+
+  const result: JsonObject = {};
+  for (const [key, child] of Object.entries(value)) {
+    result[key] = normalizeLongHexColors(child);
+  }
+  return result;
+}
+
 function applyChartDataRows(
   props: JsonObject,
   rows: JsonValue[] | undefined,
@@ -256,7 +276,9 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
     mergedProps.chartData = cloneJson(definition.defaultProps.chartData);
   }
 
-  return stripCompilerOnlyProps(definition.normalizeProps?.(mergedProps) ?? mergedProps);
+  return normalizeLongHexColors(
+    stripCompilerOnlyProps(definition.normalizeProps?.(mergedProps) ?? mergedProps),
+  ) as JsonObject;
 }
 
 function isContainerChild(componentName: string): "earth3DId" | "mapId" | null {

@@ -88,6 +88,9 @@ export function runDataDisplayNormalizerTests(): void {
       { region: "区域B", rate: 80.5 },
       { region: "区域C", rate: 72.3 },
     ],
+    rowHeader: {
+      headerBg: "rgba(34,211,238,.12)",
+    },
     style: {
       position: "absolute",
       left: 100,
@@ -106,6 +109,12 @@ export function runDataDisplayNormalizerTests(): void {
   const scrollListMapFields = Array.isArray(scrollListFirstMapping.mapFields) ? scrollListFirstMapping.mapFields : [];
   assert.equal(scrollListMapFields.length, 2, "ScrollList fieldMappings should derive from columns");
   assert.equal(scrollListDatasource.sourceType, "constant", "ScrollList datasource sourceType should be constant");
+  const scrollListRowHeader = asChartObject(scrollListSchema.props.rowHeader);
+  assert.equal(
+    scrollListRowHeader.headerBg,
+    "#232630",
+    "ScrollList header background should stay opaque",
+  );
 
   // FunnelChart: data should sync to datasource.constantData
   const funnelChartCapability = getComponentCapability("FunnelChart");

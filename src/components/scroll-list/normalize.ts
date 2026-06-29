@@ -159,6 +159,30 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   return fallback;
 }
 
+function alphaFromColor(value: JsonValue | undefined): number | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const color = value.trim().toLowerCase();
+  if (color === "transparent") {
+    return 0;
+  }
+
+  const rgbaMatch = color.match(/^rgba\(\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*,\s*([.\d]+)\s*\)$/u);
+  if (rgbaMatch) {
+    const parsed = Number(rgbaMatch[1]);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  const hexMatch = color.match(/^#([0-9a-f]{8})$/u);
+  if (hexMatch) {
+    return Number.parseInt(hexMatch[1].slice(6, 8), 16) / 255;
+  }
+
+  return undefined;
+}
+
 function generateRowId(index: number): string {
   return `row_${index + 1}`;
 }
@@ -414,6 +438,13 @@ function normalizeRowHeader(props: JsonObject): void {
   }
   if (rowHeader.bgType !== "color" && rowHeader.bgType !== "image") {
     rowHeader.bgType = DEFAULT_ROW_HEADER.bgType;
+  }
+
+  if (rowHeader.bgType === "color") {
+    const alpha = alphaFromColor(rowHeader.headerBg);
+    if (alpha !== undefined && alpha < 1) {
+      rowHeader.headerBg = DEFAULT_ROW_HEADER.headerBg;
+    }
   }
 }
 

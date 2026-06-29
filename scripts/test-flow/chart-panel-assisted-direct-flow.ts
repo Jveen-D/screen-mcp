@@ -332,9 +332,13 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
   const denseCategoryFirstSeries = denseCategorySeries[0] as JsonObject;
   const denseCategoryLabel = denseCategoryFirstSeries.label as JsonObject;
   const denseCategoryLabelLine = denseCategoryFirstSeries.labelLine as JsonObject;
-  assert.ok(
-    (denseCategoryChartStyle.width as number) < 300,
-    "dense category test should exercise a narrow chart region with side summary",
+  assert.equal(denseCategoryChartStyle.left, 24);
+  assert.equal(denseCategoryChartStyle.top, 30);
+  assert.equal(denseCategoryChartStyle.width, 768);
+  assert.equal(
+    denseCategoryChartStyle.height,
+    532,
+    "dense category chart component should fill the module even when the input style is smaller",
   );
   assert.ok(
     (denseCategoryLegend.itemGap as number) <= 14,
@@ -347,12 +351,12 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
   assert.ok(isPercentPair(denseCategoryFirstSeries.center), "category pie center should stay percentage based");
   assert.ok(isPercentPair(denseCategoryFirstSeries.radius), "category pie radius should stay percentage based");
   assert.ok(
-    (denseCategoryLabel.fontSize as number) <= 10,
-    "narrow category panel should compact external labels without locking a template value",
+    (denseCategoryLabel.fontSize as number) <= 12,
+    "dense category panel should keep external labels restrained without shrinking the chart component",
   );
   assert.ok(
-    (denseCategoryLabelLine.length as number) <= 6 && (denseCategoryLabelLine.length2 as number) <= 3,
-    "narrow category panel should compact label lines without locking a template value",
+    (denseCategoryLabelLine.length as number) <= 8 && (denseCategoryLabelLine.length2 as number) <= 4,
+    "dense category panel should keep label lines restrained without shrinking the chart component",
   );
   return { terseUserPanelInput };
 }

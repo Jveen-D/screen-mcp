@@ -175,7 +175,7 @@ export const scrollListCapability: JsonObject = {
         {
           path: "rowHeader.headerBg",
           type: "color",
-          description: "表头背景颜色。默认 #232630。",
+          description: "表头背景颜色。默认 #232630；表头必须使用不透明颜色，避免滚动行透出。",
         },
         {
           path: "rowHeader.headerBgImg",
@@ -558,6 +558,7 @@ export const scrollListCapability: JsonObject = {
     "数组按下标深合并。",
     "rowCount、rowMargin、rotate、opacity 缺失时 MCP 会补全为默认值。",
     "animateProps、rowHeader、colConfigs、customRowStyles、highlight、orderColumnCfg 等对象缺失字段由 MCP 补齐为默认值。",
+    "rowHeader.headerBg 必须是不透明颜色；若传 transparent、半透明 rgba 或带 alpha 的透明 8 位 hex，MCP 会回退到默认不透明表头色。",
     "customRowStyles 为空数组时，MCP 会重置为默认两套斑马纹样式。",
   ],
   visualRules: [

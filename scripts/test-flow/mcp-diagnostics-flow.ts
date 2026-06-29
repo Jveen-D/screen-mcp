@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-26.04-dashboard-local-coordinate-guard",
+    "2026-06-29.02-chartpanel-full-module-chart",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -211,6 +211,30 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-local-coordinate-guard"),
     "diagnostics should expose DashboardSpec local coordinate guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("percentage-bar-icon-hidden-default"),
+    "diagnostics should expose PercentageBar hidden icon default fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("overlong-hex-color-trim"),
+    "diagnostics should expose overlong hex color trim fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("scroll-list-opaque-header-background"),
+    "diagnostics should expose ScrollList opaque header background fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("chartpanel-full-module-main-chart"),
+    "diagnostics should expose ChartPanel full-module main chart fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("chartpanel-grid-safe-area-layout"),
+    "diagnostics should expose ChartPanel grid safe area layout fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("chartpanel-pie-center-radius-safe-area"),
+    "diagnostics should expose ChartPanel pie center/radius safe area fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

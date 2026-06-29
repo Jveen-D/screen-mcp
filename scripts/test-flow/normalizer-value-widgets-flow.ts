@@ -81,6 +81,11 @@ export function runValueWidgetNormalizerTests(): void {
   assert.equal(asChartObject(percentageBarConstantData[0]).value, 75, "PercentageBar value should sync to datasource");
   assert.equal(asChartObject(percentageBarConstantData[0]).max, 200, "PercentageBar max should sync to datasource");
   assert.equal(asChartObject(percentageBarConstantData[0]).min, 0, "PercentageBar min should sync to datasource");
+  assert.equal(
+    percentageBarSchema.props.iconIsShow,
+    false,
+    "PercentageBar should not show icon by default",
+  );
 
   // SingleValueChart: percentValue should sync to chartData.constant.data[0]["百分比"]
   const singleValueChartCapability = getComponentCapability("SingleValueChart");

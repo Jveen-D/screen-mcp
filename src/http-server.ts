@@ -28,7 +28,7 @@ import {
 import type { JsonObject } from "./types/component.js";
 
 const SERVER_VERSION = "0.1.0";
-const RULES_VERSION = "2026-06-26.04-dashboard-local-coordinate-guard";
+const RULES_VERSION = "2026-06-29.02-chartpanel-full-module-chart";
 const SERVER_STARTED_AT = new Date();
 const SERVER_ENTRY_FILE = fileURLToPath(import.meta.url);
 
@@ -89,6 +89,12 @@ function createServer() {
         "base-table-line-height-guard",
         "ringchart-side-legend-radius-balance",
         "dashboard-local-coordinate-guard",
+        "percentage-bar-icon-hidden-default",
+        "overlong-hex-color-trim",
+        "scroll-list-opaque-header-background",
+        "chartpanel-full-module-main-chart",
+        "chartpanel-grid-safe-area-layout",
+        "chartpanel-pie-center-radius-safe-area",
       ],
       startedAt: SERVER_STARTED_AT.toISOString(),
       source: {

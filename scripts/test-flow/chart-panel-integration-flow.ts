@@ -164,7 +164,16 @@ export function runChartPanelIntegrationTests(): void {
   );
   const lineMainChart = lineModuleSchemas.find((item) => item.componentName === "LineChart");
   const lineMainChartOption = lineMainChart?.props.option as JsonObject;
+  const lineMainChartStyle = lineMainChart?.props.style as JsonObject;
   assert.equal(lineMainChartOption.backgroundColor, "transparent");
+  assert.equal(lineMainChartStyle.left, 48);
+  assert.equal(lineMainChartStyle.top, 96);
+  assert.equal(lineMainChartStyle.width, 520);
+  assert.equal(
+    lineMainChartStyle.height,
+    360,
+    "cartesian ChartPanel main chart should fill the module and use option.grid for plot safe areas",
+  );
   assert.equal((lineMainChartOption.tooltip as JsonObject).trigger, "axis", "LineChart tooltip trigger should default to axis");
   assert.equal((lineMainChartOption.legend as JsonObject).show, true, "LineChart legend should default to show");
   const lineMainSeries = (lineMainChartOption.series as JsonObject[])[0] as JsonObject;

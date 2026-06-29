@@ -151,7 +151,8 @@ function normalizeIconStyle(props: JsonObject): void {
 function normalizeHeight(props: JsonObject): void {
   const style = isJsonObject(props.style) ? props.style : {};
 
-  const iconIsShow = props.iconIsShow === true;
+  props.iconIsShow = props.iconIsShow === true;
+  const iconIsShow = props.iconIsShow;
   const globalConfig = isJsonObject(props.globalConfig) ? props.globalConfig : {};
   const barHeight = asNumber(globalConfig.barHeight, 56);
   const tickOffset = 24;

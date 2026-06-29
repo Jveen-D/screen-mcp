@@ -86,6 +86,20 @@ type PieLayoutProfile = {
   centerLabelFontSize: number;
 };
 
+type PieLayoutGeometry = {
+  center: [string, string];
+  radius: [string, string];
+};
+
+type MainChartSafeArea = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+};
+
 type SideSummaryLayout = {
   sideWidth: number;
   sideLeft: number;
@@ -514,9 +528,24 @@ function bottomConclusionTop(input: ModuleInput, sideLayout: SideSummaryLayout):
 
 function mainChartDefaultStyle(
   input: ModuleInput,
+  _reserveSideSummary: boolean,
+  _isCartesianChart = false,
+): JsonObject {
+  return {
+    position: "absolute",
+    left: input.style.left,
+    top: input.style.top,
+    width: Math.max(input.style.width, 80),
+    height: Math.max(input.style.height, 80),
+    zIndex: layerZIndex(input, MAIN_CHART_Z_OFFSET),
+  };
+}
+
+function mainChartSafeArea(
+  input: ModuleInput,
   reserveSideSummary: boolean,
   isCartesianChart = false,
-): JsonObject {
+): MainChartSafeArea {
   const sideWidth = reserveSideSummary ? sideSummaryWidth(input) + SIDE_SUMMARY_GAP : 0;
   const topOffset = isCartesianChart
     ? MAIN_CHART_CARTESIAN_TOP_OFFSET
@@ -530,12 +559,55 @@ function mainChartDefaultStyle(
       : MAIN_CHART_BOTTOM_PADDING;
 
   return {
-    position: "absolute",
-    left: input.style.left + MAIN_CHART_SIDE_PADDING,
-    top: input.style.top + topOffset,
+    left: MAIN_CHART_SIDE_PADDING,
+    top: topOffset,
+    right: MAIN_CHART_SIDE_PADDING + sideWidth,
+    bottom: bottomPadding,
     width: Math.max(input.style.width - MAIN_CHART_SIDE_PADDING * 2 - sideWidth, 80),
     height: Math.max(input.style.height - topOffset - bottomPadding, 80),
-    zIndex: layerZIndex(input, MAIN_CHART_Z_OFFSET),
+  };
+}
+
+function mergeMainChartStyle(input: ModuleInput, propsStyle: JsonValue | undefined): JsonObject {
+  const defaultStyle = mainChartDefaultStyle(input, false, false);
+  const merged = mergeStyle(defaultStyle, propsStyle);
+  merged.left = input.style.left;
+  merged.top = input.style.top;
+  merged.width = Math.max(input.style.width, asFiniteNumber(merged.width) ?? input.style.width, 80);
+  merged.height = Math.max(input.style.height, asFiniteNumber(merged.height) ?? input.style.height, 80);
+  merged.zIndex = layerZIndex(input, MAIN_CHART_Z_OFFSET);
+  return merged;
+}
+
+function percent(value: number): string {
+  return `${Math.round(value)}%`;
+}
+
+function pieGeometryForModule(
+  input: ModuleInput,
+  reserveSideSummary: boolean,
+  centerYRatio: number,
+  innerRadiusRatio: number,
+  outerRadiusRatio: number,
+): PieLayoutGeometry {
+  const safeArea = mainChartSafeArea(input, reserveSideSummary, false);
+  const moduleWidth = Math.max(input.style.width, 1);
+  const moduleHeight = Math.max(input.style.height, 1);
+  const safeCenterX = safeArea.left + safeArea.width / 2;
+  const safeCenterY = safeArea.top + safeArea.height * centerYRatio;
+  const safeMinSide = Math.max(Math.min(safeArea.width, safeArea.height), 1);
+  const moduleMinSide = Math.max(Math.min(moduleWidth, moduleHeight), 1);
+  const scale = safeMinSide / moduleMinSide;
+
+  return {
+    center: [
+      percent((safeCenterX / moduleWidth) * 100),
+      percent((safeCenterY / moduleHeight) * 100),
+    ],
+    radius: [
+      percent(innerRadiusRatio * scale),
+      percent(outerRadiusRatio * scale),
+    ],
   };
 }
 
@@ -545,10 +617,10 @@ function createPieLayoutProfile(
   reserveSideSummary: boolean,
   chartStyleOverride?: JsonObject,
 ): PieLayoutProfile {
-  const chartStyle =
-    chartStyleOverride ?? mainChartDefaultStyle(input, reserveSideSummary, false);
-  const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
-  const chartHeight = asFiniteNumber(chartStyle.height) ?? input.style.height;
+  const chartStyle = chartStyleOverride;
+  const safeArea = mainChartSafeArea(input, reserveSideSummary, false);
+  const chartWidth = Math.min(asFiniteNumber(chartStyle?.width) ?? input.style.width, safeArea.width);
+  const chartHeight = Math.min(asFiniteNumber(chartStyle?.height) ?? input.style.height, safeArea.height);
   const dataCount = rows?.length ?? 0;
   const compactLegend = chartWidth < 300 || dataCount >= 5;
   const denseLegend = chartWidth < 240 || dataCount >= 7;
@@ -575,16 +647,23 @@ function createPieLayoutProfile(
     : reserveSideSummary
       ? 0.42
       : 0.44;
-  const outerRadius = wrapsLegend
+  const outerRadiusRatio = wrapsLegend
     ? veryTightChart
-      ? "46%"
-      : "50%"
+      ? 46
+      : 50
     : singleLineSafeLegend
-      ? "64%"
+      ? 64
     : reserveSideSummary
-      ? "54%"
-      : "58%";
-  const innerRadius = reserveSideSummary ? "34%" : "36%";
+      ? 54
+      : 58;
+  const innerRadiusRatio = reserveSideSummary ? 34 : 36;
+  const geometry = pieGeometryForModule(
+    input,
+    reserveSideSummary,
+    centerYRatio,
+    innerRadiusRatio,
+    outerRadiusRatio,
+  );
 
   return {
     legendLineCount,
@@ -593,9 +672,9 @@ function createPieLayoutProfile(
     legendItemWidth,
     legendItemHeight,
     legendOffsetY: wrapsLegend ? -10 : PIE_BOTTOM_LEGEND_OFFSET_Y,
-    center: ["50%", `${Math.round(centerYRatio * 100)}%`],
+    center: geometry.center,
     centerYRatio,
-    radius: [innerRadius, outerRadius],
+    radius: geometry.radius,
     labelFontSize: wrapsLegend ? 10 : reserveSideSummary ? 11 : 13,
     labelLineLength: wrapsLegend ? 6 : reserveSideSummary ? 8 : 14,
     labelLineLength2: wrapsLegend ? 3 : reserveSideSummary ? 4 : 10,
@@ -714,12 +793,10 @@ function createDefaultAuxiliaryTextSlots(
   const theme = isJsonObject(input.theme) ? input.theme : {};
   const chartStyle = chartStyleOverride ?? mainChartDefaultStyle(input, true, isCartesianChart);
   const layoutProfile = createPieLayoutProfile(input, dataRows, true, chartStyle);
-  const chartLeft = asFiniteNumber(chartStyle.left) ?? input.style.left;
-  const chartTop = asFiniteNumber(chartStyle.top) ?? input.style.top;
-  const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
-  const chartHeight = asFiniteNumber(chartStyle.height) ?? input.style.height;
-  const chartCenterX = chartLeft + chartWidth / 2;
-  const chartCenterY = chartTop + chartHeight * layoutProfile.centerYRatio;
+  const chartCenterX =
+    input.style.left + (Number.parseFloat(layoutProfile.center[0]) / 100) * input.style.width;
+  const chartCenterY =
+    input.style.top + (Number.parseFloat(layoutProfile.center[1]) / 100) * input.style.height;
   const total = totalDataValue(dataRows);
   const sideLayout = createSideSummaryLayout(input, dataRows, 22);
   const palette = defaultPalette(theme);
@@ -1133,8 +1210,7 @@ function createMainChartProps(
   const defaultColors = defaultPalette(theme);
   const hasExplicitChartData = Boolean(getChartDataRowsFromProps(props));
   const layoutRows = getChartDataRowsFromProps(props) ?? fallbackDataRows;
-  const defaultChartStyle = mainChartDefaultStyle(input, reserveSideSummary, isCartesianChart);
-  const chartStyle = mergeStyle(defaultChartStyle, props.style);
+  const chartStyle = mergeMainChartStyle(input, props.style);
   const chartHeight = asFiniteNumber(chartStyle.height) ?? input.style.height;
   const option = isJsonObject(props.option) ? props.option : {};
   const legend = isJsonObject(option.legend) ? option.legend : {};
@@ -1239,7 +1315,8 @@ function createMainChartProps(
         ? "__stackLine"
         : undefined;
 
-    const chartWidth = asFiniteNumber(chartStyle.width) ?? input.style.width;
+    const safeArea = mainChartSafeArea(input, reserveSideSummary, true);
+    const chartWidth = safeArea.width;
     const dataCount = layoutRows?.length ?? 1;
     const plotWidth = Math.max(chartWidth - 30 - 40, 100);
     const idealBarWidth = Math.min(Math.max(Math.round((plotWidth / dataCount) * 0.25), 12), 24);
@@ -1380,10 +1457,10 @@ function createMainChartProps(
         color: defaultColors,
         ...option,
         grid: {
-          left: 30,
-          top: isBarProgress ? 24 : (chartHeight < 280 ? 40 : 56),
-          bottom: isBarProgress ? 16 : (chartHeight < 280 ? 28 : 40),
-          right: 40,
+          left: safeArea.left + 30,
+          top: safeArea.top + (isBarProgress ? 24 : (safeArea.height < 280 ? 40 : 56)),
+          bottom: safeArea.bottom + (isBarProgress ? 16 : (safeArea.height < 280 ? 28 : 40)),
+          right: safeArea.right + 40,
           ...inputGrid,
         },
         legend: {
@@ -1553,12 +1630,12 @@ function createMainChartProps(
     : {};
 
   const baseCenter = isThreeDPie
-    ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "48%"]
+    ? (firstInputSeries.center as JsonValue | undefined) ?? layoutProfile.center
     : isLiquidFill
       ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "50%"]
       : layoutProfile.center;
   const chartRadius = isThreeDPie
-    ? (firstInputSeries.radius as JsonValue | undefined) ?? ["72%", "96%"]
+    ? (firstInputSeries.radius as JsonValue | undefined) ?? layoutProfile.radius
     : isLiquidFill
       ? (firstInputSeries.radius as JsonValue | undefined) ?? "90%"
       : layoutProfile.radius;

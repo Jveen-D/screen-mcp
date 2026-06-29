@@ -268,8 +268,8 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
     isShow: true,
     type: "animate__zoomIn",
   });
-  assert.deepEqual(moduleChartSeries[0]?.radius, ["36%", "64%"]);
-  assert.deepEqual(moduleChartSeries[0]?.center, ["50%", "44%"]);
+  assert.deepEqual(moduleChartSeries[0]?.radius, ["17%", "31%"]);
+  assert.deepEqual(moduleChartSeries[0]?.center, ["50%", "47%"]);
   assert.equal(moduleChartSeries[0]?.left, 0);
   assert.equal(moduleChartSeries[0]?.top, 0);
   assert.equal(moduleChartSeries[0]?.right, 0);
@@ -296,12 +296,13 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
   assert.equal(moduleTitleStyle.zIndex, 18);
   assert.equal(moduleChartStyle.zIndex, 12);
   assert.equal(moduleDecorationStyle.zIndex, 14);
-  assert.equal(moduleChartStyle.left, 68);
-  assert.equal(moduleChartStyle.top, 188);
-  assert.equal(moduleChartStyle.width, 480);
-  assert.ok(
-    (moduleChartStyle.height as number) >= 160,
-    "module chart should use the released bottom space to make the left panel taller",
+  assert.equal(moduleChartStyle.left, 48);
+  assert.equal(moduleChartStyle.top, 96);
+  assert.equal(moduleChartStyle.width, 520);
+  assert.equal(
+    moduleChartStyle.height,
+    360,
+    "module chart component should fill the module and use center/radius for the actual plot safe area",
   );
   assert.equal(
     moduleSchemas.some((item) => item.props.name === "侧边摘要容器"),
