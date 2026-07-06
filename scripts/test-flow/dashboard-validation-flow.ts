@@ -76,6 +76,87 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     ),
     "DashboardSpec validation should warn when many top-level components are not grouped",
   );
+  const reservedAreaOverlapValidation = validateDashboardSpec({
+    logicalId: "reserved_area_overlap_dashboard",
+    canvas: { width: 1280, height: 720 },
+    reservedAreas: [
+      {
+        logicalId: "bim_model_area",
+        purpose: "bim-model",
+        style: {
+          position: "absolute",
+          left: 360,
+          top: 120,
+          width: 560,
+          height: 480,
+        },
+      },
+    ],
+    groups: [
+      {
+        logicalId: "center_overlap_group",
+        title: "误占模型区域",
+        style: {
+          position: "absolute",
+          left: 320,
+          top: 160,
+          width: 320,
+          height: 240,
+        },
+        components: [
+          {
+            componentName: "SingleText",
+            logicalId: "center_overlap_text",
+            textContent: "误占模型区域",
+            style: {
+              position: "absolute",
+              left: 340,
+              top: 184,
+              width: 180,
+              height: 24,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject);
+  assert.equal(reservedAreaOverlapValidation.valid, true);
+  assert.ok(
+    (reservedAreaOverlapValidation.warnings as string[]).some((warning) =>
+      warning.includes("center_overlap_group overlaps reserved BIM model area bim_model_area"),
+    ),
+    "DashboardSpec validation should warn when top-level regions overlap reserved BIM model areas",
+  );
+  const missingReservedAreaStyleValidation = validateDashboardSpec({
+    logicalId: "missing_reserved_area_style_dashboard",
+    reservedAreas: [
+      {
+        logicalId: "bim_model_area",
+        purpose: "bim-model",
+      },
+    ],
+    components: [
+      {
+        componentName: "SingleText",
+        logicalId: "status_text",
+        textContent: "设备在线率 99.2%",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 24,
+          width: 220,
+          height: 24,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(missingReservedAreaStyleValidation.valid, false);
+  assert.ok(
+    (missingReservedAreaStyleValidation.errors as string[]).includes(
+      "reservedAreas[0] missing complete style left/top/width/height",
+    ),
+    "DashboardSpec validation should reject BIM reserved areas without complete style",
+  );
   const missingGroupStyleSpec = {
     logicalId: "missing_group_style_dashboard",
     groups: [

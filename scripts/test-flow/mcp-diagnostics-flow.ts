@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-29.02-chartpanel-full-module-chart",
+    "2026-06-29.03-bim-reserved-area",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -235,6 +235,18 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("chartpanel-pie-center-radius-safe-area"),
     "diagnostics should expose ChartPanel pie center/radius safe area fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-bim-reserved-area"),
+    "diagnostics should expose BIM reserved area fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-bim-skip-root-background"),
+    "diagnostics should expose BIM root background skip fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-reserved-area-overlap-warning"),
+    "diagnostics should expose reserved area overlap warning fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

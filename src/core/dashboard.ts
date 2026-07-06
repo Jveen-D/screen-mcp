@@ -556,6 +556,33 @@ function rectFromItem(item: JsonObject, fallbackId: string): Rect | undefined {
   return { id, left, top, width, height };
 }
 
+function normalizedStringField(item: JsonObject, key: string): string {
+  const value = item[key];
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .trim()
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+}
+
+function isBimModelReservedArea(item: JsonObject): boolean {
+  return ["purpose", "type", "kind"].some((key) =>
+    normalizedStringField(item, key) === "bim-model",
+  );
+}
+
+function bimModelReservedAreas(input: JsonObject): JsonObject[] {
+  return asArray(input.reservedAreas).filter(isBimModelReservedArea);
+}
+
+function hasBimModelReservedArea(input: JsonObject): boolean {
+  return bimModelReservedAreas(input).length > 0;
+}
+
 function rectsOverlap(left: Rect, right: Rect): boolean {
   return (
     left.left < right.left + right.width &&
@@ -777,8 +804,10 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   const components = asArray(input.components);
   const groups = asArray(input.groups);
   const modules = asArray(input.modules);
+  const reservedAreas = asArray(input.reservedAreas);
   const grouping = isJsonObject(input.grouping) ? input.grouping : undefined;
   const rects: Rect[] = [];
+  const reservedRects: Rect[] = [];
 
   if (components.length === 0 && groups.length === 0 && modules.length === 0) {
     errors.push("dashboard spec must include at least one component, group, or module");
@@ -789,6 +818,24 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   }
 
   validateGroupingMode(grouping, "grouping", errors);
+
+  reservedAreas.forEach((reservedArea, index) => {
+    if (!isBimModelReservedArea(reservedArea)) {
+      return;
+    }
+
+    if (typeof reservedArea.logicalId !== "string" || reservedArea.logicalId.trim() === "") {
+      errors.push(`reservedAreas[${index}] missing logicalId`);
+    }
+
+    const rect = rectFromItem(reservedArea, `reservedAreas[${index}]`);
+    if (rect) {
+      reservedRects.push(rect);
+      validateCanvasBounds(rect, canvas, warnings);
+    } else {
+      errors.push(`reservedAreas[${index}] missing complete style left/top/width/height`);
+    }
+  });
 
   if (components.length > 8 && groups.length === 0 && modules.length === 0) {
     warnings.push(
@@ -909,6 +956,14 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
     }
   }
 
+  for (const reservedRect of reservedRects) {
+    for (const rect of rects) {
+      if (rectsOverlap(rect, reservedRect)) {
+        warnings.push(`${rect.id} overlaps reserved BIM model area ${reservedRect.id}`);
+      }
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -936,7 +991,7 @@ export function generateDashboardSchema(input: JsonObject): EditorGroupNode {
     ...modules.map((module) => compileModule(module, rootId, theme, grouping)),
   ];
 
-  if (!treeHasCanvasBackground(children, canvas)) {
+  if (!hasBimModelReservedArea(input) && !treeHasCanvasBackground(children, canvas)) {
     const background = compileBackgroundCarrier(
       `${rootId}_background`,
       rootId,

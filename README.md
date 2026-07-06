@@ -179,6 +179,8 @@ DashboardSpec 支持三类顶层内容：
 - `groups`：LLM 明确声明的一组相关组件，适合顶部信息组、KPI 组、自定义混合面板等不适合 ChartPanel 的区域。每个显式 `groups` 项必须声明完整的绝对区域 `style.left/top/width/height`，不能只作为无定位的组件桶。组内可使用 `components` 或 `children`，MCP 只按声明编译，不根据坐标或关键词猜测归属。
 - `modules`：结构化模块。图表分析面板用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合信息卡优先用 `FreeformModule`。
 
+如果用户明确要求生成 BIM/模型场景，LLM 可以在 DashboardSpec 中额外声明 `reservedAreas`，例如设置 `purpose` / `type` / `kind` 为 `bim-model` 并提供完整的绝对 `style.left/top/width/height`。这只是编译期约束，用来提示中心模型展示区不能被顶层组件、分组或模块占用；`generate_dashboard_schema` 不会把 reserved area 输出为组件、分组或可见占位，也不会生成模型本身。存在显式 BIM 模型预留区时，MCP 不再补全屏背景，但仍会为缺少背景承载的显式分组和模块补轻量背景。
+
 当一个大屏包含多个相关元素时，不要把所有元素都平铺到 `components`。应优先使用 `modules` 或显式 `groups`，这样编辑器树会按区域形成 `__Group__`，并且每个组内的背景组件会被放到背景组/底层，避免遮挡文字、图表和指标。
 
 `__Group__` 只负责编辑器层级分组，不承担视觉背景。全屏底色、模块底板、面板边框都必须由真实组件表达，例如 `SvgDecoration` 或 `SingleImage`。如果 DashboardSpec 没有提供覆盖全屏的背景组件，或某个显式分组/模块没有背景承载，`generate_dashboard_schema` 会补同主题的轻量 `SvgDecoration` 背景组件；已有显式背景、底板或边框不会被替换。

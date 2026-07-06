@@ -123,4 +123,73 @@ export function runDashboardFallbackBackgroundTests(): void {
     "背景",
     "DashboardSpec fallback module background should be in the module background group",
   );
+
+  const bimReservedAreaDashboardSpec = {
+    logicalId: "bim_reserved_area_dashboard",
+    title: "BIM 模型监控大屏",
+    canvas: { width: 1280, height: 720 },
+    theme: {
+      background: "#04111F",
+      panelBackground: "rgba(8,30,50,0.74)",
+      primaryColor: "#16D9FF",
+      textColor: "#EAF7FF",
+    },
+    reservedAreas: [
+      {
+        logicalId: "bim_model_area",
+        purpose: "bim-model",
+        style: {
+          position: "absolute",
+          left: 360,
+          top: 120,
+          width: 560,
+          height: 480,
+        },
+      },
+    ],
+    groups: [
+      {
+        logicalId: "left_status_group",
+        title: "左侧状态",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 120,
+          width: 280,
+          height: 480,
+        },
+        components: [
+          {
+            componentName: "SingleText",
+            logicalId: "left_status_title",
+            name: "状态标题",
+            textContent: "设备运行总览",
+            style: {
+              position: "absolute",
+              left: 48,
+              top: 144,
+              width: 180,
+              height: 24,
+              fontSize: 20,
+              lineHeight: 1,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject;
+  const bimReservedAreaTree = generateDashboardSchema(bimReservedAreaDashboardSpec);
+  const bimReservedAreaNodes = flattenEditorNodes(bimReservedAreaTree as unknown as JsonObject);
+  assert.ok(
+    !bimReservedAreaNodes.some((item) => hasPropName(item, "全屏背景")),
+    "DashboardSpec compiler should not add a full-screen background when a BIM model area is reserved",
+  );
+  assert.ok(
+    bimReservedAreaNodes.some((item) => hasPropName(item, "分组背景")),
+    "DashboardSpec compiler should still add background carriers for bare groups around the BIM model area",
+  );
+  assert.ok(
+    !JSON.stringify(bimReservedAreaTree).includes("bim_model_area"),
+    "DashboardSpec compiler should not emit reserved BIM model area metadata into final schema",
+  );
 }
