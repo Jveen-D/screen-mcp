@@ -75,6 +75,14 @@ function cappedPercent(value: string, max: number): string {
   return `${max}%`;
 }
 
+function atLeastPercent(value: string, min: number): string {
+  const parsed = percentNumber(value);
+  if (parsed === undefined || parsed >= min) {
+    return value;
+  }
+  return `${min}%`;
+}
+
 function cappedNumber(value: JsonValue | undefined, fallback: number, max: number): number {
   return Math.min(asNumber(value, fallback), max);
 }
@@ -264,7 +272,7 @@ function normalizeCompactLegendLabelLayout(props: JsonObject): void {
   }
 
   if (multiItemNarrowLegend) {
-    legend.offsetY = Math.max(asNumber(legend.offsetY, -2), -2);
+    legend.offsetY = -2;
     legend.itemGap = cappedNumber(legend.itemGap, 10, 10);
     legend.itemWidth = cappedNumber(legend.itemWidth, 12, 12);
     legend.itemHeight = cappedNumber(legend.itemHeight, 7, 7);
@@ -273,13 +281,9 @@ function normalizeCompactLegendLabelLayout(props: JsonObject): void {
     legend.textStyle = textStyle;
   }
 
+  const readableMediumLayout = width >= 420 && height >= 280;
   for (const item of series) {
     if (!isJsonObject(item)) {
-      continue;
-    }
-
-    const label = isJsonObject(item.label) ? item.label : {};
-    if (label.show !== true || label.position !== "outside") {
       continue;
     }
 
@@ -289,10 +293,33 @@ function normalizeCompactLegendLabelLayout(props: JsonObject): void {
       DEFAULT_OUTER_RADIUS,
     ]);
 
+    if (readableMediumLayout && multiItemNarrowLegend) {
+      const radius = item.radius as [string, string];
+      radius[1] = atLeastPercent(radius[1], 42);
+
+      const innerRadius = percentNumber(radius[0]);
+      const outerRadius = percentNumber(radius[1]);
+      if (
+        innerRadius !== undefined &&
+        outerRadius !== undefined &&
+        innerRadius >= outerRadius
+      ) {
+        radius[0] = `${Math.max(0, outerRadius - 14)}%`;
+      }
+    }
+
+    const label = isJsonObject(item.label) ? item.label : {};
+    if (label.show !== true || label.position !== "outside") {
+      continue;
+    }
+
     const center = item.center as [string, string];
     const radius = item.radius as [string, string];
     center[1] = cappedPercent(center[1], multiItemNarrowLegend ? 38 : 40);
     radius[1] = cappedPercent(radius[1], multiItemNarrowLegend ? 46 : 54);
+    if (readableMediumLayout && multiItemNarrowLegend) {
+      radius[1] = atLeastPercent(radius[1], 42);
+    }
 
     const innerRadius = percentNumber(radius[0]);
     const outerRadius = percentNumber(radius[1]);
@@ -318,6 +345,14 @@ function normalizeCompactLegendLabelLayout(props: JsonObject): void {
       item.label = label;
     }
   }
+}
+
+function normalizeBottomLegendOffset(legend: JsonObject): void {
+  if (legend.show === false || legend.top !== "bottom") {
+    return;
+  }
+
+  legend.offsetY = Math.min(asNumber(legend.offsetY, 0), 0);
 }
 
 function normalizeRingChartData(props: JsonObject): void {
@@ -390,6 +425,7 @@ export function normalizeRingChartProps(props: JsonObject): JsonObject {
   normalizeLegendCenterOverlap(legend);
   normalizeSideLegendRingLayout(option, isJsonObject(props.style) ? props.style : {});
   normalizeCompactLegendLabelLayout(props);
+  normalizeBottomLegendOffset(legend);
 
   if (isValidLegendPosition(legend.left, legend.top)) {
     legend.offsetX = asNumber(legend.offsetX, 0);

@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-06-29.03-bim-reserved-area",
+    "2026-07-07.05-indicator-title-externalization",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -247,6 +247,118 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-reserved-area-overlap-warning"),
     "diagnostics should expose reserved area overlap warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("bottom-auxiliary-chart-grid-guard"),
+    "diagnostics should expose bottom auxiliary chart grid guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("ringchart-bottom-legend-radius-guard"),
+    "diagnostics should expose RingChart bottom legend radius guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("explicit-group-title-text-bucket"),
+    "diagnostics should expose explicit group title text bucket fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-chart-center-text-alignment"),
+    "diagnostics should expose circular chart center text alignment fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-single-text-fit-guard"),
+    "diagnostics should expose DashboardSpec single text fit guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("overlapping-unit-label-guard"),
+    "diagnostics should expose overlapping unit label guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("cartesian-axis-unit-name-guard"),
+    "diagnostics should expose cartesian axis unit name guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("funnel-module-balance-guard"),
+    "diagnostics should expose funnel module balance guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("cartesian-series-name-data-type-guard"),
+    "diagnostics should expose cartesian series name data type guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("cartesian-business-type-dimension-guard"),
+    "diagnostics should expose cartesian business type dimension guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("integer-chart-value-precision"),
+    "diagnostics should expose integer chart value precision fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-center-text-stack-spacing"),
+    "diagnostics should expose circular center text stack spacing fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-bottom-legend-safe-area"),
+    "diagnostics should expose circular bottom legend safe area fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("gauge-percent-text-consistency-warning"),
+    "diagnostics should expose gauge percent text consistency warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-outside-label-side-text-guard"),
+    "diagnostics should expose circular outside label side text guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("cartesian-top-legend-text-safe-area"),
+    "diagnostics should expose cartesian top legend text safe area fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("base-table-column-fit-guard"),
+    "diagnostics should expose base table column fit guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("indicator-compact-height-typography"),
+    "diagnostics should expose indicator compact height typography fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-decoration-below-content-zindex"),
+    "diagnostics should expose dashboard decoration below content z-index fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("ringchart-readable-medium-radius"),
+    "diagnostics should expose RingChart readable medium radius fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-center-hole-fit-guard"),
+    "diagnostics should expose circular center hole fit guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-center-companion-alignment"),
+    "diagnostics should expose circular center companion alignment fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("circular-bottom-legend-text-warning"),
+    "diagnostics should expose circular bottom legend text warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("cartesian-offset-top-legend-text-safe-area"),
+    "diagnostics should expose offset top legend text safe area fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("scroll-list-short-ordered-static-first-screen"),
+    "diagnostics should expose short ordered ScrollList first-screen fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("indicator-readable-separation-guard"),
+    "diagnostics should expose readable Indicator separation guard fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("indicator-title-external-single-text"),
+    "diagnostics should expose Indicator title externalization fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-indicator-value-title-split"),
+    "diagnostics should expose Indicator value/title split fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

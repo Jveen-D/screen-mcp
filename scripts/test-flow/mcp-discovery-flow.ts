@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
+import { getScreenToolDefinitions } from "../../src/mcp/screenServer.js";
 import type { McpToolContext } from "./mcp-tool-context.js";
 
 export async function runMcpDiscoveryTests({ client }: McpToolContext): Promise<void> {
   const tools = await client.listTools();
+  const toolNames = tools.tools.map((tool) => tool.name).sort();
+  const expectedToolNames = getScreenToolDefinitions().map((tool) => tool.name).sort();
+  assert.deepEqual(
+    toolNames,
+    expectedToolNames,
+    "MCP server should expose exactly the centralized tool definitions",
+  );
   assert.ok(
     tools.tools.some((tool) => tool.name === "get_server_diagnostics"),
     "MCP server should expose diagnostics",

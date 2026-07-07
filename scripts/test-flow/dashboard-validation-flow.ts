@@ -363,4 +363,216 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     ),
     "DashboardSpec validation should reject default demo chart rows",
   );
+  const gaugeTextMismatchValidation = validateDashboardSpec({
+    logicalId: "gauge_text_mismatch_dashboard",
+    groups: [
+      {
+        logicalId: "gauge_text_group",
+        title: "进度面板",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 80,
+          width: 420,
+          height: 280,
+        },
+        components: [
+          {
+            componentName: "Gauge",
+            logicalId: "progress_gauge",
+            chartData: {
+              constant: {
+                data: [
+                  { name: "当前完成率", value: 94.6 },
+                ],
+              },
+            },
+            value: 94.6,
+            indicatorConfig: {
+              maxValue: 120,
+              suffix: "%",
+            },
+            style: {
+              position: "absolute",
+              left: 80,
+              top: 110,
+              width: 260,
+              height: 180,
+            },
+          },
+          {
+            componentName: "SingleText",
+            logicalId: "progress_note",
+            textContent: "预计月底完成 101.8%",
+            style: {
+              position: "absolute",
+              left: 72,
+              top: 320,
+              width: 260,
+              height: 14,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject);
+  assert.equal(gaugeTextMismatchValidation.valid, true);
+  assert.ok(
+    (gaugeTextMismatchValidation.warnings as string[]).some((warning) =>
+      warning.includes("Gauge value 94.6% differs from nearby SingleText percentage 101.8%"),
+    ),
+    "DashboardSpec validation should warn about inconsistent gauge and text percentages",
+  );
+
+  const crowdedRingValidation = validateDashboardSpec({
+    logicalId: "crowded_ring_dashboard",
+    groups: [
+      {
+        logicalId: "crowded_ring_group",
+        title: "环图拥挤面板",
+        style: {
+          position: "absolute",
+          left: 504,
+          top: 728,
+          width: 446,
+          height: 328,
+        },
+        components: [
+          {
+            componentName: "RingChart",
+            logicalId: "crowded_ring",
+            chartData: {
+              constant: {
+                data: [
+                  { name: "分类A", type: "分类", value: 42 },
+                  { name: "分类B", type: "分类", value: 28 },
+                  { name: "分类C", type: "分类", value: 18 },
+                  { name: "分类D", type: "分类", value: 12 },
+                  { name: "分类E", type: "分类", value: 8 },
+                ],
+              },
+            },
+            style: {
+              position: "absolute",
+              left: 504,
+              top: 728,
+              width: 446,
+              height: 328,
+            },
+            option: {
+              legend: {
+                show: true,
+                top: "bottom",
+                left: "center",
+              },
+              series: [
+                {
+                  center: ["50%", "43%"],
+                  radius: ["15%", "20%"],
+                },
+              ],
+            },
+          },
+          {
+            componentName: "SingleText",
+            logicalId: "crowded_ring_value",
+            textContent: "35.9%",
+            style: {
+              position: "absolute",
+              left: 683,
+              top: 847,
+              width: 88,
+              height: 24,
+              fontSize: 24,
+            },
+          },
+          {
+            componentName: "SingleText",
+            logicalId: "crowded_ring_label",
+            textContent: "标准产品占比",
+            style: {
+              position: "absolute",
+              left: 663,
+              top: 879,
+              width: 128,
+              height: 13,
+              fontSize: 13,
+            },
+          },
+          {
+            componentName: "SingleText",
+            logicalId: "crowded_ring_note",
+            textContent: "结构变化保持稳定。",
+            style: {
+              position: "absolute",
+              left: 534,
+              top: 1010,
+              width: 300,
+              height: 14,
+              fontSize: 14,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject);
+  assert.equal(crowdedRingValidation.valid, true);
+  assert.ok(
+    (crowdedRingValidation.warnings as string[]).some((warning) =>
+      warning.includes("outer radius is too small"),
+    ),
+    "DashboardSpec validation should warn when a multi-item ring chart collapses to an unreadable small radius",
+  );
+  assert.ok(
+    (crowdedRingValidation.warnings as string[]).some((warning) =>
+      warning.includes("center text is larger than the donut hole"),
+    ),
+    "DashboardSpec validation should warn when ring center text cannot fit inside the donut hole",
+  );
+  assert.ok(
+    (crowdedRingValidation.warnings as string[]).some((warning) =>
+      warning.includes("bottom legend and bottom text"),
+    ),
+    "DashboardSpec validation should warn when circular bottom legends compete with bottom conclusion text",
+  );
+
+  const genericSeriesNameValidation = validateDashboardSpec({
+    logicalId: "generic_series_name_dashboard",
+    components: [
+      {
+        componentName: "LineChart",
+        logicalId: "generic_series_line",
+        chartData: {
+          constant: {
+            data: [
+              { name: "1月", type: "实际值", value: 120 },
+              { name: "2月", type: "实际值", value: 160 },
+              { name: "1月", type: "目标值", value: 100 },
+              { name: "2月", type: "目标值", value: 150 },
+            ],
+          },
+        },
+        option: {
+          series: [
+            { name: "数值" },
+            { name: "数值" },
+          ],
+        },
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 80,
+          width: 420,
+          height: 280,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(genericSeriesNameValidation.valid, true);
+  assert.ok(
+    (genericSeriesNameValidation.warnings as string[]).some((warning) =>
+      warning.includes("generic series names"),
+    ),
+    "DashboardSpec validation should warn when business typed chart data uses generic series names",
+  );
 }

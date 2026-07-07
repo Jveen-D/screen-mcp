@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { generateModuleSchema, generateModuleTreeSchema } from "../../src/core/modules.js";
+import { generateComponentsSchema } from "../../src/core/schema.js";
 import type { JsonObject } from "../../src/types/component.js";
 
 export function runChartPanelIntegrationTests(): void {
@@ -232,5 +233,191 @@ export function runChartPanelIntegrationTests(): void {
   assert.ok(
     lineModuleSchemas.some((item) => item.componentName === "SingleText" && (item.props.name as string | undefined)?.includes("标题")),
     "LineChart panel should include title text",
+  );
+
+  const typedLineSchema = generateComponentsSchema({
+    componentName: "LineChart",
+    logicalId: "typed_line_chart",
+    parentLogicalId: "chart_group",
+    name: "类型趋势图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "1月", type: "实际值", value: 120 },
+          { name: "2月", type: "实际值", value: 160 },
+          { name: "1月", type: "目标值", value: 100 },
+          { name: "2月", type: "目标值", value: 150 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 520,
+      height: 320,
+    },
+    option: {
+      series: [
+        { name: "数值" },
+        { name: "数值" },
+      ],
+    },
+  } as JsonObject);
+  const typedLineOption = typedLineSchema.props.option as JsonObject;
+  const typedLineSeries = typedLineOption.series as JsonObject[];
+  assert.deepEqual(
+    typedLineSeries.map((item) => item.name),
+    ["实际值", "目标值"],
+    "LineChart should derive generic series names from chartData.type",
+  );
+  const typedLineChartData = typedLineSchema.props.chartData as JsonObject;
+  const typedLineDimensions = typedLineChartData.dimension as JsonObject[];
+  assert.deepEqual(
+    typedLineDimensions.map((item) => item.fieldName),
+    ["name", "type"],
+    "LineChart should use chartData.type as a series dimension when multiple business types are present",
+  );
+  const typedLineIndicator = (typedLineChartData.indicator as JsonObject[])[0] as JsonObject;
+  const typedLineFieldConfig = typedLineIndicator.fieldDataConfig as JsonObject;
+  const typedLineFormat = typedLineFieldConfig.format as JsonObject;
+  assert.equal(
+    typedLineFormat.accuracy,
+    0,
+    "LineChart should render integer business values without redundant decimal places",
+  );
+
+  const integerBarSchema = generateComponentsSchema({
+    componentName: "BarChart",
+    logicalId: "integer_bar_chart",
+    parentLogicalId: "chart_group",
+    name: "整数柱图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "区域A", type: "指标额", value: 34600 },
+          { name: "区域B", type: "指标额", value: 28200 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 420,
+      height: 280,
+    },
+    option: {
+      series: [
+        {
+          name: "数值",
+          label: {
+            show: true,
+            formatter: "{c}万",
+          },
+        },
+      ],
+    },
+  } as JsonObject);
+  const integerBarOption = integerBarSchema.props.option as JsonObject;
+  const integerBarSeries = integerBarOption.series as JsonObject[];
+  assert.equal(integerBarSeries[0]?.name, "指标额");
+  const integerBarChartData = integerBarSchema.props.chartData as JsonObject;
+  const integerBarIndicator = (integerBarChartData.indicator as JsonObject[])[0] as JsonObject;
+  const integerBarFieldConfig = integerBarIndicator.fieldDataConfig as JsonObject;
+  const integerBarFormat = integerBarFieldConfig.format as JsonObject;
+  assert.equal(
+    integerBarFormat.accuracy,
+    0,
+    "BarChart should render integer labels without redundant .00 decimals",
+  );
+
+  const typedBarSchema = generateComponentsSchema({
+    componentName: "BarChart",
+    logicalId: "typed_bar_chart",
+    parentLogicalId: "chart_group",
+    name: "类型柱图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "区域A", type: "实际值", value: 34600 },
+          { name: "区域A", type: "目标值", value: 32000 },
+          { name: "区域B", type: "实际值", value: 28200 },
+          { name: "区域B", type: "目标值", value: 27000 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 420,
+      height: 280,
+    },
+    option: {
+      series: [
+        { name: "数值" },
+        { name: "数值" },
+      ],
+    },
+  } as JsonObject);
+  const typedBarOption = typedBarSchema.props.option as JsonObject;
+  const typedBarSeries = typedBarOption.series as JsonObject[];
+  assert.deepEqual(
+    typedBarSeries.map((item) => item.name),
+    ["实际值", "目标值"],
+    "BarChart should derive generic series names from chartData.type",
+  );
+  const typedBarChartData = typedBarSchema.props.chartData as JsonObject;
+  const typedBarDimensions = typedBarChartData.dimension as JsonObject[];
+  assert.deepEqual(
+    typedBarDimensions.map((item) => item.fieldName),
+    ["name", "type"],
+    "BarChart should use chartData.type as a series dimension when multiple business types are present",
+  );
+
+  const fittedTableSchema = generateComponentsSchema({
+    componentName: "BaseTable",
+    logicalId: "fitted_base_table",
+    parentLogicalId: "table_group",
+    name: "列宽保护表格",
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 472,
+      height: 260,
+    },
+    columns: [
+      { field: "customer", label: "客户" },
+      { field: "region", label: "区域" },
+      { field: "amount", label: "成交额", type: "number" },
+      { field: "stage", label: "状态" },
+    ],
+    data: [
+      { customer: "星河制造集团", region: "华东", amount: 860, stage: "合同执行" },
+      { customer: "云帆零售", region: "华南", amount: 720, stage: "已回款" },
+    ],
+    columnSpace: 8,
+    columnConfig: {
+      sequenceCol: {
+        isShowCount: true,
+        columnWidth: 44,
+      },
+      ordinaryCol: {
+        columnWidth: 92,
+      },
+    },
+  } as JsonObject);
+  const fittedTableProps = fittedTableSchema.props as JsonObject;
+  const fittedTableColumnConfig = fittedTableProps.columnConfig as JsonObject;
+  const fittedTableOrdinaryCol = fittedTableColumnConfig.ordinaryCol as JsonObject;
+  assert.ok(
+    (fittedTableProps.columnSpace as number) <= 4,
+    "BaseTable should compact column gaps when many columns fit in a narrow table",
+  );
+  assert.ok(
+    (fittedTableOrdinaryCol.columnWidth as number) >= 100,
+    "BaseTable should expand ordinary column width to use available table width",
   );
 }

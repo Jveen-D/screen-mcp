@@ -116,6 +116,45 @@ export function runDataDisplayNormalizerTests(): void {
     "ScrollList header background should stay opaque",
   );
 
+  const rankedShortScrollListSchema = generateComponentsSchema({
+    componentName: "ScrollList",
+    logicalId: "ranked_short_scroll_list_test",
+    parentLogicalId: "list_group",
+    name: "测试短榜单",
+    columns: [
+      { field: "customer", label: "客户" },
+      { field: "amount", label: "金额" },
+    ],
+    data: Array.from({ length: 8 }, (_, index) => ({
+      customer: `客户${index + 1}`,
+      amount: `${100 - index}万`,
+    })),
+    rowCount: 6,
+    animateProps: {
+      animate: true,
+      animationType: "rowScroll",
+      direction: "bottom2Top",
+      endBehavior: "continue",
+      switchType: "flip",
+    },
+    orderColumnCfg: {
+      show: true,
+    },
+    style: {
+      position: "absolute",
+      left: 100,
+      top: 100,
+      width: 520,
+      height: 280,
+    },
+  });
+  const rankedShortAnimateProps = asChartObject(rankedShortScrollListSchema.props.animateProps);
+  assert.equal(
+    rankedShortAnimateProps.animate,
+    false,
+    "ScrollList should disable looping animation for short ordered lists so the first screen keeps rank order",
+  );
+
   // FunnelChart: data should sync to datasource.constantData
   const funnelChartCapability = getComponentCapability("FunnelChart");
   assert.ok(Array.isArray(funnelChartCapability.aiWritableProps), "FunnelChart capability has aiWritableProps");

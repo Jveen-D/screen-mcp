@@ -238,10 +238,60 @@ function normalizeExistingChartData(props: JsonObject): void {
   };
 }
 
+function indicatorCount(props: JsonObject): number {
+  const chartData = props.chartData;
+  if (!isJsonObject(chartData) || !Array.isArray(chartData.indicator)) {
+    return 0;
+  }
+
+  return chartData.indicator.filter(isJsonObject).length;
+}
+
+function normalizeColumnFit(props: JsonObject): void {
+  const style = isJsonObject(props.style) ? props.style : {};
+  const tableWidth = asNumber(style.width, 0);
+  const fieldCount = indicatorCount(props);
+  if (tableWidth <= 0 || fieldCount === 0) {
+    return;
+  }
+
+  const columnConfig = isJsonObject(props.columnConfig) ? props.columnConfig : {};
+  const sequenceCol = isJsonObject(columnConfig.sequenceCol) ? columnConfig.sequenceCol : {};
+  const ordinaryCol = isJsonObject(columnConfig.ordinaryCol) ? columnConfig.ordinaryCol : {};
+  columnConfig.sequenceCol = sequenceCol;
+  columnConfig.ordinaryCol = ordinaryCol;
+  props.columnConfig = columnConfig;
+
+  const sequenceWidth = sequenceCol.isShowCount === true
+    ? asIntegerInRange(sequenceCol.columnWidth, 28, 90, 44)
+    : 0;
+  if (sequenceCol.isShowCount === true) {
+    sequenceCol.columnWidth = sequenceWidth;
+  }
+
+  const totalColumns = fieldCount + (sequenceCol.isShowCount === true ? 1 : 0);
+  const compactTable = totalColumns >= 5 || tableWidth < 520;
+  if (compactTable) {
+    props.columnSpace = Math.min(asNumber(props.columnSpace, 0), 4);
+  }
+
+  const columnSpace = asNumber(props.columnSpace, 0);
+  const gapCount = Math.max(0, totalColumns - 1);
+  const availableWidth = tableWidth - sequenceWidth - columnSpace * gapCount;
+  if (availableWidth <= 0) {
+    return;
+  }
+
+  const fittedWidth = Math.max(64, Math.floor(availableWidth / fieldCount));
+  const currentWidth = asIntegerInRange(ordinaryCol.columnWidth, 48, 240, fittedWidth);
+  ordinaryCol.columnWidth = Math.max(currentWidth, fittedWidth);
+}
+
 export function normalizeBaseTableProps(props: JsonObject): JsonObject {
   syncColumnsAndData(props);
   normalizeExistingChartData(props);
   normalizeTableLineHeights(props);
+  normalizeColumnFit(props);
   ensureEntryAnimation(props);
   return props;
 }

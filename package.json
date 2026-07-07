@@ -13,7 +13,11 @@
     "start": "node dist/src/server.js",
     "start:http": "node dist/src/http-server.js",
     "build": "tsc -p tsconfig.json",
-    "test:flow": "tsx scripts/test-flow.ts"
+    "test:flow": "tsx scripts/test-flow.ts",
+    "docs:generate": "tsx scripts/generate-docs.ts",
+    "check:docs": "tsx scripts/generate-docs.ts --check",
+    "check:rules": "tsx scripts/check-project-rules.ts",
+    "check": "npm run build && npm run test:flow && npm run check:docs && npm run check:rules"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

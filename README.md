@@ -15,17 +15,20 @@
 - 生产整屏流程以 `DashboardSpec` 为中心：LLM 先设计完整 spec，可选调用 `validate_dashboard_spec` 检查结构，再调用 `generate_dashboard_schema` 编译。
 - 项目不沉淀行业模板、主题模板、布局模板或关键词到模板的映射；新增能力应优先增强能力说明、校验、规范化、编译和测试。
 
-当前内置组件：
+<!-- BEGIN AUTO GENERATED CAPABILITIES -->
 
-- `PieChart`
-- `SingleImage`
-- `SingleText`
-- `SvgDecoration`
+此区块由 `npm run docs:generate` 生成，请不要手写维护。
 
-当前内置模块：
+当前 MCP 工具：12 个。
+当前内置组件：53 个。
+当前内置模块：2 个。
 
-- `ChartPanel`
-- `FreeformModule`
+- [工具参考](docs/tool-reference.md)
+- [组件参考](docs/component-reference.md)
+- [模块参考](docs/module-reference.md)
+- [开发规范](docs/development-rules.md)
+
+<!-- END AUTO GENERATED CAPABILITIES -->
 
 ## 安装依赖
 
@@ -300,6 +303,12 @@ DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真�
 
 ```bash
 npm run test:flow
+```
+
+完整检查：
+
+```bash
+npm run check
 ```
 
 测试会验证：

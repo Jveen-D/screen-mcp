@@ -75,6 +75,48 @@ function normalizeNumBackground(props: JsonObject): void {
   props.numBackground = numBackground;
 }
 
+function normalizeCompactTypography(props: JsonObject): void {
+  const style = isJsonObject(props.style) ? props.style : {};
+  const height = asNumber(style.height, 0);
+  if (height <= 0 || height > 72 || props.titleVisible !== true) {
+    return;
+  }
+
+  const titleStyle = isJsonObject(props.titleStyle) ? props.titleStyle : {};
+  const numberStyle = isJsonObject(props.numberStyle) ? props.numberStyle : {};
+  const suffixStyle = isJsonObject(props.suffixStyle) ? props.suffixStyle : {};
+  const prefixStyle = isJsonObject(props.prefixStyle) ? props.prefixStyle : {};
+  const globalConfig = isJsonObject(props.globalConfig) ? props.globalConfig : {};
+
+  const titleFontSize = asNumber(titleStyle.fontSize, 18);
+  const currentSpace = asNumber(globalConfig.space, 4);
+  globalConfig.space = Math.min(currentSpace, 2);
+
+  const availableNumberHeight = height - titleFontSize - asNumber(globalConfig.space, 2) - 8;
+  if (availableNumberHeight <= 0) {
+    return;
+  }
+
+  const currentNumberFontSize = asNumber(numberStyle.fontSize, 48);
+  const compactNumberFontSize = Math.max(28, Math.floor(availableNumberHeight));
+  if (currentNumberFontSize > compactNumberFontSize) {
+    numberStyle.fontSize = compactNumberFontSize;
+  }
+
+  const companionFontSize = Math.max(12, Math.floor(asNumber(numberStyle.fontSize, compactNumberFontSize) * 0.45));
+  if (props.suffix === true && asNumber(suffixStyle.fontSize, 18) > companionFontSize) {
+    suffixStyle.fontSize = companionFontSize;
+  }
+  if (props.prefix === true && asNumber(prefixStyle.fontSize, 18) > companionFontSize) {
+    prefixStyle.fontSize = companionFontSize;
+  }
+
+  props.globalConfig = globalConfig;
+  props.numberStyle = numberStyle;
+  props.suffixStyle = suffixStyle;
+  props.prefixStyle = prefixStyle;
+}
+
 function formatWithSeparation(value: number, decimal: number): string {
   const fixed = value.toFixed(decimal);
   if (decimal > 0) {
@@ -169,6 +211,20 @@ function normalizeStyleWidth(props: JsonObject): void {
   }
 }
 
+function normalizeReadableSeparation(props: JsonObject): void {
+  if (props.separation !== true || props.hasBackground === true) {
+    return;
+  }
+
+  const decimal = asIntegerInRange(props.decimal, 0, 4, 0);
+  const textValue = Math.abs(asNumber(props.textValue, 0));
+  const numberStyle = isJsonObject(props.numberStyle) ? props.numberStyle : {};
+  const fontSize = asNumber(numberStyle.fontSize, 48);
+  if (decimal > 0 || (fontSize >= 40 && textValue < 1000000)) {
+    props.separation = false;
+  }
+}
+
 function normalizeIndicatorData(props: JsonObject): void {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -236,7 +292,9 @@ function normalizeIndicatorData(props: JsonObject): void {
 export function normalizeIndicatorProps(props: JsonObject): JsonObject {
   normalizeTitleName(props);
   normalizeNumBackground(props);
+  normalizeCompactTypography(props);
   normalizeStyleWidth(props);
+  normalizeReadableSeparation(props);
   normalizeIndicatorData(props);
   ensureEntryAnimation(props);
   return props;

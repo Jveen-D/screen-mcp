@@ -58,12 +58,6 @@ function ensureStyleChildren(items: JsonValue | undefined) {
         value: "absolute",
         description: "固定使用 absolute。",
       },
-      {
-        path: "style.position",
-        type: "string",
-        value: "absolute",
-        description: "固定使用 absolute。",
-      },
     ]);
   }
 

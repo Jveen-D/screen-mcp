@@ -560,11 +560,13 @@ export const scrollListCapability: JsonObject = {
     "animateProps、rowHeader、colConfigs、customRowStyles、highlight、orderColumnCfg 等对象缺失字段由 MCP 补齐为默认值。",
     "rowHeader.headerBg 必须是不透明颜色；若传 transparent、半透明 rgba 或带 alpha 的透明 8 位 hex，MCP 会回退到默认不透明表头色。",
     "customRowStyles 为空数组时，MCP 会重置为默认两套斑马纹样式。",
+    "当序号列开启、数据量只比 rowCount 多 1-2 行且 animateProps.animate=true 时，MCP 会关闭滚动动画，避免首屏排名从中间序号开始。",
   ],
   visualRules: [
     "columns 的 field 必须与 data 中对象字段名保持一致，否则对应列会显示为空。",
     "rowCount 应结合 data 总量与组件高度设置，保证行高合理、不出现过度挤压。",
     "animateProps.animate 为 true 时，数据量需大于 rowCount 才会产生滚动效果。",
+    "带序号列的榜单/排行若只隐藏少量行，应优先静态展示首屏排名；循环滚动会让截图和首屏阅读出现 5、6、7、1、2 这类非连续顺序。",
     "customRowStyles 会按行索引循环应用，建议配置 2 组样式实现斑马纹。",
     "colConfigs 中 __seriesType 为 __default 且 colFieldName 为空的配置用于兜底未单独配置的列。",
     "matchStyles 按单元格原始值精确匹配，适合对状态文本等离散值做高亮。",

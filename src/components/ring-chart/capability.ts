@@ -60,7 +60,7 @@ export const ringChartCapability: JsonObject = {
           path: "option.series[0].radius",
           type: "[string,string]",
           description:
-            "内外半径，格式为 [innerRadius, outerRadius]，通常使用百分比字符串。环形图 innerRadius 不能为 0 或 '0%'，否则会被 MCP 修正为默认值 '30%'；外部 label、底部 legend 或装饰环拥挤时，应适当减小 outerRadius，例如 ['28%', '42%']。",
+            "内外半径，格式为 [innerRadius, outerRadius]，通常使用百分比字符串。环形图 innerRadius 不能为 0 或 '0%'，否则会被 MCP 修正为默认值 '30%'；外部 label、底部 legend 或装饰环拥挤时，应适当减小 outerRadius，例如 ['28%', '42%']，但不能把 outerRadius 压到让环图主体变成小圆点。",
         },
         {
           path: "option.series[0].center",
@@ -310,7 +310,10 @@ export const ringChartCapability: JsonObject = {
     "legend 不得以横向布局放在环图中心高度；top: 'center' 只适合 left/right 侧边纵向 legend。若 legend 是 horizontal 或未显式 orient，应放在 top/bottom 安全区。",
     "处理环形图挤压时优先联动三类能力：legend.offsetX/offsetY 微调图例、series[0].center 调整圆心、series[0].radius 调整内外半径。不要只依赖扩大组件、隐藏 legend、关闭 label 或限制数据项个数。",
     "当 legend 放在右侧或左侧并且使用纵向排列时，圆环本体不能过小；应保留足够的 outerRadius 和可读的中心空洞，避免图表主体被 legend 挤成一个小点。",
-    "当 RingChart 宽度小于 420px、高度小于 220px 或数据项不少于 5 项，且同时使用底部 legend 与外部 label 时，应主动缩小 outerRadius、上移 centerY、压缩 legend itemGap 和 labelLine，避免 label 与 legend 重叠。",
+    "当 RingChart 宽度小于 420px、高度小于 220px 或数据项不少于 5 项，且同时使用底部 legend 与外部 label 时，应主动缩小 outerRadius、上移 centerY、压缩 legend itemGap 和 labelLine，避免 label 与 legend 重叠；但中等以上面板仍要保留可读的图表主体，不能低于可识别的外径。",
+    "当中心空洞里放置 SingleText 数值和说明时，应先估算中心文本栈宽高，再设置足够的 innerRadius；如果 innerRadius 不足，应同步增大 outerRadius 或缩减中心文本，而不是让文字压住环形主体。",
+    "底部 legend、底部结论和外部 label 不能占用同一条底部阅读带；底部结论存在时应上移 legend、上移 centerY 或收敛 labelLine，让 legend 与结论分层。",
+    "启用内环、外环或环形文字装饰前，应确保环图主体已经足够大；小半径环图不应叠加装饰环，以免主体变成不可读的装饰点。",
     "AI 必须根据指标业务含义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName，如“指标值”“数量”“完成量”，不能保留默认值“value”；该名称会用于图例和提示框展示。",
     "标签较多或分类名较长时，应适当设置 option.series[0].labelLine.length（建议 8-16），避免引出线过短导致标签与图形主体重叠。",
     "内环、外环装饰与环形文字属于增强表达，应与整体视觉风格统一；不需要装饰时保持关闭，避免过度堆砌。",

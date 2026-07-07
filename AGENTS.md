@@ -55,7 +55,7 @@ DashboardSpec 顶层的 `grouping` 应能被未单独设置 `grouping` 的模块
 
 ## 修改流程
 
-1. 先读相关现有实现和 README，不凭记忆改。
+1. 先读相关现有实现、README 和 `docs/development-rules.md`，不凭记忆改。
 2. 使用 `rg` 查找已有能力、类型、测试和旧逻辑。
 3. 修改前确认改动是否会引入模板化、关键词分流或固定设计决策。
 4. 优先做小范围、可验证的改动，避免顺手重构无关文件。
@@ -64,7 +64,11 @@ DashboardSpec 顶层的 `grouping` 应能被未单独设置 `grouping` 的模块
 ```bash
 npm run build
 npm run test:flow
+npm run check:docs
+npm run check:rules
 ```
+
+公共 MCP 工具只能在 `src/mcp/screenServer.ts` 定义和注册；`src/server.ts` 和 `src/http-server.ts` 只负责 transport 启动。新增工具、组件或模块后必须运行 `npm run docs:generate`，不要手写 README 的能力清单。
 
 ## 输出与文档
 

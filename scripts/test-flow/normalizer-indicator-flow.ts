@@ -87,6 +87,113 @@ export function runIndicatorNormalizerTests(): void {
     "Indicator should not widen short simple layouts unnecessarily",
   );
 
+  const compactKpiSchema = generateComponentsSchema({
+    componentName: "Indicator",
+    logicalId: "indicator_compact_kpi_test",
+    parentLogicalId: "indicator_group",
+    name: "紧凑KPI",
+    titleVisible: true,
+    titleName: "订单数",
+    textValue: 9420,
+    suffix: true,
+    suffixTitle: "单",
+    titleStyle: {
+      fontSize: 18,
+      lineHeight: 1,
+    },
+    numberStyle: {
+      fontSize: 48,
+      letterSpacing: 1,
+      lineHeight: 1,
+    },
+    suffixStyle: {
+      fontSize: 18,
+      lineHeight: 1,
+    },
+    globalConfig: {
+      space: 4,
+    },
+    style: {
+      position: "absolute",
+      left: 100,
+      top: 100,
+      width: 312,
+      height: 64,
+    },
+  });
+  const compactKpiNumberStyle = compactKpiSchema.props.numberStyle as JsonObject;
+  const compactKpiSuffixStyle = compactKpiSchema.props.suffixStyle as JsonObject;
+  const compactKpiGlobalConfig = compactKpiSchema.props.globalConfig as JsonObject;
+  assert.equal(
+    compactKpiNumberStyle.fontSize,
+    36,
+    "Indicator should reduce number font size when title + value + suffix cannot fit in compact height",
+  );
+  assert.equal(
+    compactKpiSuffixStyle.fontSize,
+    16,
+    "Indicator should reduce suffix font size with compact KPI number typography",
+  );
+  assert.equal(
+    compactKpiGlobalConfig.space,
+    2,
+    "Indicator should reduce vertical gap in compact KPI cards",
+  );
+
+  const decimalKpiSchema = generateComponentsSchema({
+    componentName: "Indicator",
+    logicalId: "indicator_decimal_kpi_test",
+    parentLogicalId: "indicator_group",
+    name: "小数KPI",
+    textValue: 91.2,
+    decimal: 1,
+    separation: true,
+    suffix: true,
+    suffixTitle: "%",
+    numberStyle: {
+      fontSize: 44,
+      letterSpacing: 1,
+    },
+    style: {
+      position: "absolute",
+      left: 100,
+      top: 100,
+      width: 360,
+      height: 82,
+    },
+  });
+  assert.equal(
+    decimalKpiSchema.props.separation,
+    false,
+    "Indicator should disable separation for ordinary decimal KPIs without digit backgrounds",
+  );
+
+  const backgroundDigitKpiSchema = generateComponentsSchema({
+    componentName: "Indicator",
+    logicalId: "indicator_background_digit_test",
+    parentLogicalId: "indicator_group",
+    name: "数字背景KPI",
+    textValue: 128760,
+    separation: true,
+    hasBackground: true,
+    numBackground: {
+      width: 36,
+      height: 54,
+    },
+    style: {
+      position: "absolute",
+      left: 100,
+      top: 100,
+      width: 480,
+      height: 96,
+    },
+  });
+  assert.equal(
+    backgroundDigitKpiSchema.props.separation,
+    true,
+    "Indicator should preserve separation for explicit digit-background flip layouts",
+  );
+
   const compactRingSchema = generateComponentsSchema({
     componentName: "RingChart",
     logicalId: "compact_ring_test",
@@ -256,6 +363,112 @@ export function runIndicatorNormalizerTests(): void {
   assert.equal(denseRingLegend.itemWidth, 12);
   assert.equal(denseRingLegend.itemHeight, 7);
   assert.equal(asChartObject(denseRingLegend.textStyle).fontSize, 11);
+
+  const readableBottomLegendRingSchema = generateComponentsSchema({
+    componentName: "RingChart",
+    logicalId: "readable_bottom_legend_ring_test",
+    parentLogicalId: "chart_group",
+    name: "中等面板多项环图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "渠道A", type: "分类", value: 42 },
+          { name: "渠道B", type: "分类", value: 28 },
+          { name: "渠道C", type: "分类", value: 18 },
+          { name: "渠道D", type: "分类", value: 12 },
+          { name: "渠道E", type: "分类", value: 8 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 560,
+      height: 382,
+    },
+    option: {
+      legend: {
+        show: true,
+        top: "bottom",
+        left: "center",
+        offsetY: 12,
+        itemGap: 16,
+      },
+      series: [
+        {
+          radius: ["18%", "29%"],
+          center: ["50%", "38%"],
+        },
+      ],
+    },
+  });
+  const readableBottomLegendRingOption = asChartObject(readableBottomLegendRingSchema.props.option);
+  const readableBottomLegend = asChartObject(readableBottomLegendRingOption.legend);
+  const readableBottomLegendSeries = Array.isArray(readableBottomLegendRingOption.series)
+    ? asChartObject(readableBottomLegendRingOption.series[0])
+    : {};
+  assert.equal(
+    readableBottomLegend.offsetY,
+    -2,
+    "RingChart should pull dense bottom legends back inside the component",
+  );
+  assert.deepEqual(
+    readableBottomLegendSeries.radius,
+    ["18%", "42%"],
+    "RingChart should not allow medium bottom-legend layouts to collapse to a tiny ring",
+  );
+
+  const readableMediumRingSchema = generateComponentsSchema({
+    componentName: "RingChart",
+    logicalId: "readable_medium_ring_test",
+    parentLogicalId: "chart_group",
+    name: "中等面板中心摘要环图",
+    chartData: {
+      constant: {
+        data: [
+          { name: "分类A", type: "分类", value: 42 },
+          { name: "分类B", type: "分类", value: 28 },
+          { name: "分类C", type: "分类", value: 18 },
+          { name: "分类D", type: "分类", value: 12 },
+          { name: "分类E", type: "分类", value: 8 },
+        ],
+      },
+    },
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 446,
+      height: 328,
+    },
+    option: {
+      legend: {
+        show: true,
+        top: "bottom",
+        left: "center",
+      },
+      series: [
+        {
+          radius: ["15%", "20%"],
+          center: ["50%", "43%"],
+          label: {
+            show: false,
+            position: "outside",
+          },
+        },
+      ],
+    },
+  });
+  const readableMediumRingOption = asChartObject(readableMediumRingSchema.props.option);
+  const readableMediumRingSeries = Array.isArray(readableMediumRingOption.series)
+    ? asChartObject(readableMediumRingOption.series[0])
+    : {};
+  assert.deepEqual(
+    readableMediumRingSeries.radius,
+    ["15%", "42%"],
+    "RingChart should protect medium multi-item bottom-legend layouts from unreadably tiny outer radius even when outside labels are hidden",
+  );
 
   const centerBandLegendRingSchema = generateComponentsSchema({
     componentName: "RingChart",

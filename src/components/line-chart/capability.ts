@@ -415,7 +415,7 @@ export const lineChartCapability: JsonObject = {
     },
     {
       path: "chartData.dimension",
-      reason: "MCP 固定使用 name 作为维度（X 轴分类）。",
+      reason: "MCP 固定使用 name 作为 X 轴分类；存在多个业务 type 时会自动补 type 作为系列维度。",
     },
     {
       path: "chartData.indicator",
@@ -455,7 +455,9 @@ export const lineChartCapability: JsonObject = {
   mergeRules: [
     "option.series[i].type 固定为 'line'，即使 AI 输入其他值也会被 MCP 归一化为 'line'。",
     "option.dataset 会被 MCP 移除；折线图数据由默认 chartData 或外部数据源替换链路提供。",
-    "AI 可填写 chartData.constant.data；MCP 会归一化为完整有效的 constant chartData，并同步 originalData。",
+    "AI 可填写 chartData.constant.data；每条记录使用 { name, type, value }，name 为 X 轴分类，type 为业务系列名，value 为数值。",
+    "当 option.series[i].name 缺失或为“数值/指标值/系列”等通用名称时，MCP 会从 chartData.constant.data[].type 推导业务系列名，避免图例和分组语义丢失。",
+    "MCP 会归一化为完整有效的 constant chartData，并同步 originalData；整数 value 会保留整数精度，不额外显示 .00。",
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "option.xAxis.type 固定为 'category'，option.yAxis.type 固定为 'value'。",
@@ -463,6 +465,7 @@ export const lineChartCapability: JsonObject = {
   ],
   visualRules: [
     "折线图用于展示趋势变化，不要用于展示占比或构成关系；占比需求应使用饼图或环形图。",
+    "多系列折线图必须让 chartData.constant.data[].type 体现真实业务系列，如“销售额”“目标额”“实际值”“预测值”；不要保留“数值”作为系列语义。",
     "多系列折线图应使用对比色区分不同系列，颜色要具备足够的可辨识性，避免色盲不友好的组合。",
     "折线图的 legend 默认放在顶部（top: 'top'），给折线主体留出足够的纵向空间。",
     "当分类名较长或数量较多时，应设置 xAxis.axisLabel.rotate 为 30–45 度，避免标签重叠。",

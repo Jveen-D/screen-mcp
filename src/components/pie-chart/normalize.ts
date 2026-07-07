@@ -83,6 +83,14 @@ function normalizeLegendCenterOverlap(legend: JsonObject): void {
   legend.orient = "horizontal";
 }
 
+function normalizeBottomLegendOffset(legend: JsonObject): void {
+  if (legend.show === false || legend.top !== "bottom") {
+    return;
+  }
+
+  legend.offsetY = Math.min(asNumber(legend.offsetY, 0), 0);
+}
+
 function normalizePieSeries(option: JsonObject): void {
   const series = option.series;
   if (!Array.isArray(series)) {
@@ -168,6 +176,7 @@ export function normalizePieChartProps(props: JsonObject): JsonObject {
   }
 
   normalizeLegendCenterOverlap(legend);
+  normalizeBottomLegendOffset(legend);
 
   if (isValidLegendPosition(legend.left, legend.top)) {
     legend.offsetX = asNumber(legend.offsetX, 0);

@@ -411,6 +411,34 @@ function normalizeAnimateProps(props: JsonObject): void {
   }
 }
 
+function datasourceRowCount(props: JsonObject): number {
+  const datasource = props.datasource;
+  if (!isJsonObject(datasource) || !Array.isArray(datasource.constantData)) {
+    return 0;
+  }
+
+  return datasource.constantData.filter(isJsonObject).length;
+}
+
+function normalizeOrderedListAnimation(props: JsonObject): void {
+  const animateProps = props.animateProps;
+  const orderColumnCfg = props.orderColumnCfg;
+  if (!isJsonObject(animateProps) || !isJsonObject(orderColumnCfg)) {
+    return;
+  }
+
+  const rowCount = asNumber(props.rowCount, 5);
+  const dataCount = datasourceRowCount(props);
+  if (
+    orderColumnCfg.show === true &&
+    animateProps.animate === true &&
+    dataCount > rowCount &&
+    dataCount <= rowCount + 2
+  ) {
+    animateProps.animate = false;
+  }
+}
+
 function normalizeScrollbarProps(props: JsonObject, key: "vScrollbarProps" | "hScrollbarProps"): void {
   const raw = props[key];
   if (!isJsonObject(raw)) {
@@ -572,6 +600,7 @@ export function normalizeScrollListProps(props: JsonObject): JsonObject {
   normalizeHighlight(props);
   normalizeMatchStyles(props);
   normalizeOrderColumnCfg(props);
+  normalizeOrderedListAnimation(props);
   normalizeOrderStyles(props);
   normalizeColConfigs(props);
   normalizeEventConfigures(props);
