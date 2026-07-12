@@ -128,6 +128,8 @@ export const svgDecorationCapability: JsonObject = {
     "避免使用完全透明或依赖继承色的 SVG；应显式设置 primaryColor/secondaryColor 和适当 opacity。",
     "同一模块内的装饰语言应统一：角标、底边线、标题承托使用相似的描边粗细、圆角/切角风格和色值。",
     "除非用户明确禁止，否则每个面板/模块至少应包含一种可见装饰：标题承托、面板边框、角标、结构线或网格纹理中的一种。",
+    "整屏左侧、右侧或底部如果存在明显 padding 留白，应主动在这些边缘区域布置轻量 SvgDecoration，例如侧边轨道、刻度短线、扫描线、底部角结构或微弱纹理；不要只留下纯色空边。",
+    "边缘 padding 装饰应使用绝对坐标贴合画布边缘，zIndex 高于全屏背景但低于业务模块，不应遮挡图表、表格、KPI 或可读文本。",
   ],
   examples: [
     {

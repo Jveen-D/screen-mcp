@@ -1784,6 +1784,229 @@ function validateSingleTextContent(item: JsonObject, fieldName: string, errors: 
   }
 }
 
+type RgbaColor = {
+  red: number;
+  green: number;
+  blue: number;
+  alpha: number;
+};
+
+function clampColorChannel(value: number): number {
+  return Math.min(255, Math.max(0, value));
+}
+
+function parseCssColorChannel(value: string): number | undefined {
+  const trimmed = value.trim();
+  const parsed = Number(trimmed.endsWith("%") ? trimmed.slice(0, -1) : trimmed);
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  return clampColorChannel(trimmed.endsWith("%") ? parsed * 2.55 : parsed);
+}
+
+function parseCssAlpha(value: string): number | undefined {
+  const trimmed = value.trim();
+  const parsed = Number(trimmed.endsWith("%") ? trimmed.slice(0, -1) : trimmed);
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  return Math.min(1, Math.max(0, trimmed.endsWith("%") ? parsed / 100 : parsed));
+}
+
+function parseCssColor(value: JsonValue | undefined): RgbaColor | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const color = value.trim();
+  const hexMatch = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/iu.exec(color);
+  if (hexMatch) {
+    const raw = hexMatch[1];
+    const expanded = raw.length <= 4
+      ? [...raw].map((character) => `${character}${character}`).join("")
+      : raw;
+    return {
+      red: Number.parseInt(expanded.slice(0, 2), 16),
+      green: Number.parseInt(expanded.slice(2, 4), 16),
+      blue: Number.parseInt(expanded.slice(4, 6), 16),
+      alpha: expanded.length === 8 ? Number.parseInt(expanded.slice(6, 8), 16) / 255 : 1,
+    };
+  }
+
+  const rgbMatch = /^rgba?\((.*)\)$/iu.exec(color);
+  if (!rgbMatch) {
+    return undefined;
+  }
+
+  const parts = rgbMatch[1].split(",").map((part) => part.trim());
+  if (parts.length !== 3 && parts.length !== 4) {
+    return undefined;
+  }
+
+  const red = parseCssColorChannel(parts[0]);
+  const green = parseCssColorChannel(parts[1]);
+  const blue = parseCssColorChannel(parts[2]);
+  const alpha = parts.length === 4 ? parseCssAlpha(parts[3]) : 1;
+  if (red === undefined || green === undefined || blue === undefined || alpha === undefined) {
+    return undefined;
+  }
+
+  return { red, green, blue, alpha };
+}
+
+function compositeColor(foreground: RgbaColor, background: RgbaColor): RgbaColor | undefined {
+  if (background.alpha < 0.999) {
+    return undefined;
+  }
+
+  return {
+    red: foreground.red * foreground.alpha + background.red * (1 - foreground.alpha),
+    green: foreground.green * foreground.alpha + background.green * (1 - foreground.alpha),
+    blue: foreground.blue * foreground.alpha + background.blue * (1 - foreground.alpha),
+    alpha: 1,
+  };
+}
+
+function relativeLuminance(color: RgbaColor): number {
+  const linear = [color.red, color.green, color.blue].map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+
+  return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+}
+
+function colorContrastRatio(foreground: RgbaColor, background: RgbaColor): number | undefined {
+  const visibleForeground = compositeColor(foreground, background);
+  if (!visibleForeground) {
+    return undefined;
+  }
+
+  const foregroundLuminance = relativeLuminance(visibleForeground);
+  const backgroundLuminance = relativeLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function warnContrast(
+  foreground: RgbaColor,
+  background: RgbaColor,
+  threshold: number,
+  label: string,
+  warnings: string[],
+): void {
+  const ratio = colorContrastRatio(foreground, background);
+  if (ratio !== undefined && ratio + 0.001 < threshold) {
+    warnings.push(
+      `${label} contrast ${ratio.toFixed(2)}:1 is below ${threshold}:1; adjust the LLM-authored foreground or background color`,
+    );
+  }
+}
+
+function warnThemeContrast(theme: JsonObject | undefined, warnings: string[]): void {
+  const textColor = parseCssColor(theme?.textColor);
+  const background = parseCssColor(theme?.background);
+  if (!textColor || !background || background.alpha < 0.999) {
+    return;
+  }
+
+  warnContrast(textColor, background, 4.5, "theme.textColor against theme.background", warnings);
+
+  const panelBackground = parseCssColor(theme?.panelBackground);
+  const resolvedPanelBackground = panelBackground
+    ? compositeColor(panelBackground, background)
+    : undefined;
+  if (resolvedPanelBackground) {
+    warnContrast(
+      textColor,
+      resolvedPanelBackground,
+      4.5,
+      "theme.textColor against theme.panelBackground",
+      warnings,
+    );
+  }
+}
+
+function isLargeText(style: JsonObject, fontSize: number): boolean {
+  const fontWeight = style.fontWeight;
+  const bold = fontWeight === "bold" || fontWeight === "bolder" ||
+    (typeof fontWeight === "number" && fontWeight >= 700);
+  return fontSize >= 18 || (bold && fontSize >= 14);
+}
+
+function warnSingleTextContrast(item: JsonObject, fieldName: string, warnings: string[]): void {
+  if (componentNameOf(item) !== "SingleText") {
+    return;
+  }
+
+  const style = componentStyleFromItem(item);
+  const foreground = parseCssColor(style?.color);
+  const background = parseCssColor(style?.backgroundColor);
+  if (!style || !foreground || !background || background.alpha < 0.999) {
+    return;
+  }
+
+  const declaredFontSize = asFiniteNumber(style.fontSize);
+  const fontSize = declaredFontSize !== undefined && declaredFontSize > 0 ? declaredFontSize : 18;
+  warnContrast(
+    foreground,
+    background,
+    isLargeText(style, fontSize) ? 3 : 4.5,
+    `${fieldName} SingleText`,
+    warnings,
+  );
+}
+
+function normalizedTextLineHeight(style: JsonObject, fontSize: number): number {
+  const raw = asFiniteNumber(style.lineHeight) ?? 1;
+  if (raw <= 0) {
+    return 1;
+  }
+  if (raw <= 4) {
+    return raw;
+  }
+
+  return Math.min(2, Math.max(1, raw / fontSize));
+}
+
+function estimatedTextLineWidth(text: string, fontSize: number, letterSpacing: number): number {
+  return Math.max(0, estimateTextWidth(text, fontSize) + Math.max(0, text.length - 1) * letterSpacing);
+}
+
+function warnSingleTextFit(item: JsonObject, fieldName: string, warnings: string[]): void {
+  if (componentNameOf(item) !== "SingleText") {
+    return;
+  }
+
+  const style = componentStyleFromItem(item);
+  const width = asFiniteNumber(style?.width);
+  const height = asFiniteNumber(style?.height);
+  const text = textContentOf(item)?.trim() ?? "";
+  if (!style || width === undefined || height === undefined || width <= 0 || height <= 0 || text === "") {
+    return;
+  }
+
+  const declaredFontSize = asFiniteNumber(style.fontSize);
+  const fontSize = declaredFontSize !== undefined && declaredFontSize > 0 ? declaredFontSize : 18;
+  const letterSpacing = asFiniteNumber(style.letterSpacing) ?? 0;
+  const lineHeight = normalizedTextLineHeight(style, fontSize);
+  const lineCount = text.split(/\r?\n/u).reduce((count, line) => {
+    const lineWidth = estimatedTextLineWidth(line, fontSize, letterSpacing);
+    return count + Math.max(1, Math.ceil(lineWidth / width));
+  }, 0);
+  const neededHeight = Math.ceil(lineCount * fontSize * lineHeight);
+  if (neededHeight > height + 1) {
+    warnings.push(
+      `${fieldName} SingleText content needs about ${lineCount} line(s) and ${neededHeight}px height for its declared width, but style.height is ${height}px; text may overflow or be clipped`,
+    );
+  }
+}
+
 function chartDataRowsFromValue(value: JsonValue | undefined): JsonObject[] | undefined {
   if (!isJsonObject(value)) {
     return undefined;
@@ -2197,6 +2420,9 @@ function validateComponentWarnings(
   fieldName: string,
   warnings: string[],
 ): void {
+  warnSingleTextContrast(item, fieldName, warnings);
+  warnSingleTextFit(item, fieldName, warnings);
+
   if (!isChartComponent(item)) {
     return;
   }
@@ -2244,6 +2470,160 @@ function collectSlotComponents(value: JsonValue | undefined, fieldName: string):
   return items;
 }
 
+function componentLabelOf(item: JsonObject): string {
+  const props = componentProps(item);
+  return [
+    typeof item.title === "string" ? item.title : "",
+    typeof item.name === "string" ? item.name : "",
+    typeof props.name === "string" ? props.name : "",
+  ].join(" ");
+}
+
+function isBackgroundLikeSpecComponent(item: JsonObject): boolean {
+  return /背景|底板|底图|底色|background|backdrop|panel[-_ ]?(?:bg|background)/iu
+    .test(componentLabelOf(item));
+}
+
+function isEdgePaddingDecoration(item: JsonObject): boolean {
+  return componentNameOf(item) === "SvgDecoration" &&
+    hasVisibleSvgSource(item) &&
+    !isBackgroundLikeSpecComponent(item);
+}
+
+function dashboardComponentItems(
+  components: JsonObject[],
+  groups: JsonObject[],
+  modules: JsonObject[],
+): JsonObject[] {
+  return [
+    ...components,
+    ...groups.flatMap(groupComponents),
+    ...modules.flatMap((module, moduleIndex) => {
+      const slots = isJsonObject(module.slots) ? module.slots : {};
+      return Object.entries(slots).flatMap(([slotName, slotValue]) =>
+        collectSlotComponents(slotValue, `modules[${moduleIndex}].slots.${slotName}`)
+          .map((component) => component.item),
+      );
+    }),
+  ];
+}
+
+function dashboardContentRects(
+  components: JsonObject[],
+  groups: JsonObject[],
+  modules: JsonObject[],
+): Rect[] {
+  const componentRects = components
+    .filter((component) =>
+      !isEdgePaddingDecoration(component) &&
+      !isBackgroundLikeSpecComponent(component) &&
+      componentNameOf(component) !== "SingleImage",
+    )
+    .map((component, index) => rectFromItem(component, `components[${index}]`))
+    .filter((rect): rect is Rect => Boolean(rect));
+
+  const groupRects = groups
+    .map((group, index) => rectFromItem(group, `groups[${index}]`))
+    .filter((rect): rect is Rect => Boolean(rect));
+
+  const moduleRects = modules
+    .map((module, index) => rectFromItem(module, `modules[${index}]`))
+    .filter((rect): rect is Rect => Boolean(rect));
+
+  return [...componentRects, ...groupRects, ...moduleRects];
+}
+
+function edgePaddingThreshold(canvas: { width: number; height: number }): number {
+  return Math.max(24, Math.min(48, Math.round(Math.min(canvas.width, canvas.height) * 0.025)));
+}
+
+function edgePaddingBands(
+  contentRects: Rect[],
+  canvas: { width: number; height: number },
+): Array<{ label: string; rect: Rect }> {
+  if (contentRects.length === 0) {
+    return [];
+  }
+
+  const threshold = edgePaddingThreshold(canvas);
+  const minLeft = Math.max(0, Math.min(...contentRects.map((rect) => rect.left)));
+  const maxRight = Math.min(
+    canvas.width,
+    Math.max(...contentRects.map((rect) => rect.left + rect.width)),
+  );
+  const maxBottom = Math.min(
+    canvas.height,
+    Math.max(...contentRects.map((rect) => rect.top + rect.height)),
+  );
+
+  const bands: Array<{ label: string; rect: Rect }> = [];
+  if (minLeft >= threshold) {
+    bands.push({
+      label: "left",
+      rect: { id: "left-edge-padding", left: 0, top: 0, width: minLeft, height: canvas.height },
+    });
+  }
+
+  const rightPadding = canvas.width - maxRight;
+  if (rightPadding >= threshold) {
+    bands.push({
+      label: "right",
+      rect: {
+        id: "right-edge-padding",
+        left: maxRight,
+        top: 0,
+        width: rightPadding,
+        height: canvas.height,
+      },
+    });
+  }
+
+  const bottomPadding = canvas.height - maxBottom;
+  if (bottomPadding >= threshold) {
+    bands.push({
+      label: "bottom",
+      rect: {
+        id: "bottom-edge-padding",
+        left: 0,
+        top: maxBottom,
+        width: canvas.width,
+        height: bottomPadding,
+      },
+    });
+  }
+
+  return bands;
+}
+
+function warnEmptyEdgePadding(
+  components: JsonObject[],
+  groups: JsonObject[],
+  modules: JsonObject[],
+  canvas: { width: number; height: number },
+  warnings: string[],
+): void {
+  const bands = edgePaddingBands(dashboardContentRects(components, groups, modules), canvas);
+  if (bands.length === 0) {
+    return;
+  }
+
+  const decorations = dashboardComponentItems(components, groups, modules)
+    .filter(isEdgePaddingDecoration)
+    .map((item, index) => componentRectFromItem(item, `edgeDecoration[${index}]`))
+    .filter((rect): rect is Rect => Boolean(rect));
+
+  const emptyBands = bands.filter((band) =>
+    !decorations.some((decoration) => rectsOverlap(decoration, band.rect)),
+  );
+  if (emptyBands.length === 0) {
+    return;
+  }
+
+  warnings.push(
+    `dashboard canvas has empty ${emptyBands.map((band) => band.label).join("/")} edge padding; add LLM-authored SvgDecoration edge ornaments such as side rails, tick marks, scan lines, signal ticks, or bottom corner structures while keeping main content above decorations`,
+  );
+}
+
 function validateGroupingMode(
   value: JsonObject | undefined,
   fieldName: string,
@@ -2272,6 +2652,7 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   const groups = asArray(input.groups);
   const modules = asArray(input.modules);
   const reservedAreas = asArray(input.reservedAreas);
+  const theme = isJsonObject(input.theme) ? input.theme : undefined;
   const grouping = isJsonObject(input.grouping) ? input.grouping : undefined;
   const rects: Rect[] = [];
   const reservedRects: Rect[] = [];
@@ -2285,6 +2666,7 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   }
 
   validateGroupingMode(grouping, "grouping", errors);
+  warnThemeContrast(theme, warnings);
 
   reservedAreas.forEach((reservedArea, index) => {
     if (!isBimModelReservedArea(reservedArea)) {
@@ -2454,6 +2836,8 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
       }
     }
   }
+
+  warnEmptyEdgePadding(components, groups, modules, canvas, warnings);
 
   return {
     valid: errors.length === 0,

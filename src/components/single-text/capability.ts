@@ -97,6 +97,10 @@ export const singleTextCapability: JsonObject = {
     "style.lineHeight 使用无单位倍率；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
     "单行文本默认 backgroundColor 透明；需要底板时应由 LLM 显式设计 SvgDecoration 或单独背景组件，不要让文本自己带默认色块。",
   ],
+  visualRules: [
+    "根据 textContent、fontSize、letterSpacing 和 lineHeight 为文本预留足够宽高；长文本需要显式增加高度或拆成多行，避免裁切和溢出。",
+    "文字与明确背景之间应保持可读对比度：普通文字至少 4.5:1，大字号文字（18px 及以上，或 14px 及以上粗体）至少 3:1。MCP 只发出 warning，不会替换 LLM 显式选择的颜色。",
+  ],
   examples: [
     {
       title: "饼图面板标题",

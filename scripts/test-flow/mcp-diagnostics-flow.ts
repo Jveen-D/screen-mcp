@@ -14,7 +14,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-07-07.05-indicator-title-externalization",
+    "2026-07-12.02-objective-ui-quality",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),
@@ -359,6 +359,26 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-indicator-value-title-split"),
     "diagnostics should expose Indicator value/title split fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-edge-padding-decoration-warning"),
+    "diagnostics should expose dashboard edge padding decoration warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("svg-decoration-edge-padding-guidance"),
+    "diagnostics should expose SvgDecoration edge padding guidance fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-theme-contrast-warning"),
+    "diagnostics should expose dashboard theme contrast warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-single-text-contrast-warning"),
+    "diagnostics should expose SingleText contrast warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-single-text-overflow-warning"),
+    "diagnostics should expose SingleText overflow warning fingerprint",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

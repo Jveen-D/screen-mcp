@@ -76,6 +76,130 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     ),
     "DashboardSpec validation should warn when many top-level components are not grouped",
   );
+  const emptyEdgePaddingValidation = validateDashboardSpec({
+    logicalId: "empty_edge_padding_dashboard",
+    canvas: { width: 1000, height: 600 },
+    groups: [
+      {
+        logicalId: "center_content_group",
+        title: "主体内容",
+        style: {
+          position: "absolute",
+          left: 80,
+          top: 64,
+          width: 840,
+          height: 436,
+        },
+        components: [
+          {
+            componentName: "SingleText",
+            logicalId: "center_content_title",
+            textContent: "主体内容",
+            style: {
+              position: "absolute",
+              left: 108,
+              top: 92,
+              width: 160,
+              height: 24,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject);
+  assert.equal(emptyEdgePaddingValidation.valid, true);
+  assert.ok(
+    (emptyEdgePaddingValidation.warnings as string[]).some((warning) =>
+      warning.includes("empty left/right/bottom edge padding"),
+    ),
+    "DashboardSpec validation should warn when large edge padding has no decorative accents",
+  );
+  const decoratedEdgePaddingValidation = validateDashboardSpec({
+    logicalId: "decorated_edge_padding_dashboard",
+    canvas: { width: 1000, height: 600 },
+    components: [
+      {
+        componentName: "SvgDecoration",
+        logicalId: "left_edge_rail",
+        name: "左侧边缘轨道",
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 44 600" xmlns="http://www.w3.org/2000/svg"><path d="M22 24v552" stroke="currentColor" stroke-width="2" opacity=".6"/><path d="M12 96h20M12 180h20M12 264h20M12 348h20M12 432h20" stroke="currentColor" stroke-width="2" opacity=".8"/></svg>',
+        style: {
+          position: "absolute",
+          left: 12,
+          top: 0,
+          width: 44,
+          height: 600,
+        },
+      },
+      {
+        componentName: "SvgDecoration",
+        logicalId: "right_edge_rail",
+        name: "右侧边缘轨道",
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 44 600" xmlns="http://www.w3.org/2000/svg"><path d="M22 24v552" stroke="currentColor" stroke-width="2" opacity=".6"/><path d="M12 96h20M12 180h20M12 264h20M12 348h20M12 432h20" stroke="currentColor" stroke-width="2" opacity=".8"/></svg>',
+        style: {
+          position: "absolute",
+          left: 944,
+          top: 0,
+          width: 44,
+          height: 600,
+        },
+      },
+      {
+        componentName: "SvgDecoration",
+        logicalId: "bottom_edge_structure",
+        name: "底部边缘结构线",
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 1000 36" xmlns="http://www.w3.org/2000/svg"><path d="M24 18h260M716 18h260" stroke="currentColor" stroke-width="2" opacity=".72"/><path d="M316 18h368" stroke="currentColor" stroke-width="1" stroke-dasharray="8 10" opacity=".45"/></svg>',
+        style: {
+          position: "absolute",
+          left: 0,
+          top: 552,
+          width: 1000,
+          height: 36,
+        },
+      },
+    ],
+    groups: [
+      {
+        logicalId: "decorated_center_content_group",
+        title: "主体内容",
+        style: {
+          position: "absolute",
+          left: 80,
+          top: 64,
+          width: 840,
+          height: 436,
+        },
+        components: [
+          {
+            componentName: "SingleText",
+            logicalId: "decorated_center_content_title",
+            textContent: "主体内容",
+            style: {
+              position: "absolute",
+              left: 108,
+              top: 92,
+              width: 160,
+              height: 24,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject);
+  assert.equal(decoratedEdgePaddingValidation.valid, true);
+  assert.equal(
+    (decoratedEdgePaddingValidation.warnings as string[]).some((warning) =>
+      warning.includes("edge padding"),
+    ),
+    false,
+    "DashboardSpec validation should accept custom SvgDecoration accents in edge padding",
+  );
   const reservedAreaOverlapValidation = validateDashboardSpec({
     logicalId: "reserved_area_overlap_dashboard",
     canvas: { width: 1280, height: 720 },
@@ -301,6 +425,174 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
       error.includes("SingleText textContent must be real business copy"),
     ),
     "DashboardSpec validation should reject visible placeholder text",
+  );
+  const lowContrastThemeValidation = validateDashboardSpec({
+    logicalId: "low_contrast_theme_dashboard",
+    theme: {
+      background: "#111827",
+      panelBackground: "rgba(255,255,255,0.06)",
+      textColor: "#3A4350",
+    },
+    components: [
+      {
+        componentName: "SingleText",
+        logicalId: "low_contrast_theme_text",
+        textContent: "主题文字对比度检查",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 24,
+          width: 220,
+          height: 18,
+          fontSize: 18,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(lowContrastThemeValidation.valid, true);
+  assert.ok(
+    (lowContrastThemeValidation.warnings as string[]).some((warning) =>
+      warning.includes("theme.textColor against theme.background contrast"),
+    ),
+    "DashboardSpec validation should warn when theme text and background colors have low contrast",
+  );
+  assert.ok(
+    (lowContrastThemeValidation.warnings as string[]).some((warning) =>
+      warning.includes("theme.textColor against theme.panelBackground contrast"),
+    ),
+    "DashboardSpec validation should resolve translucent panel backgrounds before checking contrast",
+  );
+
+  const readableThemeValidation = validateDashboardSpec({
+    logicalId: "readable_theme_dashboard",
+    theme: {
+      background: "#08111F",
+      panelBackground: "rgba(255,255,255,0.08)",
+      textColor: "#F2F8FF",
+    },
+    components: [
+      {
+        componentName: "SingleText",
+        logicalId: "readable_theme_text",
+        textContent: "高对比主题文字",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 24,
+          width: 180,
+          height: 18,
+          fontSize: 18,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(readableThemeValidation.valid, true);
+  assert.equal(
+    (readableThemeValidation.warnings as string[]).some((warning) =>
+      warning.includes("contrast"),
+    ),
+    false,
+    "DashboardSpec validation should not warn about readable theme colors",
+  );
+
+  const lowContrastSingleTextValidation = validateDashboardSpec({
+    logicalId: "low_contrast_single_text_dashboard",
+    components: [
+      {
+        componentName: "SingleText",
+        logicalId: "low_contrast_single_text",
+        textContent: "局部文字对比度检查",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 24,
+          width: 220,
+          height: 16,
+          fontSize: 16,
+          color: "#777777",
+          backgroundColor: "#888888",
+        },
+      },
+      {
+        componentName: "SingleText",
+        logicalId: "acceptable_large_text",
+        textContent: "大字号文字",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 64,
+          width: 180,
+          height: 20,
+          fontSize: 20,
+          fontWeight: "bold",
+          color: "#8A8A8A",
+          backgroundColor: "#FFFFFF",
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(lowContrastSingleTextValidation.valid, true);
+  assert.ok(
+    (lowContrastSingleTextValidation.warnings as string[]).some((warning) =>
+      warning.includes("components[0] SingleText contrast"),
+    ),
+    "DashboardSpec validation should warn about low-contrast SingleText colors",
+  );
+  assert.equal(
+    (lowContrastSingleTextValidation.warnings as string[]).some((warning) =>
+      warning.includes("components[1] SingleText contrast"),
+    ),
+    false,
+    "DashboardSpec validation should use the lower WCAG threshold for large text",
+  );
+
+  const crampedSingleTextValidation = validateDashboardSpec({
+    logicalId: "cramped_single_text_dashboard",
+    components: [
+      {
+        componentName: "SingleText",
+        logicalId: "cramped_single_text",
+        textContent: "设备综合运行状态存在异常需要立即处理",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 24,
+          width: 96,
+          height: 18,
+          fontSize: 18,
+          lineHeight: 1,
+        },
+      },
+      {
+        componentName: "SingleText",
+        logicalId: "fitting_single_text",
+        textContent: "运行正常",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 64,
+          width: 120,
+          height: 18,
+          fontSize: 18,
+          lineHeight: 1,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(crampedSingleTextValidation.valid, true);
+  assert.ok(
+    (crampedSingleTextValidation.warnings as string[]).some((warning) =>
+      warning.includes("components[0] SingleText content needs about") &&
+      warning.includes("text may overflow or be clipped"),
+    ),
+    "DashboardSpec validation should warn when SingleText content cannot fit its declared box",
+  );
+  assert.equal(
+    (crampedSingleTextValidation.warnings as string[]).some((warning) =>
+      warning.includes("components[1] SingleText content needs about"),
+    ),
+    false,
+    "DashboardSpec validation should not warn when SingleText content fits its declared box",
   );
   const missingChartDataValidation = validateDashboardSpec({
     logicalId: "missing_chart_data_dashboard",
