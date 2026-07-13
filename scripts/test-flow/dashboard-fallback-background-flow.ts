@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateDashboardSchema } from "../../src/core/dashboard.js";
 import type { JsonObject } from "../../src/types/component.js";
-import { flattenEditorNodes, hasPropName } from "./helpers.js";
+import { flattenEditorNodes, hasPropName, nodeProps } from "./helpers.js";
 
 export function runDashboardFallbackBackgroundTests(): void {
   const fallbackBackgroundDashboardSpec = {
@@ -107,6 +107,13 @@ export function runDashboardFallbackBackgroundTests(): void {
     fallbackBackgroundNodes.some((item) => hasPropName(item, "模块背景")),
     "DashboardSpec compiler should add a real background carrier for bare modules",
   );
+  const fallbackBackgroundStyles = fallbackBackgroundNodes
+    .filter((item) => hasPropName(item, "全屏背景") || hasPropName(item, "分组背景") || hasPropName(item, "模块背景"))
+    .map((item) => nodeProps(item).style as JsonObject);
+  assert.ok(
+    fallbackBackgroundStyles.every((style) => style.zIndex === 0),
+    "DashboardSpec fallback backgrounds should keep zIndex zero so renderer grouping cannot raise them above content",
+  );
   const fallbackRootBackgroundGroup = fallbackBackgroundTree.children.at(-1);
   assert.equal(
     fallbackRootBackgroundGroup?.title,
@@ -122,6 +129,56 @@ export function runDashboardFallbackBackgroundTests(): void {
     fallbackBareModule.children.at(-1)?.title,
     "背景",
     "DashboardSpec fallback module background should be in the module background group",
+  );
+
+  const explicitSvgBackgroundTree = generateDashboardSchema({
+    logicalId: "explicit_svg_background_dashboard",
+    title: "显式 SVG 背景大屏",
+    canvas: { width: 1280, height: 720 },
+    components: [
+      {
+        componentName: "SvgDecoration",
+        logicalId: "explicit_fullscreen_background",
+        name: "全屏背景",
+        svgSource: "custom",
+        svgContent:
+          '<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg"><rect width="1280" height="720" fill="#04111F"/></svg>',
+        style: {
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: 1280,
+          height: 720,
+        },
+      },
+      {
+        componentName: "SingleText",
+        logicalId: "explicit_background_title",
+        name: "主标题",
+        textContent: "显式 SVG 背景大屏",
+        style: {
+          position: "absolute",
+          left: 420,
+          top: 24,
+          width: 440,
+          height: 32,
+          fontSize: 32,
+          lineHeight: 1,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(
+    explicitSvgBackgroundTree.children.at(-1)?.title,
+    "全屏背景",
+    "explicit full-screen SvgDecoration background should be moved to the bottom layer",
+  );
+  assert.equal(
+    flattenEditorNodes(explicitSvgBackgroundTree as unknown as JsonObject)
+      .filter((item) => hasPropName(item, "全屏背景"))
+      .length,
+    1,
+    "explicit full-screen SvgDecoration background should suppress the fallback background",
   );
 
   const bimReservedAreaDashboardSpec = {

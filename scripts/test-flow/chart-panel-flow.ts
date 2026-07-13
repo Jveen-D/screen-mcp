@@ -330,6 +330,60 @@ export function runChartPanelFlowTests(): ChartPanelFlowFixtures {
     "direct manual ChartPanel generation should reject missing auxiliary business text",
   );
 
+  const flatSlotSchemas = generateModuleSchema({
+    ...chartPanelInput,
+    layoutMode: "manual",
+    logicalId: "manual_panel_flat_slot_props",
+    slots: {
+      mainChart: {
+        componentName: "PieChart",
+        chartData: {
+          constant: {
+            data: [
+              { name: "分类A", type: "分类", value: 58 },
+              { name: "分类B", type: "分类", value: 42 },
+            ],
+          },
+        },
+      },
+      auxiliaryTexts: [
+        {
+          componentName: "SingleText",
+          textContent: "分类A贡献 58%，当前保持领先",
+        },
+      ],
+    },
+  } satisfies JsonObject);
+  assert.ok(
+    flatSlotSchemas.some(
+      (item) => item.componentName === "SingleText" &&
+        item.props.textContent === "分类A贡献 58%，当前保持领先",
+    ),
+    "manual ChartPanel should accept flat slot props and preserve real auxiliary text",
+  );
+
+  assert.throws(
+    () =>
+      generateModuleSchema({
+        ...chartPanelInput,
+        layoutMode: "manual",
+        logicalId: "manual_panel_non_text_auxiliary",
+        slots: {
+          ...(chartPanelInput.slots as JsonObject),
+          auxiliaryTexts: [
+            {
+              componentName: "SvgDecoration",
+              props: {
+                svgContent: '<svg xmlns="http://www.w3.org/2000/svg"/>',
+              },
+            },
+          ],
+        },
+      } satisfies JsonObject),
+    /manual ChartPanel must include slots\.auxiliaryTexts/,
+    "manual ChartPanel should require auxiliary business text rather than any slot component",
+  );
+
   const noResourcePanelInput = {
     ...chartPanelInput,
     logicalId: "no_resource_panel",

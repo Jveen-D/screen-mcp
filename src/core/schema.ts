@@ -394,8 +394,23 @@ export function sortComponentSchemas(schemas: ComponentSchema[]): ComponentSchem
   });
 }
 
+const BACKGROUND_EDITOR_NODE_TITLE_PATTERN =
+  /背景|底板|底座|底图|面板边框|模块边框|卡组边框|边框|background|backdrop|panel[-_ ]?(?:bg|frame)/i;
+
+function editorNodeTitle(node: EditorTreeNode): string {
+  if (typeof node.title === "string" && node.title.trim() !== "") {
+    return node.title;
+  }
+
+  return isJsonObject(node.props) && typeof node.props.name === "string"
+    ? node.props.name
+    : "";
+}
+
 function isBottomLayerEditorNode(node: EditorTreeNode): boolean {
   return node.componentName === "SingleImage" ||
+    (node.componentName === "SvgDecoration" &&
+      BACKGROUND_EDITOR_NODE_TITLE_PATTERN.test(editorNodeTitle(node))) ||
     (node.componentName === "__Group__" && node.title === "背景");
 }
 

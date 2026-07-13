@@ -154,10 +154,27 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
             option: {
               grid: {
                 left: 58,
-                top: 76,
+                top: 30,
                 right: 28,
                 bottom: 38,
               },
+              legend: {
+                show: false,
+              },
+            },
+          },
+          {
+            componentName: "SingleText",
+            logicalId: "guarded_trend_insight",
+            textContent: "当前阶段运行平稳",
+            style: {
+              position: "absolute",
+              left: 390,
+              top: 140,
+              width: 210,
+              height: 16,
+              fontSize: 14,
+              lineHeight: 1,
             },
           },
           {
@@ -202,6 +219,12 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
   const guardedChart = guardedNodes.find((item) => item.componentName === "BarChart");
   const guardedChartOption = nodeProps(guardedChart).option as JsonObject;
   const guardedChartGrid = guardedChartOption.grid as JsonObject;
+  assert.ok(
+    typeof guardedChartGrid.top === "number" &&
+      guardedChartGrid.top >= 66 &&
+      guardedChartGrid.top < 90,
+    `DashboardSpec should reserve only the measured top text space instead of a large fixed grid gap; received ${String(guardedChartGrid.top)}`,
+  );
   assert.ok(
     typeof guardedChartGrid.bottom === "number" && guardedChartGrid.bottom >= 74,
     "DashboardSpec should reserve cartesian grid bottom space for same-group bottom text",
@@ -303,7 +326,7 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
             style: {
               position: "absolute",
               left: 112,
-              top: 368,
+              top: 356,
               width: 220,
               height: 14,
               fontSize: 14,
@@ -484,8 +507,8 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
   const circularChartOption = nodeProps(circularChart).option as JsonObject;
   const circularLegend = circularChartOption.legend as JsonObject;
   assert.ok(
-    (circularLegend.offsetY as number) <= -24,
-    "DashboardSpec should lift circular bottom legends when a bottom conclusion is present",
+    (circularLegend.offsetY as number) <= -32,
+    "DashboardSpec should keep the circular bottom legend at least eight pixels above the conclusion text",
   );
   const circularSeries = (circularChartOption.series as JsonObject[])[0] as JsonObject;
   const circularRadius = circularSeries.radius as string[];

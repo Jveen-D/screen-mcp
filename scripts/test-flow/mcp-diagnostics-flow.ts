@@ -14,7 +14,11 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-07-12.02-objective-ui-quality",
+    "2026-07-12.03-chartpanel-slot-contract",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("chartpanel-flat-slot-props-compatibility"),
+    "diagnostics should expose ChartPanel flat slot props compatibility fingerprint",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("complete-schema-response-contract"),

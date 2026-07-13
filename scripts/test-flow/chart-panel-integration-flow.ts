@@ -134,7 +134,7 @@ export function runChartPanelIntegrationTests(): void {
             },
           },
           option: {
-            grid: { left: 40, top: 50, bottom: 40, right: 30 },
+            grid: { left: 40, top: 50, bottom: 40, right: 90 },
             tooltip: { formatter: "{b}<br/>指标值：{c}" },
             xAxis: { type: "category", data: ["Q1", "Q2", "Q3", "Q4"] },
             yAxis: { type: "value", name: "指标值", min: 0, max: 300, nameTextStyle: { color: "#BDEEFF" } },
@@ -211,6 +211,15 @@ export function runChartPanelIntegrationTests(): void {
     "LineChart markLine should be preserved",
   );
   assert.equal((lineMainChartOption.tooltip as JsonObject)?.formatter, "{b}<br/>指标值：{c}", "LineChart tooltip formatter should be preserved");
+  const lineGrid = lineMainChartOption.grid as JsonObject;
+  assert.equal(lineGrid.top, 72, "cartesian ChartPanel should use a compact title-safe grid.top");
+  assert.equal(lineGrid.left, 40, "cartesian ChartPanel should preserve an explicit grid.left");
+  assert.equal(lineGrid.bottom, 40, "cartesian ChartPanel should preserve an explicit grid.bottom");
+  assert.equal(
+    lineGrid.right,
+    90,
+    "cartesian ChartPanel should preserve an explicit grid.right",
+  );
   const lineModuleTree = generateModuleTreeSchema(lineChartPanelInput);
   assert.equal(lineModuleTree.componentName, "__Group__");
   assert.ok(

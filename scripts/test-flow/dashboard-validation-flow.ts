@@ -45,6 +45,51 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     ),
     "DashboardSpec validation should reject manual ChartPanel modules without auxiliary business text",
   );
+  const emptyAuxiliaryTextValidation = validateDashboardSpec({
+    logicalId: "empty_auxiliary_text_dashboard",
+    modules: [
+      {
+        moduleName: "ChartPanel",
+        logicalId: "empty_auxiliary_panel",
+        title: "空辅助文本面板",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 80,
+          width: 420,
+          height: 280,
+        },
+        slots: {
+          mainChart: {
+            componentName: "LineChart",
+            props: {
+              chartData: {
+                constant: {
+                  data: [
+                    { name: "一月", type: "指标值", value: 42 },
+                    { name: "二月", type: "指标值", value: 58 },
+                  ],
+                },
+              },
+            },
+          },
+          auxiliaryTexts: [
+            {
+              componentName: "SingleText",
+              props: {},
+            },
+          ],
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(emptyAuxiliaryTextValidation.valid, false);
+  assert.ok(
+    (emptyAuxiliaryTextValidation.errors as string[]).some((error) =>
+      error.includes("slots.auxiliaryTexts"),
+    ),
+    "DashboardSpec validation should reject auxiliary SingleText slots without real business copy",
+  );
   const invalidGroupingValidation = validateDashboardSpec({
     ...dashboardSpec,
     grouping: { mode: "template" },

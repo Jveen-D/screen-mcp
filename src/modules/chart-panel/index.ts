@@ -186,8 +186,16 @@ function asSlotArray(value: JsonValue | undefined, slotName: string): ModuleSlot
 }
 
 function slotProps(slot: ModuleSlotInput | undefined): JsonObject {
-  const props = slot?.props;
-  return isJsonObject(props) ? props : {};
+  if (!slot) {
+    return {};
+  }
+
+  if (isJsonObject(slot.props)) {
+    return slot.props;
+  }
+
+  const { componentName: _componentName, props: _props, ...flatProps } = slot;
+  return flatProps as JsonObject;
 }
 
 function textColor(theme: JsonObject): string {
@@ -999,7 +1007,7 @@ function isPlaceholderText(value: string): boolean {
 
 function hasUsableAuxiliaryText(slot: ModuleSlotInput): boolean {
   if (slot.componentName !== "SingleText") {
-    return true;
+    return false;
   }
 
   const props = slotProps(slot);
@@ -1320,6 +1328,12 @@ function createMainChartProps(
     const dataCount = layoutRows?.length ?? 1;
     const plotWidth = Math.max(chartWidth - 30 - 40, 100);
     const idealBarWidth = Math.min(Math.max(Math.round((plotWidth / dataCount) * 0.25), 12), 24);
+    const defaultGrid = {
+      left: safeArea.left + 30,
+      top: TITLE_SAFE_HEIGHT,
+      bottom: safeArea.bottom + (isBarProgress ? 16 : (safeArea.height < 280 ? 28 : 40)),
+      right: safeArea.right + 40,
+    };
 
     const normalizedSeries = inputSeries.map((s) => {
       if (!isJsonObject(s)) {
@@ -1457,11 +1471,9 @@ function createMainChartProps(
         color: defaultColors,
         ...option,
         grid: {
-          left: safeArea.left + 30,
-          top: safeArea.top + (isBarProgress ? 24 : (safeArea.height < 280 ? 40 : 56)),
-          bottom: safeArea.bottom + (isBarProgress ? 16 : (safeArea.height < 280 ? 28 : 40)),
-          right: safeArea.right + 40,
+          ...defaultGrid,
           ...inputGrid,
+          top: Math.max(asFiniteNumber(inputGrid.top) ?? defaultGrid.top, TITLE_SAFE_HEIGHT),
         },
         legend: {
           show: true,

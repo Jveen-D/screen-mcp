@@ -126,7 +126,7 @@ function backgroundCarrierComponent(
       width: rect.width,
       height: rect.height,
       backgroundColor: "rgba(0,0,0,0)",
-      zIndex: fullScreen ? 0 : 10,
+      zIndex: 0,
     },
   };
 }
@@ -1023,15 +1023,11 @@ function circularChartLegend(node: EditorTreeNode): JsonObject | undefined {
 
 function reserveCircularBottomLegendSpace(root: EditorTreeNode, containerRect: Rect): void {
   const leaves = collectLeafNodes(root);
-  const bottomTextExists = leaves.some((node) => {
-    if (node.componentName !== "SingleText" || isTitleNode(node)) {
-      return false;
-    }
-
-    const rect = nodeRect(node);
-    return Boolean(rect && isBottomTextRect(rect, containerRect));
-  });
-  if (!bottomTextExists) {
+  const bottomTexts = leaves
+    .filter((node) => node.componentName === "SingleText" && !isTitleNode(node))
+    .map((node) => nodeRect(node))
+    .filter((rect): rect is Rect => Boolean(rect && isBottomTextRect(rect, containerRect)));
+  if (bottomTexts.length === 0) {
     return;
   }
 
@@ -1046,7 +1042,17 @@ function reserveCircularBottomLegendSpace(root: EditorTreeNode, containerRect: R
       continue;
     }
 
-    const safeOffsetY = -Math.round(Math.min(34, Math.max(24, chartRect.height * 0.08)));
+    const overlappingBottomTexts = bottomTexts.filter((rect) =>
+      horizontallyOverlap(rect, chartRect),
+    );
+    if (overlappingBottomTexts.length === 0) {
+      continue;
+    }
+
+    const firstBottomTextTop = Math.min(...overlappingBottomTexts.map((rect) => rect.top));
+    const safeOffsetY = Math.floor(
+      firstBottomTextTop - (chartRect.top + chartRect.height) - 8,
+    );
     legend.offsetY = Math.min(asFiniteNumber(legend.offsetY) ?? 0, safeOffsetY);
   }
 }
@@ -1223,13 +1229,12 @@ function approximateTopLegendRect(node: EditorTreeNode, chartRect: Rect, legend:
 function reserveTopTextLegendSpace(root: EditorTreeNode, containerRect: Rect): void {
   const leaves = collectLeafNodes(root);
   const topTexts = leaves
-    .filter((node) => node.componentName === "SingleText" && !isTitleNode(node))
+    .filter((node) => node.componentName === "SingleText")
     .map((node) => ({ node, rect: nodeRect(node) }))
     .filter((item): item is { node: EditorTreeNode; rect: Rect } =>
       Boolean(
         item.rect &&
-        item.rect.top <= containerRect.top + Math.max(64, containerRect.height * 0.18) &&
-        item.rect.left >= containerRect.left + containerRect.width * 0.45,
+        item.rect.top < containerRect.top + Math.max(72, containerRect.height * 0.22),
       ),
     );
 
@@ -1239,40 +1244,62 @@ function reserveTopTextLegendSpace(root: EditorTreeNode, containerRect: Rect): v
 
   for (const chart of leaves) {
     const grid = nodeOptionGrid(chart);
-    const legend = nodeOptionLegend(chart);
     const chartRect = nodeRect(chart);
-    if (!grid || !legend || !chartRect || legend.show === false || legend.top !== "top") {
+    if (!grid || !chartRect) {
       continue;
     }
 
-    const legendRect = approximateTopLegendRect(chart, chartRect, legend);
-    if (!legendRect) {
-      continue;
-    }
-
-    const overlappingTopTexts = topTexts.filter(({ rect }) =>
+    const chartTopTexts = topTexts.filter(({ rect }) =>
       horizontallyOverlap(rect, chartRect) &&
-      rect.top < chartRect.top + Math.max(72, chartRect.height * 0.22) &&
-      rectsOverlap(rect, {
-        ...legendRect,
-        left: legendRect.left - 8,
-        top: legendRect.top - 4,
-        width: legendRect.width + 16,
-        height: legendRect.height + 8,
-      }),
+      rect.top + rect.height > chartRect.top &&
+      rect.top < chartRect.top + Math.max(72, chartRect.height * 0.22),
     );
-    if (overlappingTopTexts.length === 0) {
+    if (chartTopTexts.length === 0) {
       continue;
     }
 
-    const requiredOffsetY = Math.max(
+    const requiredTextOffsetY = Math.max(
       0,
-      ...overlappingTopTexts.map(({ rect }) =>
+      ...chartTopTexts.map(({ rect }) =>
         Math.ceil(rect.top + rect.height - chartRect.top + 8),
       ),
     );
-    legend.offsetY = Math.max(asFiniteNumber(legend.offsetY) ?? 0, requiredOffsetY);
-    grid.top = Math.max(asFiniteNumber(grid.top) ?? 0, requiredOffsetY + 34);
+    let requiredGridTop = requiredTextOffsetY;
+
+    const legend = nodeOptionLegend(chart);
+    const legendRect = legend
+      ? approximateTopLegendRect(chart, chartRect, legend)
+      : undefined;
+    if (legend && legendRect) {
+      const overlappingTopTexts = chartTopTexts.filter(({ rect }) =>
+        rectsOverlap(rect, {
+          ...legendRect,
+          left: legendRect.left - 8,
+          top: legendRect.top - 4,
+          width: legendRect.width + 16,
+          height: legendRect.height + 8,
+        }),
+      );
+      if (overlappingTopTexts.length > 0) {
+        const requiredLegendOffsetY = Math.max(
+          0,
+          ...overlappingTopTexts.map(({ rect }) =>
+            Math.ceil(rect.top + rect.height - chartRect.top + 8),
+          ),
+        );
+        legend.offsetY = Math.max(
+          asFiniteNumber(legend.offsetY) ?? 0,
+          requiredLegendOffsetY,
+        );
+      }
+
+      requiredGridTop = Math.max(
+        requiredGridTop,
+        (asFiniteNumber(legend.offsetY) ?? 0) + legendRect.height + 12,
+      );
+    }
+
+    grid.top = Math.max(asFiniteNumber(grid.top) ?? 0, requiredGridTop);
   }
 }
 
@@ -2641,7 +2668,14 @@ function validateGroupingMode(
 
 function hasAuxiliaryTextSlots(slots: JsonObject): boolean {
   const auxiliaryTexts = slots.auxiliaryTexts;
-  return Array.isArray(auxiliaryTexts) && auxiliaryTexts.some(isJsonObject);
+  return Array.isArray(auxiliaryTexts) && auxiliaryTexts.some((item) => {
+    if (!isJsonObject(item) || componentNameOf(item) !== "SingleText") {
+      return false;
+    }
+
+    const textContent = textContentOf(item);
+    return typeof textContent === "string" && !isPlaceholderText(textContent);
+  });
 }
 
 export function validateDashboardSpec(input: JsonObject): JsonObject {
