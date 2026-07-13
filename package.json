@@ -20,7 +20,7 @@
     "check": "npm run build && npm run test:flow && npm run check:docs && npm run check:rules"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.25.28"
   },
   "devDependencies": {

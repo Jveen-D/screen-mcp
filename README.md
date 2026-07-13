@@ -63,7 +63,9 @@ Server 使用官方 `@modelcontextprotocol/sdk`，默认通过 stdio transport �
 npm run dev:http
 ```
 
-默认运行在 `http://localhost:3460`，SSE 端点为 `http://localhost:3460/sse`。
+默认运行在 `http://localhost:3460`，Streamable HTTP 端点为 `http://localhost:3460/mcp`。
+
+部署到容器或反向代理后时，设置 `HOST=0.0.0.0`，并通过逗号分隔的 `MCP_ALLOWED_HOSTS` 配置允许访问的域名（不含端口），例如 `MCP_ALLOWED_HOSTS=platform.example.com`。生产环境应由网关提供 HTTPS、身份认证和访问控制，不要直接将未鉴权的 MCP 端口暴露到公网。
 
 Agent 配置示例：
 
@@ -72,8 +74,8 @@ Agent 配置示例：
   "mcpServers": {
     "screen-mcp": {
       "name": "screen-component-mcp",
-      "transport": "sse",
-      "url": "http://localhost:3460/sse"
+      "transport": "streamable-http",
+      "url": "http://localhost:3460/mcp"
     }
   }
 }
