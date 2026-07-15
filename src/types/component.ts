@@ -66,4 +66,40 @@ export interface EditorGroupNode {
   children: EditorTreeNode[];
 }
 
-export type EditorTreeNode = EditorComponentNode | EditorGroupNode;
+export interface EditorMasterNode {
+  id: string;
+  componentName: "Master";
+  structVersion: "0.0.0";
+  props: JsonObject;
+  title: string;
+  isHidden: boolean;
+  isLocked: boolean;
+  isGroup?: false;
+  children?: EditorTreeNode[];
+}
+
+export type EditorTreeNode = EditorComponentNode | EditorGroupNode | EditorMasterNode;
+
+export interface EditorRootPageNode {
+  id: string;
+  componentName: "NormalRootPage";
+  structVersion: "0.0.0";
+  props: JsonObject;
+  title: string;
+  isHidden: boolean;
+  isLocked: boolean;
+  children: EditorTreeNode[];
+}
+
+export interface EditorDocumentSchema {
+  id: string;
+  name: string;
+  rootNode: EditorRootPageNode;
+}
+
+export interface EditorProjectSchema {
+  name: string;
+  version: "0.0.2";
+  structVersion: "0.0.2";
+  documents: EditorDocumentSchema[];
+}

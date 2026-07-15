@@ -78,6 +78,18 @@
 - Mode: writes schema output
 - Description: Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, explicit component groups, chart choices, layout coordinates, copy, backgrounds, decorations, edge-padding accents, optional grouping, and optional BIM/model reservedAreas before calling this tool. DashboardSpec.groups can wrap LLM-declared related components, but each explicit group must include complete absolute style left/top/width/height; DashboardSpec.grouping is inherited by groups/modules that do not define their own grouping. DashboardSpec.reservedAreas with purpose/type/kind 'bim-model' are compile-time constraints only: they are validated for overlap, suppress automatic full-canvas background fallback, and are not emitted into the final schema. This tool compiles and validates the spec, rejects empty SvgDecoration placeholders, placeholder text, missing/demo chart data, and manual ChartPanel modules without auxiliaryTexts, warns about objective contrast, SingleText fit, and empty edge-padding issues, strips compile-time theme from output props, adds real SvgDecoration background carriers for bare groups/modules and bare canvas when no BIM/model reserved area exists, and does not infer a full-screen layout from a prompt or apply a fixed dashboard template.
 
+### `validate_dashboard_project_spec`
+
+- Title: Validate Dashboard Project Spec
+- Mode: read-only
+- Description: Validate a LLM-authored multi-page DashboardProjectSpec. Reusable master designs belong in masters; normal screens belong in pages and reference masters by masterLogicalIds. Rejects duplicate document logicalIds, duplicate or unknown master references, masters referencing other masters, invalid nested DashboardSpecs, and pages with neither own content nor a master.
+
+### `generate_dashboard_project_schema`
+
+- Title: Generate Dashboard Project Schema
+- Mode: writes schema output
+- Description: Compile a complete LLM-authored DashboardProjectSpec into an editor-ready project schema with documents. Each masters item becomes an independent pageType='master' document; each pages item becomes a pageType='page' document whose masterLogicalIds compile to Master reference nodes using the exact master document ids. Automatic full-canvas backgrounds are suppressed for masters and pages using masters so inherited layers cannot cover each other; author an explicit background component when needed. Normal pages are emitted first, and existing single-dashboard generation remains unchanged.
+
 ## Legacy compatibility
 
 ### `generate_full_screen_from_prompt`

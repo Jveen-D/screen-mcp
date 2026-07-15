@@ -11,4 +11,5 @@ export interface McpToolContext {
   chartPanelInput: JsonObject;
   freeformModuleInput: JsonObject;
   dashboardSpec: JsonObject;
+  dashboardProjectSpec: JsonObject;
 }

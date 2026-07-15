@@ -6,6 +6,7 @@ import type { McpToolContext } from "./mcp-tool-context.js";
 export async function runMcpDashboardToolTests({
   client,
   dashboardSpec,
+  dashboardProjectSpec,
 }: McpToolContext): Promise<void> {
   const dashboardValidationResult = await client.callTool({
     name: "validate_dashboard_spec",
@@ -49,5 +50,39 @@ export async function runMcpDashboardToolTests({
   assert.ok(
     toolDashboardNodes.some((item) => hasPropName(item, "AI自定义标题线")),
     "DashboardSpec MCP compiler should preserve LLM-authored decorations",
+  );
+
+  const projectValidationResult = await client.callTool({
+    name: "validate_dashboard_project_spec",
+    arguments: dashboardProjectSpec,
+  });
+  assert.equal(projectValidationResult.isError, undefined);
+  const toolProjectValidation = readToolJson(projectValidationResult);
+  assert.equal(toolProjectValidation.valid, true);
+  assert.deepEqual(toolProjectValidation.errors, []);
+
+  const projectSchemaResult = await client.callTool({
+    name: "generate_dashboard_project_schema",
+    arguments: dashboardProjectSpec,
+  });
+  assert.equal(projectSchemaResult.isError, undefined);
+  const toolProjectSchema = readToolJson(projectSchemaResult);
+  assert.ok(Array.isArray(toolProjectSchema.documents));
+  assert.equal(toolProjectSchema.documents.length, 4);
+  const masterDocument = toolProjectSchema.documents.find(
+    (document: JsonObject) =>
+      ((document.rootNode as JsonObject).props as JsonObject).pageType === "master",
+  ) as JsonObject | undefined;
+  assert.ok(masterDocument, "project schema MCP compiler should emit a master document");
+  const normalPage = toolProjectSchema.documents.find(
+    (document: JsonObject) =>
+      ((document.rootNode as JsonObject).props as JsonObject).pageTitle === "运营总览",
+  ) as JsonObject | undefined;
+  assert.ok(normalPage);
+  assert.ok(
+    ((normalPage.rootNode as JsonObject).children as JsonObject[]).some(
+      (node) => node.componentName === "Master" && node.id === masterDocument.id,
+    ),
+    "project schema MCP compiler should link normal pages to master documents",
   );
 }

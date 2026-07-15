@@ -19,7 +19,7 @@
 
 此区块由 `npm run docs:generate` 生成，请不要手写维护。
 
-当前 MCP 工具：12 个。
+当前 MCP 工具：14 个。
 当前内置组件：53 个。
 当前内置模块：2 个。
 
@@ -299,6 +299,90 @@ DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真�
 }
 ```
 
+## 母版与多页面项目
+
+单个页面仍使用 `DashboardSpec -> generate_dashboard_schema`。当一次设计需要生成多个页面并共享母版时，使用 `DashboardProjectSpec`：
+
+1. LLM 在 `masters` 中设计可复用的母版内容，每个母版都是完整的 DashboardSpec 内容区域。
+2. LLM 在 `pages` 中设计普通页面，并通过 `masterLogicalIds` 引用一个或多个母版的 `logicalId`。
+3. 可选调用 `validate_dashboard_project_spec` 检查重复文档 ID、悬空/重复母版引用和各页面内部的 DashboardSpec。
+4. 调用 `generate_dashboard_project_schema` 编译完整项目 schema。结果包含 `documents`，可由编辑器作为项目直接导入。
+
+项目级 `canvas`、`theme` 和 `grouping` 会被未单独声明这些字段的母版或页面继承。MCP 只执行继承、校验和 schema 编译，不决定母版应包含什么视觉内容。
+
+```json
+{
+  "logicalId": "operations_project",
+  "title": "运营多页面大屏",
+  "canvas": { "width": 1920, "height": 1080 },
+  "theme": {
+    "background": "#071522",
+    "primaryColor": "#23D5E8",
+    "textColor": "#EAFBFF"
+  },
+  "masters": [
+    {
+      "logicalId": "shared_chrome",
+      "title": "共用头部母版",
+      "components": [
+        {
+          "componentName": "SingleText",
+          "logicalId": "shared_title",
+          "textContent": "运营指挥中心",
+          "style": {
+            "position": "absolute",
+            "left": 48,
+            "top": 24,
+            "width": 420,
+            "height": 32,
+            "fontSize": 32,
+            "lineHeight": 1
+          }
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "logicalId": "overview_page",
+      "title": "运营总览",
+      "masterLogicalIds": ["shared_chrome"],
+      "components": [
+        {
+          "componentName": "SingleText",
+          "logicalId": "overview_metric",
+          "textContent": "今日处理 128 项",
+          "style": {
+            "position": "absolute",
+            "left": 48,
+            "top": 128,
+            "width": 260,
+            "height": 24,
+            "fontSize": 24,
+            "lineHeight": 1
+          }
+        }
+      ]
+    },
+    {
+      "logicalId": "detail_page",
+      "title": "运营明细",
+      "masterLogicalIds": ["shared_chrome"]
+    }
+  ]
+}
+```
+
+编译结果遵循编辑器的母版协议：
+
+- 每个 `masters` 项编译为独立的 `pageType: "master"` document。
+- 每个 `pages` 项编译为 `pageType: "page"` document。
+- `masterLogicalIds` 编译为普通页根节点下的 `Master` 引用节点，其 ID 精确等于对应母版 document ID。
+- 普通页面排在 `documents` 前部，避免编辑器默认打开母版。
+- 页面可以只引用母版而没有自己的组件；母版不能再引用其他母版。
+- 页面自身内容排在 `Master` 引用之前，确保页面内容渲染在母版内容上方。
+- 母版和已引用母版的页面不会自动补全屏背景，避免多层母版互相遮挡；需要背景时由 LLM 显式设计真实背景组件。
+
 `generate_full_screen_from_prompt` 已禁用生产生成用途，因为 prompt-only 整屏生成容易回到固定模板复用。需要整屏时请先由 LLM 生成 DashboardSpec，再调用 `generate_dashboard_schema`。
 
 ## 验证流程
@@ -324,6 +408,7 @@ npm run check
 - 使用 `generate_module_schema` 生成完整图表面板和自由模块 schema 数组
 - 使用 `grouping.singleChildGroup` 生成单组件语义分组
 - 使用 `validate_dashboard_spec` / `generate_dashboard_schema` 走通整屏编译流程
+- 使用 `validate_dashboard_project_spec` / `generate_dashboard_project_schema` 生成独立母版文档和普通页 `Master` 引用
 - `generate_full_screen_from_prompt` 保持禁用，避免 prompt-only 固定模板生成
 - `chartData.sourceType` 仍然是 `constant`
 - `option.series[0].type` 仍然是 `pie`

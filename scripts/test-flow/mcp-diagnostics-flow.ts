@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { RULES_VERSION } from "../../src/mcp/screenServer.js";
 import type { JsonObject } from "../../src/types/component.js";
 import { readToolJson } from "./helpers.js";
 import type { McpToolContext } from "./mcp-tool-context.js";
@@ -14,7 +15,7 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.equal(diagnostics.serverVersion, "0.1.0");
   assert.equal(
     diagnostics.rulesVersion,
-    "2026-07-12.03-chartpanel-slot-contract",
+    RULES_VERSION,
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("chartpanel-flat-slot-props-compatibility"),
@@ -383,6 +384,12 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-single-text-overflow-warning"),
     "diagnostics should expose SingleText overflow warning fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-project-master-documents") &&
+      (diagnostics.rulesFingerprint as string[]).includes("dashboard-page-master-references") &&
+      (diagnostics.rulesFingerprint as string[]).includes("dashboard-master-reference-validation"),
+    "diagnostics should expose dashboard project master support fingerprints",
   );
   assert.equal(
     typeof (diagnostics.process as JsonObject).pid,

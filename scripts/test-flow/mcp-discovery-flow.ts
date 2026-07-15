@@ -55,11 +55,22 @@ export async function runMcpDiscoveryTests({ client }: McpToolContext): Promise<
     tools.tools.some((tool) => tool.name === "generate_dashboard_schema"),
     "MCP server should expose DashboardSpec compiler",
   );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "validate_dashboard_project_spec"),
+    "MCP server should expose project and master validation",
+  );
+  assert.ok(
+    tools.tools.some((tool) => tool.name === "generate_dashboard_project_schema"),
+    "MCP server should expose project and master compilation",
+  );
   const serverInstructions = client.getInstructions();
   assert.ok(
     serverInstructions?.includes("LLM owns design decisions") &&
       serverInstructions.includes("DashboardSpec") &&
       serverInstructions.includes("generate_dashboard_schema") &&
+      serverInstructions.includes("generate_dashboard_project_schema") &&
+      serverInstructions.includes("masters") &&
+      serverInstructions.includes("masterLogicalIds") &&
       serverInstructions.includes("FreeformModule") &&
       serverInstructions.includes("grouping.singleChildGroup"),
     "MCP server instructions should steer full dashboards through LLM-authored DashboardSpec",

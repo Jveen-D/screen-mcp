@@ -25,15 +25,19 @@ import {
   generateDashboardSchema,
   validateDashboardSpec,
 } from "../core/dashboard.js";
+import {
+  generateDashboardProjectSchema,
+  validateDashboardProjectSpec,
+} from "../core/dashboardProject.js";
 import type { EditorTreeNode, JsonObject } from "../types/component.js";
 
 export const SERVER_VERSION = "0.1.0";
-export const RULES_VERSION = "2026-07-12.03-chartpanel-slot-contract";
+export const RULES_VERSION = "2026-07-15.01-dashboard-master-pages";
 
 const SERVER_STARTED_AT = new Date();
 
 export const SCREEN_MCP_INSTRUCTIONS =
-  "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. Use DashboardSpec.groups for LLM-declared related top-level component regions such as headers, KPI rows, and custom mixed panels; every DashboardSpec.groups item must declare a complete absolute style left/top/width/height and should not be used as an unpositioned bucket. Do not flatten many unrelated elements into DashboardSpec.components. Full-screen dashboards should treat left/right/bottom canvas padding as active visual space: add LLM-authored custom SvgDecoration edge rails, tick marks, scan lines, signal ticks, corner structures, or subtle texture accents when those bands would otherwise be empty, while keeping them below business content and above only the background. When the user explicitly asks for a BIM/model screen, the LLM may add DashboardSpec.reservedAreas with purpose/type/kind 'bim-model' and a complete absolute style to keep that model space empty; reservedAreas are compile-time constraints only, are not emitted into the final schema, and suppress only the automatic full-canvas background fallback. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; DashboardSpec and direct module generation for manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion. Module/grouping is common: set grouping.mode='semantic' and grouping.singleChildGroup=true when you want semantic sections grouped; earlier siblings render above later siblings, so main content must be above decorations/background and background groups must stay last. __Group__ is only an editor grouping container and is not a visual background; module root groups may carry style only for editor positioning. DashboardSpec child components should prefer canvas absolute coordinates; when a module/group child is clearly using local coordinates, generate_dashboard_schema offsets it to canvas coordinates for editor rendering. DashboardSpec compilation adds real SvgDecoration background carriers for the full canvas and bare groups/modules when no explicit BIM/model reserved area exists; bare groups/modules still receive background carriers. DashboardSpec and direct chart component generation must carry real chartData.constant.data, or supported ChartPanel dataItems, and SingleText must carry real textContent; do not rely on demo categories or placeholder copy. Reserve enough width and height for SingleText content and keep explicit text/background colors readable; validate_dashboard_spec reports objective contrast and text-fit warnings without replacing LLM-authored design choices. Theme is compile-time context and is stripped from final component props. SvgDecoration decorations should use LLM-authored custom svgContent unless a non-empty preset id is explicitly chosen; MCP does not fall back to a default preset icon and rejects empty decoration placeholders in DashboardSpec. Do not guess or select existing project asset paths; use imageSrc only when the user explicitly provides a path. Hard constraints: Indicator width should be at least 280px and text lineHeight should be 1; KPI labels should be explicit SingleText siblings and Indicator should focus on value/prefix/suffix, with DashboardSpec compilation externalizing real Indicator titleName as SingleText when needed; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.";
+  "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. Use DashboardSpec.groups for LLM-declared related top-level component regions such as headers, KPI rows, and custom mixed panels; every DashboardSpec.groups item must declare a complete absolute style left/top/width/height and should not be used as an unpositioned bucket. Do not flatten many unrelated elements into DashboardSpec.components. Full-screen dashboards should treat left/right/bottom canvas padding as active visual space: add LLM-authored custom SvgDecoration edge rails, tick marks, scan lines, signal ticks, corner structures, or subtle texture accents when those bands would otherwise be empty, while keeping them below business content and above only the background. When the user explicitly asks for a BIM/model screen, the LLM may add DashboardSpec.reservedAreas with purpose/type/kind 'bim-model' and a complete absolute style to keep that model space empty; reservedAreas are compile-time constraints only, are not emitted into the final schema, and suppress only the automatic full-canvas background fallback. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; DashboardSpec and direct module generation for manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion. Module/grouping is common: set grouping.mode='semantic' and grouping.singleChildGroup=true when you want semantic sections grouped; earlier siblings render above later siblings, so main content must be above decorations/background and background groups must stay last. __Group__ is only an editor grouping container and is not a visual background; module root groups may carry style only for editor positioning. DashboardSpec child components should prefer canvas absolute coordinates; when a module/group child is clearly using local coordinates, generate_dashboard_schema offsets it to canvas coordinates for editor rendering. DashboardSpec compilation adds real SvgDecoration background carriers for the full canvas and bare groups/modules when no explicit BIM/model reserved area exists; bare groups/modules still receive background carriers. DashboardSpec and direct chart component generation must carry real chartData.constant.data, or supported ChartPanel dataItems, and SingleText must carry real textContent; do not rely on demo categories or placeholder copy. Reserve enough width and height for SingleText content and keep explicit text/background colors readable; validate_dashboard_spec reports objective contrast and text-fit warnings without replacing LLM-authored design choices. Theme is compile-time context and is stripped from final component props. SvgDecoration decorations should use LLM-authored custom svgContent unless a non-empty preset id is explicitly chosen; MCP does not fall back to a default preset icon and rejects empty decoration placeholders in DashboardSpec. Do not guess or select existing project asset paths; use imageSrc only when the user explicitly provides a path. Hard constraints: Indicator width should be at least 280px and text lineHeight should be 1; KPI labels should be explicit SingleText siblings and Indicator should focus on value/prefix/suffix, with DashboardSpec compilation externalizing real Indicator titleName as SingleText when needed; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. For multi-page projects with shared masters, create a DashboardProjectSpec, put reusable LLM-authored designs in masters, put normal screens in pages, reference masters from each page with masterLogicalIds, call validate_dashboard_project_spec, then call generate_dashboard_project_schema. Master documents and pages using masters do not receive automatic full-canvas backgrounds, so the LLM must author explicit background components when needed. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.";
 
 export const RULES_FINGERPRINT = [
   "chartpanel-flat-slot-props-compatibility",
@@ -144,6 +148,9 @@ export const RULES_FINGERPRINT = [
   "dashboard-theme-contrast-warning",
   "dashboard-single-text-contrast-warning",
   "dashboard-single-text-overflow-warning",
+  "dashboard-project-master-documents",
+  "dashboard-page-master-references",
+  "dashboard-master-reference-validation",
 ] as const;
 
 export type ScreenToolCategory =
@@ -287,6 +294,29 @@ const dashboardSpecInput = z
     groups: z.array(z.record(z.unknown())).optional(),
     modules: z.array(z.record(z.unknown())).optional(),
     reservedAreas: z.array(z.record(z.unknown())).optional(),
+  })
+  .passthrough();
+
+const dashboardProjectDocumentInput = dashboardSpecInput.extend({
+  logicalId: z.string().min(1),
+  masterLogicalIds: z.array(z.string().min(1)).optional(),
+});
+
+const dashboardProjectSpecInput = z
+  .object({
+    logicalId: z.string().min(1).optional(),
+    title: z.string().min(1).optional(),
+    canvas: z
+      .object({
+        width: z.number().optional(),
+        height: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+    theme: z.record(z.unknown()).optional(),
+    grouping: z.record(z.unknown()).optional(),
+    masters: z.array(dashboardProjectDocumentInput).optional(),
+    pages: z.array(dashboardProjectDocumentInput).optional(),
   })
   .passthrough();
 
@@ -545,6 +575,50 @@ export function getScreenToolDefinitions(
       handler: async (input) => {
         try {
           return asToolContent(generateDashboardSchema(input));
+        } catch (error) {
+          return handleToolError(error);
+        }
+      },
+    },
+    {
+      name: "validate_dashboard_project_spec",
+      category: "dashboard",
+      config: {
+        title: "Validate Dashboard Project Spec",
+        description:
+          "Validate a LLM-authored multi-page DashboardProjectSpec. Reusable master designs belong in masters; normal screens belong in pages and reference masters by masterLogicalIds. Rejects duplicate document logicalIds, duplicate or unknown master references, masters referencing other masters, invalid nested DashboardSpecs, and pages with neither own content nor a master.",
+        inputSchema: dashboardProjectSpecInput,
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async (input) => {
+        try {
+          return asToolContent(validateDashboardProjectSpec(input));
+        } catch (error) {
+          return handleToolError(error);
+        }
+      },
+    },
+    {
+      name: "generate_dashboard_project_schema",
+      category: "dashboard",
+      config: {
+        title: "Generate Dashboard Project Schema",
+        description:
+          "Compile a complete LLM-authored DashboardProjectSpec into an editor-ready project schema with documents. Each masters item becomes an independent pageType='master' document; each pages item becomes a pageType='page' document whose masterLogicalIds compile to Master reference nodes using the exact master document ids. Automatic full-canvas backgrounds are suppressed for masters and pages using masters so inherited layers cannot cover each other; author an explicit background component when needed. Normal pages are emitted first, and existing single-dashboard generation remains unchanged.",
+        inputSchema: dashboardProjectSpecInput,
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async (input) => {
+        try {
+          return asToolContent(generateDashboardProjectSchema(input));
         } catch (error) {
           return handleToolError(error);
         }

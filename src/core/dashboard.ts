@@ -2880,7 +2880,14 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   };
 }
 
-export function generateDashboardSchema(input: JsonObject): EditorGroupNode {
+export type DashboardSchemaGenerationOptions = {
+  suppressRootBackground?: boolean;
+};
+
+export function generateDashboardSchema(
+  input: JsonObject,
+  options: DashboardSchemaGenerationOptions = {},
+): EditorGroupNode {
   const validation = validateDashboardSpec(input);
   const errors = validation.errors;
   if (Array.isArray(errors) && errors.length > 0) {
@@ -2900,7 +2907,11 @@ export function generateDashboardSchema(input: JsonObject): EditorGroupNode {
     ...modules.map((module) => compileModule(module, rootId, theme, grouping)),
   ];
 
-  if (!hasBimModelReservedArea(input) && !treeHasCanvasBackground(children, canvas)) {
+  if (
+    !options.suppressRootBackground &&
+    !hasBimModelReservedArea(input) &&
+    !treeHasCanvasBackground(children, canvas)
+  ) {
     const background = compileBackgroundCarrier(
       `${rootId}_background`,
       rootId,
