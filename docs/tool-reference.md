@@ -82,13 +82,13 @@
 
 - Title: Validate Dashboard Project Spec
 - Mode: read-only
-- Description: Validate a LLM-authored multi-page DashboardProjectSpec. Reusable master designs belong in masters; normal screens belong in pages and reference masters by masterLogicalIds. Rejects duplicate document logicalIds, duplicate or unknown master references, masters referencing other masters, invalid nested DashboardSpecs, and pages with neither own content nor a master.
+- Description: Validate a LLM-authored multi-page DashboardProjectSpec. Reusable master designs belong in masters; normal screens belong in pages and reference masters by masterLogicalIds. Every master and page is validated as a full DashboardSpec with the same structure, real-data, grouping, layout, contrast, text-fit, and visual-space quality rules used for an independent dashboard. Rejects duplicate document logicalIds, duplicate or unknown master references, masters referencing other masters, invalid nested DashboardSpecs, and pages with neither own content nor a master.
 
 ### `generate_dashboard_project_schema`
 
 - Title: Generate Dashboard Project Schema
 - Mode: writes schema output
-- Description: Compile a complete LLM-authored DashboardProjectSpec into an editor-ready project schema with documents. Each masters item becomes an independent pageType='master' document; each pages item becomes a pageType='page' document whose masterLogicalIds compile to Master reference nodes using the exact master document ids. Automatic full-canvas backgrounds are suppressed for masters and pages using masters so inherited layers cannot cover each other; author an explicit background component when needed. Normal pages are emitted first, and existing single-dashboard generation remains unchanged.
+- Description: Compile a complete LLM-authored DashboardProjectSpec into an editor-ready project schema with documents. Every masters/pages item is a full DashboardSpec and must meet the same quality bar as an independently generated dashboard: complete information hierarchy, balanced content density, meaningful canvas usage, explicit absolute layout, real chart data and text, intentional groups/modules, readable contrast, sufficient text boxes, and LLM-authored backgrounds and decorations. Do not simplify pages, leave meaningless empty regions, or mechanically repeat one layout merely because the project contains multiple pages. Shared masters carry only reusable visual structure and must not replace page-specific business design. Each masters item becomes an independent pageType='master' document; each pages item becomes a pageType='page' document whose masterLogicalIds compile to Master reference nodes using the exact master document ids. Automatic full-canvas backgrounds are suppressed for masters and pages using masters so inherited layers cannot cover each other; author an explicit background component when needed. Normal pages are emitted first, and existing single-dashboard generation remains unchanged.
 
 ## Legacy compatibility
 
