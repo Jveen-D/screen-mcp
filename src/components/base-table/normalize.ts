@@ -64,7 +64,7 @@ function buildIndicator(column: JsonObject): JsonObject {
   return {
     fieldDataConfig,
     fieldName: field,
-    fieldDisplayName: field,
+    fieldDisplayName: label,
     fieldType,
   };
 }
@@ -164,11 +164,14 @@ function syncColumnsAndData(props: JsonObject): void {
   const normalizedData = data.map((row) => buildRow(row, columns));
 
   const indicator = columns.map(buildIndicator);
-  const fieldList = columns.map((column) => ({
-    fieldName: asString(column.field, ""),
-    fieldDisplayName: asString(column.field, ""),
-    fieldType: getFieldType(column),
-  }));
+  const fieldList = columns.map((column) => {
+    const field = asString(column.field, "");
+    return {
+      fieldName: field,
+      fieldDisplayName: asString(column.label, field),
+      fieldType: getFieldType(column),
+    };
+  });
 
   const chartData = isJsonObject(props.chartData) ? props.chartData : {};
   const originalChartData = isJsonObject(chartData.constant)

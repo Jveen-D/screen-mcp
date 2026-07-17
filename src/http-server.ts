@@ -4,6 +4,7 @@ import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { createScreenMcpServer } from "./mcp/screenServer.js";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3460;
@@ -13,6 +14,7 @@ const ALLOWED_HOSTS = (process.env.MCP_ALLOWED_HOSTS ?? "")
   .map((host) => host.trim())
   .filter(Boolean);
 const MCP_PATH = "/mcp";
+const MCP_JSON_BODY_LIMIT = "10mb";
 
 interface Session {
   transport: StreamableHTTPServerTransport;
@@ -20,9 +22,10 @@ interface Session {
 }
 
 type ParsedRequest = IncomingMessage & { body?: unknown };
+type HttpParserError = Error & { status?: number; type?: string };
 
 const sessions = new Map<string, Session>();
-const app = createMcpExpressApp({
+const mcpApp = createMcpExpressApp({
   host: HOST,
   ...(ALLOWED_HOSTS.length > 0 ? { allowedHosts: ALLOWED_HOSTS } : {}),
 });
@@ -64,7 +67,7 @@ async function handleSessionRequest(
   await session.transport.handleRequest(req, res);
 }
 
-app.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
+mcpApp.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader(
@@ -82,7 +85,7 @@ app.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
   next();
 });
 
-app.post(MCP_PATH, async (req: ParsedRequest, res: ServerResponse) => {
+mcpApp.post(MCP_PATH, async (req: ParsedRequest, res: ServerResponse) => {
   try {
     const sessionId = sessionIdFrom(req.headers);
     let session = sessionId ? sessions.get(sessionId) : undefined;
@@ -127,7 +130,7 @@ app.post(MCP_PATH, async (req: ParsedRequest, res: ServerResponse) => {
   }
 });
 
-app.get(MCP_PATH, async (req: IncomingMessage, res: ServerResponse) => {
+mcpApp.get(MCP_PATH, async (req: IncomingMessage, res: ServerResponse) => {
   try {
     await handleSessionRequest(req, res);
   } catch (error) {
@@ -138,7 +141,7 @@ app.get(MCP_PATH, async (req: IncomingMessage, res: ServerResponse) => {
   }
 });
 
-app.delete(MCP_PATH, async (req: IncomingMessage, res: ServerResponse) => {
+mcpApp.delete(MCP_PATH, async (req: IncomingMessage, res: ServerResponse) => {
   try {
     await handleSessionRequest(req, res);
   } catch (error) {
@@ -147,6 +150,22 @@ app.delete(MCP_PATH, async (req: IncomingMessage, res: ServerResponse) => {
       sendJsonRpcError(res, 500, "Internal server error");
     }
   }
+});
+
+const app = express();
+// The SDK parser has a fixed 100kb limit; pre-parsing keeps its Host validation while raising that limit.
+app.use(express.json({ limit: MCP_JSON_BODY_LIMIT }));
+app.use(mcpApp);
+app.use((error: HttpParserError, _req: Request, res: Response, _next: NextFunction) => {
+  const isPayloadTooLarge = error.type === "entity.too.large" || error.status === 413;
+  console.error("Error parsing MCP HTTP request:", error);
+  sendJsonRpcError(
+    res,
+    isPayloadTooLarge ? 413 : 400,
+    isPayloadTooLarge
+      ? `MCP request body exceeds the ${MCP_JSON_BODY_LIMIT} limit`
+      : "Invalid JSON request body",
+  );
 });
 
 const httpServer = app.listen(PORT, HOST, () => {

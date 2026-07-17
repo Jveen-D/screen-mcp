@@ -54,6 +54,17 @@ export function runDataDisplayNormalizerTests(): void {
   assert.equal(asChartObject(baseTableConstantData[0]).region, "区域A", "BaseTable first row region should sync");
   const baseTableIndicator = Array.isArray(baseTableChartData.indicator) ? baseTableChartData.indicator : [];
   assert.equal(baseTableIndicator.length, 2, "BaseTable indicator should derive from columns");
+  assert.equal(
+    asChartObject(baseTableIndicator[0]).fieldDisplayName,
+    "区域",
+    "BaseTable indicator should preserve the Chinese column label",
+  );
+  const baseTableFieldList = Array.isArray(baseTableConstant.fieldList) ? baseTableConstant.fieldList : [];
+  assert.equal(
+    asChartObject(baseTableFieldList[1]).fieldDisplayName,
+    "指标值",
+    "BaseTable field list should preserve the Chinese column label",
+  );
   assert.ok(Array.isArray(baseTableChartData.dimension) && baseTableChartData.dimension.length === 0, "BaseTable dimension should be empty");
   const baseTableHeaderConfig = asChartObject(baseTableSchema.props.headerConfig);
   assert.ok(

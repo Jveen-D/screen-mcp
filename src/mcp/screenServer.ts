@@ -32,7 +32,7 @@ import {
 import type { EditorTreeNode, JsonObject } from "../types/component.js";
 
 export const SERVER_VERSION = "0.1.0";
-export const RULES_VERSION = "2026-07-15.02-dashboard-project-quality";
+export const RULES_VERSION = "2026-07-16.01-reference-reconstruction";
 
 const SERVER_STARTED_AT = new Date();
 
@@ -152,6 +152,7 @@ export const RULES_FINGERPRINT = [
   "dashboard-page-master-references",
   "dashboard-master-reference-validation",
   "dashboard-project-page-quality-parity",
+  "dashboard-base-table-real-data-validation",
 ] as const;
 
 export type ScreenToolCategory =

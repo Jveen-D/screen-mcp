@@ -2100,6 +2100,63 @@ function validateChartData(
   }
 }
 
+function baseTableColumns(item: JsonObject): JsonObject[] {
+  const props = componentProps(item);
+  if (Array.isArray(props.columns)) {
+    return props.columns.filter(isJsonObject);
+  }
+
+  const chartData = props.chartData;
+  return isJsonObject(chartData) && Array.isArray(chartData.indicator)
+    ? chartData.indicator.filter(isJsonObject)
+    : [];
+}
+
+function baseTableRows(item: JsonObject): JsonObject[] {
+  const props = componentProps(item);
+  if (Array.isArray(props.data)) {
+    return props.data.filter(isJsonObject);
+  }
+  return chartDataRowsOf(item) ?? [];
+}
+
+function baseTableField(column: JsonObject): string {
+  const value = column.field ?? column.fieldName;
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isPlaceholderTableValue(value: JsonValue | undefined): boolean {
+  return value === undefined ||
+    value === null ||
+    (typeof value === "string" && /^(?:\s*|-{1,3}|—|暂无|无数据|placeholder)$/iu.test(value));
+}
+
+function validateBaseTableData(item: JsonObject, fieldName: string, errors: string[]): void {
+  if (componentNameOf(item) !== "BaseTable") {
+    return;
+  }
+
+  const columns = baseTableColumns(item);
+  const rows = baseTableRows(item);
+  const fields = columns.map(baseTableField).filter((field) => field !== "");
+  if (fields.length === 0) {
+    errors.push(`${fieldName} BaseTable must include explicit columns with non-empty field names`);
+    return;
+  }
+  if (rows.length === 0) {
+    errors.push(`${fieldName} BaseTable must include explicit non-empty data rows`);
+    return;
+  }
+
+  const missingFields = fields.filter((field) => rows.every((row) => !(field in row)));
+  if (missingFields.length > 0) {
+    errors.push(`${fieldName} BaseTable data is missing column fields: ${missingFields.join(", ")}`);
+  }
+  if (rows.every((row) => fields.every((field) => isPlaceholderTableValue(row[field])))) {
+    errors.push(`${fieldName} BaseTable data must contain real cell values, not empty or placeholder rows`);
+  }
+}
+
 function validateComponentQuality(
   item: JsonObject,
   fieldName: string,
@@ -2109,6 +2166,7 @@ function validateComponentQuality(
   validateSvgDecoration(item, fieldName, errors);
   validateSingleTextContent(item, fieldName, errors);
   validateChartData(item, fieldName, errors, inheritedChartRowsAvailable);
+  validateBaseTableData(item, fieldName, errors);
 }
 
 function asNumeric(value: JsonValue | undefined): number | undefined {
