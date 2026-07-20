@@ -134,8 +134,16 @@ export async function runMcpDiagnosticsTests({ client }: McpToolContext): Promis
     "diagnostics should expose common semantic grouping fingerprint",
   );
   assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("single-image-content-layer-role"),
+    "diagnostics should expose SingleImage content-layer semantics fingerprint",
+  );
+  assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-grouping-inheritance"),
     "diagnostics should expose DashboardSpec grouping inheritance fingerprint",
+  );
+  assert.ok(
+    (diagnostics.rulesFingerprint as string[]).includes("dashboard-descriptive-group-title"),
+    "diagnostics should expose descriptive DashboardSpec group title fingerprint",
   );
   assert.ok(
     (diagnostics.rulesFingerprint as string[]).includes("dashboard-group-style-required"),

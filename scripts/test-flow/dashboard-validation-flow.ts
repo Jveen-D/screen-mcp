@@ -362,6 +362,49 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     /groups\[0\] missing complete style left\/top\/width\/height/u,
     "DashboardSpec compiler should reject unpositioned explicit groups",
   );
+  const genericGroupTitleSpec = {
+    logicalId: "generic_group_title_dashboard",
+    groups: [
+      {
+        logicalId: "generic_group_title_a7k2",
+        title: "组件分组",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 80,
+          width: 320,
+          height: 120,
+        },
+        components: [
+          {
+            componentName: "SingleText",
+            logicalId: "generic_group_text_a7k2",
+            textContent: "设备在线率 99.2%",
+            style: {
+              position: "absolute",
+              left: 48,
+              top: 104,
+              width: 220,
+              height: 24,
+            },
+          },
+        ],
+      },
+    ],
+  } as JsonObject;
+  const genericGroupTitleValidation = validateDashboardSpec(genericGroupTitleSpec);
+  assert.equal(genericGroupTitleValidation.valid, false);
+  assert.ok(
+    (genericGroupTitleValidation.errors as string[]).includes(
+      "groups[0].title must use a specific business or visual region name",
+    ),
+    "DashboardSpec validation should reject generic explicit group titles",
+  );
+  assert.throws(
+    () => generateDashboardSchema(genericGroupTitleSpec),
+    /groups\[0\]\.title must use a specific business or visual region name/u,
+    "DashboardSpec compiler should reject generic explicit group titles",
+  );
   const emptyGroupSvgValidation = validateDashboardSpec({
     logicalId: "empty_group_svg_dashboard",
     groups: [

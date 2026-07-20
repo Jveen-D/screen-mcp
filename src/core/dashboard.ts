@@ -2,6 +2,8 @@ import {
   componentSchemaToEditorNode,
   generateComponentsSchema,
   hasDefaultDemoChartRows,
+  isContentSingleImageNode,
+  isContentSingleImageProps,
   sortEditorTreeChildren,
   toSchemaId,
   uniqueSchemaId,
@@ -293,7 +295,7 @@ function hasSingleImageVisualSource(node: EditorTreeNode): boolean {
 
 function isBackgroundCarrier(node: EditorTreeNode): boolean {
   if (node.componentName === "SingleImage") {
-    return hasSingleImageVisualSource(node);
+    return !isContentSingleImageNode(node) && hasSingleImageVisualSource(node);
   }
 
   if (node.componentName !== "SvgDecoration" || !hasSvgVisualSource(node)) {
@@ -414,10 +416,16 @@ function compileModule(
   return moduleTree;
 }
 
+const GENERIC_GROUP_TITLE_PATTERN =
+  /^(?:(?:组件|内容|业务)?分组|组件组|group|component[ _-]*group)(?:[ _-]*\d+)?$/iu;
+
 function groupTitle(item: JsonObject): string {
-  return typeof item.title === "string" && item.title.trim() !== ""
-    ? item.title.trim()
-    : "组件分组";
+  const title = typeof item.title === "string" ? item.title.trim() : "";
+  if (title === "" || GENERIC_GROUP_TITLE_PATTERN.test(title)) {
+    throw new Error("dashboard group title must use a specific business or visual region name");
+  }
+
+  return title;
 }
 
 function groupComponents(item: JsonObject): JsonObject[] {
@@ -2602,7 +2610,7 @@ function dashboardContentRects(
     .filter((component) =>
       !isEdgePaddingDecoration(component) &&
       !isBackgroundLikeSpecComponent(component) &&
-      componentNameOf(component) !== "SingleImage",
+      (componentNameOf(component) !== "SingleImage" || isContentSingleImageProps(component)),
     )
     .map((component, index) => rectFromItem(component, `components[${index}]`))
     .filter((rect): rect is Rect => Boolean(rect));
@@ -2809,6 +2817,12 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   groups.forEach((group, groupIndex) => {
     if (typeof group.logicalId !== "string" || group.logicalId.trim() === "") {
       errors.push(`groups[${groupIndex}] missing logicalId`);
+    }
+    const title = typeof group.title === "string" ? group.title.trim() : "";
+    if (title === "") {
+      errors.push(`groups[${groupIndex}] missing descriptive title`);
+    } else if (GENERIC_GROUP_TITLE_PATTERN.test(title)) {
+      errors.push(`groups[${groupIndex}].title must use a specific business or visual region name`);
     }
 
     validateGroupingMode(

@@ -75,7 +75,7 @@ export const freeformModuleCapability: JsonObject = {
           path: "grouping.mode",
           type: "enum",
           values: ["semantic", "none"],
-          description: "semantic=按语义分组，主内容组位于装饰和背景组之上；none=不创建语义分组，仅保证 SingleImage 背景在最后。",
+          description: "semantic=按语义分组，主内容组位于装饰和背景组之上；none=不创建语义分组，仅保证 imageLayerRole=background 的 SingleImage 在最后。",
         },
         {
           path: "grouping.singleChildGroup",
@@ -98,7 +98,7 @@ export const freeformModuleCapability: JsonObject = {
     "FreeformModule 不提供任何固定布局、默认装饰或业务文本；LLM 必须先根据用户需求决定组件列表、主题颜色、坐标、尺寸、层级和视觉语言。DashboardSpec 编译层在缺少背景承载时可补同主题轻量背景组件，但不会替代具体设计。",
     "slots.children 中的每个组件使用画布绝对坐标，并应落在 module.style 定义的模块区域内；MCP 只编译，不重新排版。",
     "同一模块内需要可编辑的结构层级时，设置 grouping.singleChildGroup=true；否则只有同语义桶包含多个组件时才自动生成子分组。",
-    "语义分组是通用规则：SingleImage 进入背景组，名称包含背景/底板的 SvgDecoration 进入背景组，普通 SvgDecoration 进入装饰组，标题类 SingleText/SvgDecoration 进入标题组，其余业务组件进入主内容组。",
+    "语义分组是通用规则：imageLayerRole=background 的 SingleImage 进入背景组，imageLayerRole=content 的照片、鸟瞰图、Logo 或复杂插画进入主内容组；名称包含背景/底板的 SvgDecoration 进入背景组，普通 SvgDecoration 进入装饰组，标题类 SingleText/SvgDecoration 进入标题组，其余业务组件进入主内容组。",
     "主内容组必须排在装饰组和背景组之前，确保业务组件在顶层；背景组件必须排在同级数组最后，避免遮挡真实内容。",
     "FreeformModule 适合 KPI 指标区、表格区、地图区、视频区、控制区、混合信息卡等非标准图表面板；图表分析面板仍优先使用 ChartPanel。",
   ],

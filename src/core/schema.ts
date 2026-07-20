@@ -366,8 +366,8 @@ export function generateComponentsSchemas(
   componentsProps: JsonObject[],
 ): ComponentSchema[] {
   const orderedProps = [...componentsProps].sort((left, right) => {
-    const leftIsImage = left.componentName === "SingleImage";
-    const rightIsImage = right.componentName === "SingleImage";
+    const leftIsImage = left.componentName === "SingleImage" && !isContentSingleImageProps(left);
+    const rightIsImage = right.componentName === "SingleImage" && !isContentSingleImageProps(right);
 
     return Number(leftIsImage) - Number(rightIsImage);
   });
@@ -380,8 +380,8 @@ export function generateComponentsSchemas(
 
 export function sortComponentSchemas(schemas: ComponentSchema[]): ComponentSchema[] {
   const sorted = [...schemas].sort((left, right) => {
-    const leftIsImage = left.componentName === "SingleImage";
-    const rightIsImage = right.componentName === "SingleImage";
+    const leftIsImage = left.componentName === "SingleImage" && !isContentSingleImageProps(left.props);
+    const rightIsImage = right.componentName === "SingleImage" && !isContentSingleImageProps(right.props);
     return Number(leftIsImage) - Number(rightIsImage);
   });
 
@@ -407,8 +407,16 @@ function editorNodeTitle(node: EditorTreeNode): string {
     : "";
 }
 
+export function isContentSingleImageProps(props: JsonObject): boolean {
+  return props.imageLayerRole === "content";
+}
+
+export function isContentSingleImageNode(node: EditorTreeNode): boolean {
+  return node.componentName === "SingleImage" && isContentSingleImageProps(node.props);
+}
+
 function isBottomLayerEditorNode(node: EditorTreeNode): boolean {
-  return node.componentName === "SingleImage" ||
+  return (node.componentName === "SingleImage" && !isContentSingleImageNode(node)) ||
     (node.componentName === "SvgDecoration" &&
       BACKGROUND_EDITOR_NODE_TITLE_PATTERN.test(editorNodeTitle(node))) ||
     (node.componentName === "__Group__" && node.title === "背景");

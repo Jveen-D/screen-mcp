@@ -1,4 +1,8 @@
-import { sortEditorTreeChildren, uniqueSchemaId } from "./schema.js";
+import {
+  isContentSingleImageNode,
+  sortEditorTreeChildren,
+  uniqueSchemaId,
+} from "./schema.js";
 import type { EditorGroupNode, EditorTreeNode, JsonObject, JsonValue } from "../types/component.js";
 
 export type SemanticGroupMode = "none" | "semantic";
@@ -116,7 +120,7 @@ function bucketForChild(child: EditorTreeNode): GroupBucketKey {
   const componentName = child.componentName;
 
   if (componentName === "SingleImage") {
-    return "background";
+    return isContentSingleImageNode(child) ? "mainContent" : "background";
   }
 
   if (componentName === "SvgDecoration") {

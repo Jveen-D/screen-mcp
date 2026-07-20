@@ -93,6 +93,57 @@ export function runDashboardCompilerTests(dashboardSpec: JsonObject): void {
     "DashboardSpec grouping should be inherited by FreeformModule modules",
   );
 
+  const contentImageTree = generateDashboardSchema({
+    logicalId: "content_image_dashboard_a7k2",
+    title: "内容图片分层大屏",
+    canvas: { width: 960, height: 540 },
+    grouping: { mode: "semantic", singleChildGroup: true },
+    groups: [
+      {
+        logicalId: "overview_panel_a7k2",
+        title: "项目鸟瞰",
+        style: { position: "absolute", left: 120, top: 80, width: 720, height: 380 },
+        components: [
+          {
+            componentName: "SingleImage",
+            logicalId: "overview_image_a7k2",
+            name: "项目鸟瞰图",
+            imageLayerRole: "content",
+            imageBase64: "data:image/png;base64,CONTENTIMAGE",
+            style: { position: "absolute", left: 144, top: 112, width: 672, height: 324, zIndex: 1 },
+          },
+          {
+            componentName: "SvgDecoration",
+            logicalId: "overview_background_a7k2",
+            name: "面板背景",
+            svgSource: "custom",
+            svgContent:
+              '<svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg"><rect width="720" height="380" fill="#071522"/></svg>',
+            style: { position: "absolute", left: 120, top: 80, width: 720, height: 380, zIndex: 30 },
+          },
+        ],
+      },
+    ],
+  });
+  const contentImagePanel = contentImageTree.children.find((item) => item.title === "项目鸟瞰");
+  assert.ok(contentImagePanel && Array.isArray(contentImagePanel.children));
+  const contentImageMainGroup = contentImagePanel.children.find((item) => item.title === "主内容");
+  const contentImageBackgroundGroup = contentImagePanel.children.find((item) => item.title === "背景");
+  assert.ok(contentImageMainGroup && Array.isArray(contentImageMainGroup.children));
+  assert.ok(contentImageBackgroundGroup && Array.isArray(contentImageBackgroundGroup.children));
+  const contentImage = contentImageMainGroup.children.find((item) => item.componentName === "SingleImage");
+  assert.ok(contentImage, "content SingleImage should stay in the semantic main-content group");
+  assert.equal(contentImage.props.imageLayerRole, "content");
+  assert.ok(
+    ((contentImage.props.style as JsonObject).zIndex as number) >= 20,
+    "content SingleImage should stay above the panel background",
+  );
+  assert.equal(
+    contentImageBackgroundGroup.children.some((item) => item.componentName === "SingleImage"),
+    false,
+    "content SingleImage must not be moved into the background group",
+  );
+
   const guardedLayoutTree = generateDashboardSchema({
     logicalId: "guarded_layout_dashboard",
     title: "布局保护大屏",

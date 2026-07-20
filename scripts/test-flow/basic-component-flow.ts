@@ -29,6 +29,10 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
     imageWritableProps.some((item) => item.path === "style.backgroundColor"),
     "base component background color should use style.backgroundColor",
   );
+  assert.ok(
+    imageWritableProps.some((item) => item.path === "imageLayerRole"),
+    "SingleImage should expose explicit background/content layer semantics",
+  );
   assert.equal(
     imageWritableProps.some((item) => item.path === "option.backgroundColor"),
     false,

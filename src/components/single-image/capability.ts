@@ -7,7 +7,7 @@ export const singleImageCapability: JsonObject = {
     "用于大屏面板背景、全屏背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。imageSrc 只能使用用户明确提供的路径，AI 不要猜测或选择现有素材库资源；没有素材时可用 style/SvgDecoration 表达轻量背景，只有确实需要图片纹理时才生成短 base64。",
 
   aiRole:
-    "AI 负责图片组件的位置、尺寸和图片来源。MCP 负责补齐默认 props。组件层级由最终 schema 数组顺序决定。",
+    "AI 负责图片组件的位置、尺寸、图片来源和 imageLayerRole。MCP 负责补齐默认 props，并只把 background 图片强制置底。",
 
   requiredProps: [
     {
@@ -64,6 +64,14 @@ export const singleImageCapability: JsonObject = {
       description: "图片平铺方式。",
     },
     {
+      path: "imageLayerRole",
+      type: "enum",
+      values: ["background", "content"],
+      defaultValue: "background",
+      description:
+        "图片层级语义。background 用于全屏/面板底图并强制置底；content 用于照片、鸟瞰图、Logo、复杂插画等业务内容，进入主内容组并保持在面板背景之上。",
+    },
+    {
       path: "animation",
       type: "object",
       description: "图片动画配置，无明确要求时保持默认关闭。",
@@ -95,15 +103,16 @@ export const singleImageCapability: JsonObject = {
     "禁止生成不可访问的外部图片链接或照片级真实图片；自行生成的 base64 内容应为短小的矢量风格渐变、网格、光效或纹理。",
     "需要真实图片素材、纹理或光效时使用 SingleImage；简单面板底色、边框和线性结构优先使用 style 或 SvgDecoration。",
     "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
-    "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
-    "当手动构建 __Group__ 的 children 数组时，必须把 SingleImage 背景图放在 children 末尾；generate_components_schemas 会自动把 SingleImage 排到最后，但手写 children 时需要显式保证。",
+    "全屏或面板底图必须设置 imageLayerRole=background；照片、鸟瞰图、Logo、复杂插画等业务内容图片必须设置 imageLayerRole=content。",
+    "只有 imageLayerRole=background 的 SingleImage 会被排到 SingleText、SvgDecoration、PieChart 等内容之后；content 图片参与普通主内容排序并应使用明确 zIndex。",
+    "手动构建 __Group__ 的 children 数组时，只需把 imageLayerRole=background 的 SingleImage 放在 children 末尾；content 图片应按实际遮挡关系放入主内容层。",
   ],
   visualRules: [
     "AI 始终保有设计权：根据用户需求决定是否使用 SingleImage。不要为了默认科技感而生成长 base64。",
     "全屏背景图应覆盖整个画布（如 1920×1080），并位于 ComponentSchema[] 末尾作为最底层，避免遮挡内容。",
     "生成的 base64 背景图应使用短小矢量或简单纹理：深色渐变、科技网格、弱光晕、细边框，避免大尺寸照片级真实图片。",
-    "图片组件通常用于背景、纹理或光效；最终 ComponentSchema[] 中必须排在 SingleText、SvgDecoration、PieChart 等真实内容和图标装饰之后，避免图片处于顶层遮盖内容。",
-    "在任意 __Group__ 的 children 数组中，覆盖全屏或全面板的 SingleImage 背景图必须是最后一个元素； decorative 光效/纹理如需置顶应使用 SvgDecoration 或提高 zIndex，而不是依靠数组顺序把 SingleImage 提前。",
+    "照片、鸟瞰图、Logo、复杂插画等不可重画内容使用 imageLayerRole=content，必须位于面板背景之上；可通过 zIndex 和数组顺序与标题或标注建立局部遮挡关系。",
+    "在任意 __Group__ 的 children 数组中，覆盖全屏或全面板且 imageLayerRole=background 的 SingleImage 必须是最后一个元素；decorative 光效/纹理如需置顶应使用 SvgDecoration，而不是把背景图片标记为 content。",
     "当 style.backgroundColor 或 SvgDecoration 足以表达背景结构时，不必额外生成 SingleImage。",
   ],
   examples: [
@@ -127,6 +136,7 @@ export const singleImageCapability: JsonObject = {
           borderColor: "rgba(0,0,0,0)",
         },
         imageUseMode: "upload",
+        imageLayerRole: "background",
         imageSrc: "<user-provided-image-src>",
         imageShowType: "noRepeat",
         opacity: 1,
@@ -152,6 +162,7 @@ export const singleImageCapability: JsonObject = {
           borderColor: "rgba(0,0,0,0)",
         },
         imageUseMode: "base64",
+        imageLayerRole: "background",
         imageBase64:
           "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzAyMEExOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA2MTkyRiIvPjwvbGluZWFyR3JhZGllbnQ+PHBhdHRlcm4gaWQ9InAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTQwIDBIMFY0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBFNUZGIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMDgiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiBmaWxsPSJ1cmwoI3ApIi8+PC9zdmc+",
         imageShowType: "noRepeat",
