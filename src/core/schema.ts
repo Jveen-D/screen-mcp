@@ -464,6 +464,9 @@ function componentSchemaLayerRole(schema: ComponentSchema): EditorLayerRole {
   ) {
     return schema.props.imageLayerRole;
   }
+  if (schema.componentName === "SingleImage") {
+    return "background";
+  }
   return schema.componentName === "SvgDecoration" ? "decoration" : "content";
 }
 

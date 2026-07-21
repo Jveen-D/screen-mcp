@@ -1,3 +1,4 @@
+import type { EditorLayerRole } from "./schema.js";
 import {
   componentSchemaToEditorNode,
   editorNodeLayerRole,
@@ -311,11 +312,23 @@ function isBackgroundCarrier(node: EditorTreeNode): boolean {
   return true;
 }
 
-function treeHasBackgroundCarrier(children: EditorTreeNode[]): boolean {
-  return children.some((child) =>
-    isBackgroundCarrier(child) ||
-    (Array.isArray(child.children) && treeHasBackgroundCarrier(child.children)),
-  );
+function treeHasCoveringBackgroundCarrier(children: EditorTreeNode[], container: Rect): boolean {
+  return children.some((child) => {
+    if (isBackgroundCarrier(child)) {
+      const rect = nodeRect(child);
+      if (
+        rect &&
+        rect.left <= container.left + 1 &&
+        rect.top <= container.top + 1 &&
+        rect.left + rect.width >= container.left + container.width - 1 &&
+        rect.top + rect.height >= container.top + container.height - 1
+      ) {
+        return true;
+      }
+    }
+
+    return Array.isArray(child.children) && treeHasCoveringBackgroundCarrier(child.children, container);
+  });
 }
 
 function treeHasCanvasBackground(children: EditorTreeNode[], canvas: { width: number; height: number }): boolean {
@@ -408,7 +421,7 @@ function compileModule(
     applyGroupLayoutGuards(moduleTree, rect);
   }
 
-  if (autoPanelBackgrounds && rect && !treeHasBackgroundCarrier(moduleTree.children)) {
+  if (autoPanelBackgrounds && rect && !treeHasCoveringBackgroundCarrier(moduleTree.children, rect)) {
     const background = compileBackgroundCarrier(
       `${moduleTree.id}_background`,
       moduleTree.id,
@@ -1397,25 +1410,35 @@ function fitBaseTablesToContainer(root: EditorTreeNode, containerRect: Rect): vo
   }
 }
 
+function clampLayerZIndex(node: EditorTreeNode, layerRole: EditorLayerRole): void {
+  const style = mutableNodeStyle(node);
+  if (!style) {
+    return;
+  }
+
+  if (layerRole === "background") {
+    style.zIndex = Math.min(asFiniteNumber(style.zIndex) ?? 0, 0);
+    return;
+  }
+
+  if (layerRole === "decoration") {
+    style.zIndex = Math.min(asFiniteNumber(style.zIndex) ?? 10, 10);
+    return;
+  }
+
+  style.zIndex = Math.max(asFiniteNumber(style.zIndex) ?? 20, 20);
+}
+
 function enforceMainContentAboveDecorations(root: EditorTreeNode): void {
-  for (const node of collectLeafNodes(root)) {
-    const style = mutableNodeStyle(node);
-    if (!style) {
-      continue;
-    }
+  if (!isEditorGroupNode(root) || !Array.isArray(root.children)) {
+    return;
+  }
 
-    const layerRole = editorNodeLayerRole(node);
-    if (layerRole === "background") {
-      style.zIndex = Math.min(asFiniteNumber(style.zIndex) ?? 0, 0);
-      continue;
+  for (const child of root.children) {
+    clampLayerZIndex(child, editorNodeLayerRole(child));
+    if (isEditorGroupNode(child)) {
+      enforceMainContentAboveDecorations(child);
     }
-
-    if (layerRole === "decoration") {
-      style.zIndex = Math.min(asFiniteNumber(style.zIndex) ?? 10, 10);
-      continue;
-    }
-
-    style.zIndex = Math.max(asFiniteNumber(style.zIndex) ?? 20, 20);
   }
 }
 
@@ -1663,7 +1686,7 @@ function compileComponentGroup(
     applyGroupLayoutGuards(sortedGroup, rect);
   }
 
-  if (autoPanelBackgrounds && rect && !treeHasBackgroundCarrier(sortedGroup.children)) {
+  if (autoPanelBackgrounds && rect && !treeHasCoveringBackgroundCarrier(sortedGroup.children, rect)) {
     const background = compileBackgroundCarrier(
       `${groupId}_background`,
       groupId,
