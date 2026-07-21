@@ -27,6 +27,7 @@ export const singleImageDefaultProps: JsonObject = {
   imageSrc: "",
   imageBase64: "",
   imageShowType: "noRepeat",
+  imageLayerRole: "background",
   name: "图片",
   animation: {
     isActive: false,

@@ -1,9 +1,10 @@
 import {
   componentSchemaToEditorNode,
+  editorNodeLayerRole,
   generateComponentsSchema,
   hasDefaultDemoChartRows,
-  isContentSingleImageNode,
   isContentSingleImageProps,
+  isEditorLayerRole,
   sortEditorTreeChildren,
   toSchemaId,
   uniqueSchemaId,
@@ -121,6 +122,7 @@ function backgroundCarrierComponent(
     svgFit: "fill",
     primaryColor: stroke,
     opacity: 1,
+    layerRole: "background",
     style: {
       position: "absolute",
       left: rect.left,
@@ -294,16 +296,19 @@ function hasSingleImageVisualSource(node: EditorTreeNode): boolean {
 }
 
 function isBackgroundCarrier(node: EditorTreeNode): boolean {
+  if (editorNodeLayerRole(node) !== "background") {
+    return false;
+  }
+
   if (node.componentName === "SingleImage") {
-    return !isContentSingleImageNode(node) && hasSingleImageVisualSource(node);
+    return hasSingleImageVisualSource(node);
   }
 
   if (node.componentName !== "SvgDecoration" || !hasSvgVisualSource(node)) {
     return false;
   }
 
-  return /背景|底板|底座|底图|面板边框|模块边框|卡组边框|边框|background|backdrop|panel[-_ ]?(?:bg|frame)/i
-    .test(nodeTitle(node));
+  return true;
 }
 
 function treeHasBackgroundCarrier(children: EditorTreeNode[]): boolean {
@@ -335,7 +340,7 @@ function createBackgroundGroup(parentId: string, child: EditorTreeNode): EditorG
     id: uniqueSchemaId(`${parentId}_grp_background`, "fs"),
     componentName: "__Group__",
     structVersion: "0.0.0",
-    props: {},
+    props: { layerRole: "background" },
     title: "背景",
     isHidden: false,
     isLocked: false,
@@ -380,6 +385,7 @@ function compileModule(
   parentId: string,
   theme: JsonObject | undefined,
   grouping: JsonObject | undefined,
+  autoPanelBackgrounds: boolean,
 ): EditorTreeNode {
   if (typeof item.moduleName !== "string" || item.moduleName.trim() === "") {
     throw new Error("dashboard module missing moduleName");
@@ -395,13 +401,14 @@ function compileModule(
   }
 
   const moduleTree = generateModuleTreeSchema(moduleInput);
+  moduleTree.props.layerRole = isEditorLayerRole(item.layerRole) ? item.layerRole : "content";
   const rect = rectFromItem(moduleInput, moduleTree.id);
   if (rect) {
     absolutizeClearLocalStyles(moduleTree, rect);
     applyGroupLayoutGuards(moduleTree, rect);
   }
 
-  if (rect && !treeHasBackgroundCarrier(moduleTree.children)) {
+  if (autoPanelBackgrounds && rect && !treeHasBackgroundCarrier(moduleTree.children)) {
     const background = compileBackgroundCarrier(
       `${moduleTree.id}_background`,
       moduleTree.id,
@@ -464,7 +471,9 @@ function markGroupTitleComponent(component: JsonObject, title: string): JsonObje
 }
 
 function groupProps(item: JsonObject): JsonObject {
-  const props: JsonObject = {};
+  const props: JsonObject = {
+    layerRole: isEditorLayerRole(item.layerRole) ? item.layerRole : "content",
+  };
   if (isJsonObject(item.style)) {
     props.style = item.style;
   }
@@ -1395,12 +1404,13 @@ function enforceMainContentAboveDecorations(root: EditorTreeNode): void {
       continue;
     }
 
-    if (isBackgroundCarrier(node)) {
+    const layerRole = editorNodeLayerRole(node);
+    if (layerRole === "background") {
       style.zIndex = Math.min(asFiniteNumber(style.zIndex) ?? 0, 0);
       continue;
     }
 
-    if (node.componentName === "SvgDecoration") {
+    if (layerRole === "decoration") {
       style.zIndex = Math.min(asFiniteNumber(style.zIndex) ?? 10, 10);
       continue;
     }
@@ -1617,6 +1627,7 @@ function compileComponentGroup(
   parentId: string,
   theme: JsonObject | undefined,
   inheritedGrouping: JsonObject | undefined,
+  autoPanelBackgrounds: boolean,
 ): EditorGroupNode {
   if (typeof item.logicalId !== "string" || item.logicalId.trim() === "") {
     throw new Error("dashboard group missing logicalId");
@@ -1652,7 +1663,7 @@ function compileComponentGroup(
     applyGroupLayoutGuards(sortedGroup, rect);
   }
 
-  if (rect && !treeHasBackgroundCarrier(sortedGroup.children)) {
+  if (autoPanelBackgrounds && rect && !treeHasBackgroundCarrier(sortedGroup.children)) {
     const background = compileBackgroundCarrier(
       `${groupId}_background`,
       groupId,
@@ -2970,13 +2981,14 @@ export function generateDashboardSchema(
   const canvas = canvasSize(input);
   const theme = isJsonObject(input.theme) ? input.theme : undefined;
   const grouping = isJsonObject(input.grouping) ? input.grouping : undefined;
+  const autoPanelBackgrounds = input.autoPanelBackgrounds !== false;
   const components = asArray(input.components);
   const groups = asArray(input.groups);
   const modules = asArray(input.modules);
   let children: EditorTreeNode[] = [
     ...compileRootComponents(components, rootId, theme, grouping),
-    ...groups.map((group) => compileComponentGroup(group, rootId, theme, grouping)),
-    ...modules.map((module) => compileModule(module, rootId, theme, grouping)),
+    ...groups.map((group) => compileComponentGroup(group, rootId, theme, grouping, autoPanelBackgrounds)),
+    ...modules.map((module) => compileModule(module, rootId, theme, grouping, autoPanelBackgrounds)),
   ];
 
   if (
@@ -3014,6 +3026,7 @@ export function generateDashboardSchema(
         height: canvas.height,
         zIndex: 1,
       },
+      layerRole: "content",
     },
     title: dashboardTitle(input),
     isHidden: false,

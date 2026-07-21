@@ -34,6 +34,13 @@ export const svgDecorationCapability: JsonObject = {
   ],
   aiWritableProps: [
     { path: "name", type: "string", description: "图层名称。" },
+    {
+      path: "layerRole",
+      type: "enum",
+      values: ["decoration", "background"],
+      defaultValue: "decoration",
+      description: "统一层级语义。背景、底板和带填充的承托框使用 background；图标、结构线和光效使用 decoration。",
+    },
     { path: "style", type: "object", description: "位置、尺寸和背景。" },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },

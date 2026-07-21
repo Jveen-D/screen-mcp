@@ -29,6 +29,9 @@ function isNonDecorativeSvg(svgContent: string): boolean {
 }
 
 export function normalizeSvgDecorationProps(props: JsonObject): JsonObject {
+  if (props.layerRole !== "background" && props.layerRole !== "decoration") {
+    props.layerRole = "decoration";
+  }
   const svgSource = props.svgSource;
   if (svgSource === "preset") {
     const svgPreset = typeof props.svgPreset === "string" ? props.svgPreset.trim() : "";

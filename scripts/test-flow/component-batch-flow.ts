@@ -22,6 +22,7 @@ export function runComponentBatchFlowTests({
       ...imageProps,
       logicalId: "overview_content_image_a7k2",
       name: "项目鸟瞰图",
+      layerRole: "content",
       imageLayerRole: "content",
     },
     aiProps,
@@ -44,7 +45,7 @@ export function runComponentBatchFlowTests({
   );
   assert.equal(
     sortComponentSchemas(panelSchemas).at(-1)?.props.imageLayerRole,
-    undefined,
-    "schema sorting should keep the legacy background image at the bottom",
+    "background",
+    "schema sorting should normalize the background image role at the bottom",
   );
 }

@@ -76,7 +76,7 @@ function masterLogicalIds(input: JsonObject): string[] {
 
 function resolveDocumentSpec(project: JsonObject, document: JsonObject): JsonObject {
   const resolved: JsonObject = { ...document };
-  for (const key of ["canvas", "theme", "grouping"] as const) {
+  for (const key of ["canvas", "theme", "grouping", "autoPanelBackgrounds"] as const) {
     if (resolved[key] === undefined && project[key] !== undefined) {
       resolved[key] = project[key];
     }
@@ -197,6 +197,7 @@ function pageRootProps(
 ): JsonObject {
   const canvas = canvasSize(input);
   return {
+    layerRole: "content",
     docId: documentId,
     globalSetting: {
       screenSize: `${canvas.width}x${canvas.height}`,
@@ -255,7 +256,7 @@ function masterReference(document: CompiledDocument): EditorTreeNode {
     id: document.document.id,
     componentName: "Master",
     structVersion: "0.0.0",
-    props: {},
+    props: { layerRole: "content" },
     title: document.title,
     isHidden: false,
     isLocked: false,

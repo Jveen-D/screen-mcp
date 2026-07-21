@@ -1,4 +1,5 @@
 import {
+  editorNodeLayerRole,
   isContentSingleImageNode,
   sortEditorTreeChildren,
   uniqueSchemaId,
@@ -33,9 +34,6 @@ const GROUP_ORDER: { key: GroupBucketKey; suffix: string; title: string }[] = [
   { key: "decorations", suffix: "decorations", title: "装饰" },
   { key: "background", suffix: "background", title: "背景" },
 ];
-
-const SVG_BACKGROUND_TITLE_PATTERN =
-  /背景|底板|底座|底图|标题承托|标题装饰|标题背景|^(?:面板|模块|卡组)边框$|background|backdrop|title[-_ ]?badge|^(?:panel|module|card)[-_ ]?(?:bg|frame|border)$/i;
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -86,27 +84,18 @@ function nodeTitle(child: EditorTreeNode): string {
   return "";
 }
 
-function svgContentHasVisibleFill(child: EditorTreeNode): boolean {
-  const props = child.props;
-  if (!isJsonObject(props) || typeof props.svgContent !== "string") {
-    return false;
-  }
-
-  return /fill=(["'])(?!none\b|transparent\b|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)|rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0\s*\))[^"']+\1/iu
-    .test(props.svgContent);
-}
-
 function createEditorGroup(
   parentId: string,
   suffix: string,
   title: string,
   children: EditorTreeNode[],
+  layerRole: "content" | "decoration" | "background",
 ): EditorGroupNode {
   return {
     id: uniqueSchemaId(`${parentId}_grp_${suffix}`, "fs"),
     componentName: "__Group__",
     structVersion: "0.0.0",
-    props: {},
+    props: { layerRole },
     title,
     isHidden: false,
     isLocked: false,
@@ -118,20 +107,17 @@ function createEditorGroup(
 function bucketForChild(child: EditorTreeNode): GroupBucketKey {
   const title = nodeTitle(child);
   const componentName = child.componentName;
+  const layerRole = editorNodeLayerRole(child);
+
+  if (layerRole === "background") {
+    return "background";
+  }
+  if (layerRole === "decoration") {
+    return "decorations";
+  }
 
   if (componentName === "SingleImage") {
     return isContentSingleImageNode(child) ? "mainContent" : "background";
-  }
-
-  if (componentName === "SvgDecoration") {
-    if (
-      SVG_BACKGROUND_TITLE_PATTERN.test(title) ||
-      (/边框|frame|border/i.test(title) && svgContentHasVisibleFill(child))
-    ) {
-      return "background";
-    }
-
-    return "decorations";
   }
 
   if (componentName === "SingleText") {
@@ -217,7 +203,12 @@ export function groupEditorTreeChildren(
       continue;
     }
 
-    groupedChildren.push(createEditorGroup(options.parentId, suffix, title, items));
+    const layerRole = key === "background"
+      ? "background"
+      : key === "decorations"
+      ? "decoration"
+      : "content";
+    groupedChildren.push(createEditorGroup(options.parentId, suffix, title, items, layerRole));
   }
 
   return sortChildren(options.parentId, groupedChildren);

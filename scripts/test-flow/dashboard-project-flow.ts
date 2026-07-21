@@ -177,7 +177,7 @@ export function runDashboardProjectTests(projectSpec: JsonObject): void {
         id: masterDocument.id,
         componentName: "Master",
         structVersion: "0.0.0",
-        props: {},
+        props: { layerRole: "content" },
         title: "共用头部母版",
         isHidden: false,
         isLocked: false,

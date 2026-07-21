@@ -131,6 +131,26 @@ export function runDashboardFallbackBackgroundTests(): void {
     "DashboardSpec fallback module background should be in the module background group",
   );
 
+  const suppressedPanelBackgroundTree = generateDashboardSchema({
+    ...fallbackBackgroundDashboardSpec,
+    logicalId: "suppressed_panel_background_dashboard",
+    autoPanelBackgrounds: false,
+  });
+  const suppressedPanelBackgroundNodes = flattenEditorNodes(
+    suppressedPanelBackgroundTree as unknown as JsonObject,
+  );
+  assert.ok(
+    suppressedPanelBackgroundNodes.some((item) => hasPropName(item, "全屏背景")),
+    "autoPanelBackgrounds=false should keep the canvas background fallback",
+  );
+  assert.equal(
+    suppressedPanelBackgroundNodes.some((item) =>
+      hasPropName(item, "分组背景") || hasPropName(item, "模块背景")
+    ),
+    false,
+    "autoPanelBackgrounds=false should suppress group and module fallback backgrounds",
+  );
+
   const explicitSvgBackgroundTree = generateDashboardSchema({
     logicalId: "explicit_svg_background_dashboard",
     title: "显式 SVG 背景大屏",
@@ -140,6 +160,7 @@ export function runDashboardFallbackBackgroundTests(): void {
         componentName: "SvgDecoration",
         logicalId: "explicit_fullscreen_background",
         name: "全屏背景",
+        layerRole: "background",
         svgSource: "custom",
         svgContent:
           '<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg"><rect width="1280" height="720" fill="#04111F"/></svg>',

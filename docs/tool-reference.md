@@ -30,13 +30,13 @@
 
 - Title: Generate Component Schema
 - Mode: writes schema output
-- Description: Generate one complete editor component schema from minimal AI props. Keep props concise; use SingleImage imageBase64 only when the user provides it or the design explicitly needs it. Indicator width >=280px; Gauge already renders its value; SingleImage backgrounds use imageLayerRole='background' and must be last, while photos, renders, logos, and complex illustrations use imageLayerRole='content'.
+- Description: Generate one complete editor component schema from minimal AI props. Keep props concise; use SingleImage imageBase64 only when the user provides it or the design explicitly needs it. Indicator width >=280px; Gauge already renders its value; SingleImage must set identical layerRole and imageLayerRole values: background for bottom layers, content for photos, renders, logos, and complex illustrations.
 
 ### `generate_components_schemas`
 
 - Title: Generate Component Schemas
 - Mode: writes schema output
-- Description: Generate complete editor component schemas from minimal AI props. SingleImage nodes with imageLayerRole='background' are sorted to the bottom layer; imageLayerRole='content' stays in the main content layer. Keep inputs concise and prefer SvgDecoration/style backgrounds unless image content is actually needed.
+- Description: Generate complete editor component schemas from minimal AI props. Siblings are sorted by layerRole in content, decoration, background order. SingleImage must keep imageLayerRole identical to layerRole. Keep inputs concise and prefer SvgDecoration/style backgrounds unless image content is actually needed.
 
 ## Module schema
 
@@ -56,13 +56,13 @@
 
 - Title: Generate Module Schema
 - Mode: writes schema output
-- Description: Generate editor component schemas from one explicit module input. Use ChartPanel for chart panels and FreeformModule for arbitrary mixed modules. Inputs should be LLM-designed slots, not prompt-only templates; only SingleImage nodes with imageLayerRole='background' are sorted last.
+- Description: Generate editor component schemas from one explicit module input. Use ChartPanel for chart panels and FreeformModule for arbitrary mixed modules. Inputs should be LLM-designed slots, not prompt-only templates; layerRole controls content, decoration, and background ordering.
 
 ### `generate_module_tree_schema`
 
 - Title: Generate Dashboard Module Tree Schema
 - Mode: writes schema output
-- Description: Generate one editor-ready __Group__ module tree from explicit module slots. Supports common grouping.mode='semantic' and grouping.singleChildGroup=true. SingleImage backgrounds use imageLayerRole='background' and move to the bottom layer; imageLayerRole='content' stays in main content.
+- Description: Generate one editor-ready __Group__ module tree from explicit module slots. Supports common grouping.mode='semantic' and grouping.singleChildGroup=true. Siblings are normalized and sorted by layerRole; SingleImage keeps imageLayerRole identical to layerRole.
 
 ## DashboardSpec
 

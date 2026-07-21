@@ -378,24 +378,17 @@ export function generateComponentsSchemas(
   }));
 }
 
-export function sortComponentSchemas(schemas: ComponentSchema[]): ComponentSchema[] {
-  const sorted = [...schemas].sort((left, right) => {
-    const leftIsImage = left.componentName === "SingleImage" && !isContentSingleImageProps(left.props);
-    const rightIsImage = right.componentName === "SingleImage" && !isContentSingleImageProps(right.props);
-    return Number(leftIsImage) - Number(rightIsImage);
-  });
+export type EditorLayerRole = "content" | "decoration" | "background";
 
-  return sorted.map((schema, index) => {
-    const next: ComponentSchema = { ...schema, indexNum: index + 1 };
-    if (Array.isArray(next.children)) {
-      next.children = sortComponentSchemas(next.children);
-    }
-    return next;
-  });
-}
+const EDITOR_LAYER_ORDER: Record<EditorLayerRole, number> = {
+  content: 0,
+  decoration: 1,
+  background: 2,
+};
 
 const BACKGROUND_EDITOR_NODE_TITLE_PATTERN =
-  /背景|底板|底座|底图|面板边框|模块边框|卡组边框|边框|background|backdrop|panel[-_ ]?(?:bg|frame)/i;
+  /背景|底板|底座|底图|底纹|底色|衬底|面板边框|模块边框|卡组边框|边框|background|backdrop|panel[-_ ]?(?:bg|frame)/i;
+const BACKGROUND_EDITOR_NODE_ID_PATTERN = /(?:^|[_-])(?:bg|background|backdrop)(?:[_-]|$)/i;
 
 function editorNodeTitle(node: EditorTreeNode): string {
   if (typeof node.title === "string" && node.title.trim() !== "") {
@@ -407,28 +400,103 @@ function editorNodeTitle(node: EditorTreeNode): string {
     : "";
 }
 
+export function isEditorLayerRole(value: JsonValue | undefined): value is EditorLayerRole {
+  return value === "content" || value === "decoration" || value === "background";
+}
+
 export function isContentSingleImageProps(props: JsonObject): boolean {
-  return props.imageLayerRole === "content";
+  return props.layerRole === "content" || props.imageLayerRole === "content";
 }
 
 export function isContentSingleImageNode(node: EditorTreeNode): boolean {
   return node.componentName === "SingleImage" && isContentSingleImageProps(node.props);
 }
 
-function isBottomLayerEditorNode(node: EditorTreeNode): boolean {
-  return (node.componentName === "SingleImage" && !isContentSingleImageNode(node)) ||
-    (node.componentName === "SvgDecoration" &&
-      BACKGROUND_EDITOR_NODE_TITLE_PATTERN.test(editorNodeTitle(node))) ||
-    (node.componentName === "__Group__" && node.title === "背景");
+export function editorNodeLayerRole(node: EditorTreeNode): EditorLayerRole {
+  if (isJsonObject(node.props)) {
+    if (isEditorLayerRole(node.props.layerRole)) {
+      return node.props.layerRole;
+    }
+    if (
+      node.componentName === "SingleImage" &&
+      (node.props.imageLayerRole === "content" || node.props.imageLayerRole === "background")
+    ) {
+      return node.props.imageLayerRole;
+    }
+  }
+
+  const hasBackgroundTitle = BACKGROUND_EDITOR_NODE_TITLE_PATTERN.test(editorNodeTitle(node));
+  if (node.componentName === "SingleImage") {
+    return "background";
+  }
+  if (node.componentName === "SvgDecoration") {
+    return hasBackgroundTitle || BACKGROUND_EDITOR_NODE_ID_PATTERN.test(node.id)
+      ? "background"
+      : "decoration";
+  }
+  if (
+    node.componentName === "__Group__" &&
+    (hasBackgroundTitle ||
+      (Array.isArray(node.children) &&
+        node.children.length > 0 &&
+        node.children.every((child) => editorNodeLayerRole(child) === "background")))
+  ) {
+    return "background";
+  }
+  return "content";
+}
+
+function setEditorNodeLayerRole(node: EditorTreeNode, layerRole: EditorLayerRole): void {
+  node.props = isJsonObject(node.props) ? node.props : {};
+  node.props.layerRole = layerRole;
+  if (node.componentName === "SingleImage" && layerRole !== "decoration") {
+    node.props.imageLayerRole = layerRole;
+  }
+}
+
+function componentSchemaLayerRole(schema: ComponentSchema): EditorLayerRole {
+  if (isEditorLayerRole(schema.props.layerRole)) {
+    return schema.props.layerRole;
+  }
+  if (
+    schema.componentName === "SingleImage" &&
+    (schema.props.imageLayerRole === "content" || schema.props.imageLayerRole === "background")
+  ) {
+    return schema.props.imageLayerRole;
+  }
+  return schema.componentName === "SvgDecoration" ? "decoration" : "content";
+}
+
+export function sortComponentSchemas(schemas: ComponentSchema[]): ComponentSchema[] {
+  const normalized = schemas.map((schema) => {
+    const layerRole = componentSchemaLayerRole(schema);
+    const props: JsonObject = { ...schema.props, layerRole };
+    if (schema.componentName === "SingleImage" && layerRole !== "decoration") {
+      props.imageLayerRole = layerRole;
+    }
+    return { ...schema, props };
+  });
+  const sorted = normalized.sort((left, right) => {
+    return EDITOR_LAYER_ORDER[componentSchemaLayerRole(left)] - EDITOR_LAYER_ORDER[componentSchemaLayerRole(right)];
+  });
+
+  return sorted.map((schema, index) => {
+    const next: ComponentSchema = { ...schema, indexNum: index + 1 };
+    if (Array.isArray(next.children)) {
+      next.children = sortComponentSchemas(next.children);
+    }
+    return next;
+  });
 }
 
 export function sortEditorTreeChildren(node: EditorTreeNode): EditorTreeNode {
   if (Array.isArray(node.children)) {
-    const sortedChildren = [...node.children].sort((left, right) => {
-      return Number(isBottomLayerEditorNode(left)) - Number(isBottomLayerEditorNode(right));
+    const normalizedChildren = node.children.map(sortEditorTreeChildren);
+    node.children = normalizedChildren.sort((left, right) => {
+      return EDITOR_LAYER_ORDER[editorNodeLayerRole(left)] - EDITOR_LAYER_ORDER[editorNodeLayerRole(right)];
     });
-    node.children = sortedChildren.map(sortEditorTreeChildren);
   }
+  setEditorNodeLayerRole(node, editorNodeLayerRole(node));
   return node;
 }
 

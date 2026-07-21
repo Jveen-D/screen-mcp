@@ -33,6 +33,10 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
     imageWritableProps.some((item) => item.path === "imageLayerRole"),
     "SingleImage should expose explicit background/content layer semantics",
   );
+  assert.ok(
+    imageWritableProps.some((item) => item.path === "layerRole"),
+    "SingleImage should expose the canonical editor layer role",
+  );
   assert.equal(
     imageWritableProps.some((item) => item.path === "option.backgroundColor"),
     false,
@@ -59,6 +63,8 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
   assert.equal(imageSchema.componentName, "SingleImage");
   assert.equal(imageSchema.props.imageBase64, "data:image/png;base64,AAAA");
   assert.equal(imageSchema.props.imageUseMode, "base64");
+  assert.equal(imageSchema.props.layerRole, "background");
+  assert.equal(imageSchema.props.imageLayerRole, "background");
   assert.deepEqual(imageSchema.props.entryAnimiation, { isShow: false, type: "" });
   assert.equal(imageSchema.props.targetUrl, "");
   assert.equal(imageSchema.props.openBrowser, false);

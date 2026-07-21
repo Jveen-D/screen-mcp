@@ -7,7 +7,7 @@ export const singleImageCapability: JsonObject = {
     "用于大屏面板背景、全屏背景、标题背景、纹理、光效 PNG/JPG/WebP 或 base64 图片点缀。imageSrc 只能使用用户明确提供的路径，AI 不要猜测或选择现有素材库资源；没有素材时可用 style/SvgDecoration 表达轻量背景，只有确实需要图片纹理时才生成短 base64。",
 
   aiRole:
-    "AI 负责图片组件的位置、尺寸、图片来源和 imageLayerRole。MCP 负责补齐默认 props，并只把 background 图片强制置底。",
+    "AI 负责图片组件的位置、尺寸、图片来源和 layerRole，并让兼容字段 imageLayerRole 与其一致。MCP 负责规范化两个字段，并把 background 图片置底。",
 
   requiredProps: [
     {
@@ -34,6 +34,13 @@ export const singleImageCapability: JsonObject = {
   ],
   aiWritableProps: [
     { path: "name", type: "string", description: "图层名称。" },
+    {
+      path: "layerRole",
+      type: "enum",
+      values: ["background", "content"],
+      defaultValue: "background",
+      description: "统一层级语义，必须与 imageLayerRole 一致。",
+    },
     { path: "style", type: "object", description: "位置、尺寸、背景、边框和圆角。" },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
@@ -69,7 +76,7 @@ export const singleImageCapability: JsonObject = {
       values: ["background", "content"],
       defaultValue: "background",
       description:
-        "图片层级语义。background 用于全屏/面板底图并强制置底；content 用于照片、鸟瞰图、Logo、复杂插画等业务内容，进入主内容组并保持在面板背景之上。",
+        "图片层级兼容字段。background 用于全屏/面板底图；content 用于照片、鸟瞰图、Logo、复杂插画；MCP 会将它与 layerRole 归一为一致值。",
     },
     {
       path: "animation",
@@ -103,16 +110,16 @@ export const singleImageCapability: JsonObject = {
     "禁止生成不可访问的外部图片链接或照片级真实图片；自行生成的 base64 内容应为短小的矢量风格渐变、网格、光效或纹理。",
     "需要真实图片素材、纹理或光效时使用 SingleImage；简单面板底色、边框和线性结构优先使用 style 或 SvgDecoration。",
     "当 imageBase64 非空时，imageUseMode 必须为 base64；当 imageSrc 非空且 imageBase64 为空时，imageUseMode 使用 upload。",
-    "全屏或面板底图必须设置 imageLayerRole=background；照片、鸟瞰图、Logo、复杂插画等业务内容图片必须设置 imageLayerRole=content。",
-    "只有 imageLayerRole=background 的 SingleImage 会被排到 SingleText、SvgDecoration、PieChart 等内容之后；content 图片参与普通主内容排序并应使用明确 zIndex。",
-    "手动构建 __Group__ 的 children 数组时，只需把 imageLayerRole=background 的 SingleImage 放在 children 末尾；content 图片应按实际遮挡关系放入主内容层。",
+    "全屏或面板底图必须同时设置 layerRole=background 和 imageLayerRole=background；照片、鸟瞰图、Logo、复杂插画等业务内容图片必须同时设置为 content。",
+    "层级只按统一 layerRole 和数组顺序编译：background 图片排在内容与装饰之后，content 图片进入主内容层；不要用 zIndex 表达图片角色。",
+    "手动构建 __Group__ 的 children 数组时，background SingleImage 放在 children 末尾；content 图片按实际遮挡关系放入主内容层。",
   ],
   visualRules: [
     "AI 始终保有设计权：根据用户需求决定是否使用 SingleImage。不要为了默认科技感而生成长 base64。",
     "全屏背景图应覆盖整个画布（如 1920×1080），并位于 ComponentSchema[] 末尾作为最底层，避免遮挡内容。",
     "生成的 base64 背景图应使用短小矢量或简单纹理：深色渐变、科技网格、弱光晕、细边框，避免大尺寸照片级真实图片。",
-    "照片、鸟瞰图、Logo、复杂插画等不可重画内容使用 imageLayerRole=content，必须位于面板背景之上；可通过 zIndex 和数组顺序与标题或标注建立局部遮挡关系。",
-    "在任意 __Group__ 的 children 数组中，覆盖全屏或全面板且 imageLayerRole=background 的 SingleImage 必须是最后一个元素；decorative 光效/纹理如需置顶应使用 SvgDecoration，而不是把背景图片标记为 content。",
+    "照片、鸟瞰图、Logo、复杂插画等不可重画内容使用 layerRole=content，并让 imageLayerRole 与其一致，必须位于面板背景之上。",
+    "在任意 __Group__ 的 children 数组中，覆盖全屏或全面板且 layerRole=background 的 SingleImage 必须是最后一个元素；decorative 光效/纹理如需置顶应使用 SvgDecoration，而不是把背景图片标记为 content。",
     "当 style.backgroundColor 或 SvgDecoration 足以表达背景结构时，不必额外生成 SingleImage。",
   ],
   examples: [
@@ -136,6 +143,7 @@ export const singleImageCapability: JsonObject = {
           borderColor: "rgba(0,0,0,0)",
         },
         imageUseMode: "upload",
+        layerRole: "background",
         imageLayerRole: "background",
         imageSrc: "<user-provided-image-src>",
         imageShowType: "noRepeat",
@@ -162,6 +170,7 @@ export const singleImageCapability: JsonObject = {
           borderColor: "rgba(0,0,0,0)",
         },
         imageUseMode: "base64",
+        layerRole: "background",
         imageLayerRole: "background",
         imageBase64:
           "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzAyMEExOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA2MTkyRiIvPjwvbGluZWFyR3JhZGllbnQ+PHBhdHRlcm4gaWQ9InAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTQwIDBIMFY0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBFNUZGIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMDgiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiBmaWxsPSJ1cmwoI3ApIi8+PC9zdmc+",

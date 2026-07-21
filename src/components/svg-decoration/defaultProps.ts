@@ -23,6 +23,7 @@ export const svgDecorationDefaultProps: JsonObject = {
   svgPreset: "",
   svgContent: "",
   svgFit: "contain",
+  layerRole: "decoration",
   primaryColor: "",
   secondaryColor: "",
   accentColor: "",
