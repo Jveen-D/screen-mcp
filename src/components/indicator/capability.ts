@@ -80,8 +80,25 @@ export const indicatorCapability: JsonObject = {
     {
       path: "globalConfig.space",
       type: "number",
-      description:
-        "标题与数字之间的间距（px）。注意：该值会同时作为标题和数字的外边距，因此视觉上两者的真实间距约为 2*space。建议 space 取 2~8。",
+      range: [0, 64],
+      description: "标题与数字之间的精确间距（px）。新建组件使用 flex gap，建议 2~12。",
+    },
+    {
+      path: "globalConfig.padding",
+      type: "object",
+      description: "组件内容内边距，四边单位均为 px。",
+      children: [
+        { path: "globalConfig.padding.top", type: "number", range: [0, 120], description: "上内边距。" },
+        { path: "globalConfig.padding.right", type: "number", range: [0, 120], description: "右内边距。" },
+        { path: "globalConfig.padding.bottom", type: "number", range: [0, 120], description: "下内边距。" },
+        { path: "globalConfig.padding.left", type: "number", range: [0, 120], description: "左内边距。" },
+      ],
+    },
+    {
+      path: "titleOverflow",
+      type: "enum",
+      values: ["ellipsis", "clip", "wrap"],
+      description: "标题超出可用宽度时的处理方式：省略号、裁切或自动换行。",
     },
     {
       path: "titleStyle",
@@ -176,6 +193,11 @@ export const indicatorCapability: JsonObject = {
       description: "是否开启千分位分隔。",
     },
     {
+      path: "emptyText",
+      type: "string",
+      description: "空值或非数字值的占位文案，默认“--”。数值 0 不视为空值。",
+    },
+    {
       path: "animation",
       type: "boolean",
       description: "是否开启动画。",
@@ -201,8 +223,8 @@ export const indicatorCapability: JsonObject = {
       type: "object",
       description: "数字背景配置：width、height、isBgColor、bgColor、bgImg。开启 hasBackground 后才会生效。",
       children: [
-        { path: "numBackground.width", type: "number", description: "单个数字背景宽度（px）。" },
-        { path: "numBackground.height", type: "number", description: "单个数字背景高度（px）。" },
+        { path: "numBackground.width", type: "number", range: [12, 120], description: "单个数字背景宽度（px）。" },
+        { path: "numBackground.height", type: "number", range: [20, 160], description: "单个数字背景高度（px）。" },
         { path: "numBackground.isBgColor", type: "boolean", description: "true=使用背景色，false=使用背景图片。" },
         { path: "numBackground.bgColor", type: "string", description: "背景色（isBgColor=true 时生效）。" },
         { path: "numBackground.bgImg", type: "string", description: "背景图片地址（isBgColor=false 时生效）。" },
@@ -230,7 +252,17 @@ export const indicatorCapability: JsonObject = {
         },
       ],
     },
-    { path: "style", type: "object", description: "位置、尺寸、层级与背景色。" },
+    {
+      path: "style",
+      type: "object",
+      description: "位置、尺寸、层级、背景与边框。",
+      children: [
+        { path: "style.backgroundColor", type: "string", description: "组件背景色。" },
+        { path: "style.borderRadius", type: "number", range: [0, 100], description: "圆角（px）。" },
+        { path: "style.borderWidth", type: "number", range: [0, 20], description: "边框宽度（px）。" },
+        { path: "style.borderColor", type: "string", description: "边框颜色。" },
+      ],
+    },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
   ],
@@ -248,7 +280,7 @@ export const indicatorCapability: JsonObject = {
     "对象按 key 深合并。",
     "chartData 永远使用默认结构，MCP 会把 textValue 同步到 chartData.constant.data[0].value。",
     "decimal 会同步到 chartData.indicator[0].fieldDataConfig.format.accuracy。",
-    "未开启数字背景时，小数或短数字如果传入 separation=true，MCP 会关闭 separation，避免普通 KPI 被逐位拆散显示。",
+    "separation 是显式格式化意图，MCP 会保留调用方传入的 true/false；只在值非法时回退默认值。",
     "DashboardSpec 编译时，如果 Indicator 仍开启内置标题，MCP 会优先把真实 titleName 外置为同级 SingleText，并关闭 Indicator.titleVisible；默认占位标题不会被外置。",
   ],
   visualRules: [
@@ -266,7 +298,7 @@ export const indicatorCapability: JsonObject = {
     "Indicator 背景应使用与所属面板/大屏主题协调的弱透明色或 Tech 边框，不要默认使用高饱和纯色背景。",
     "numberStyle.fontSize 与组件高度需匹配：单列布局时建议 height ≥ fontSize * 1.6；数字带背景时建议 height ≥ numBackground.height + 20。",
     "numberStyle.letterSpacing 实际表现为数字间距，推荐 0~4；设置过大将导致数字被撑开并可能溢出。",
-    "globalConfig.space 会同时作用于标题和数字，视觉上真实间距约为 2*space；如需 8px 间距可设置 space=4。",
+    "新建组件的 globalConfig.space 使用 flex gap，配置值就是标题与数字之间的实际像素间距；旧 schema 缺少 useFlexGap 时继续沿用原双 margin 行为。",
     "前缀/后缀开启时，应预留额外宽度，避免 prefix/suffix 与数字重叠或换行。",
   ],
   examples: [

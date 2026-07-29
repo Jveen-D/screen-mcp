@@ -30,6 +30,16 @@ export function runIndicatorNormalizerTests(): void {
   assert.equal(asChartObject(indicatorConstantData[0]).value, 9876, "Indicator textValue should sync to chartData");
   const indicatorIndicator = Array.isArray(indicatorChartData.indicator) ? indicatorChartData.indicator : [];
   assert.equal(asChartObject(indicatorIndicator[0]).fieldName, "value", "Indicator indicator fieldName should be value");
+  assert.equal(indicatorSchema.props.titleOverflow, "ellipsis");
+  assert.equal(indicatorSchema.props.emptyText, "--");
+  assert.equal(indicatorSchema.props.separation, true, "Indicator should keep the readable grouping default");
+  assert.deepEqual(asChartObject(indicatorSchema.props.globalConfig).padding, {
+    top: 12,
+    right: 16,
+    bottom: 12,
+    left: 16,
+  });
+  assert.equal(asChartObject(indicatorSchema.props.style).borderRadius, 4);
 
   const indicatorWideSchema = generateComponentsSchema({
     componentName: "Indicator",
@@ -164,9 +174,49 @@ export function runIndicatorNormalizerTests(): void {
   });
   assert.equal(
     decimalKpiSchema.props.separation,
-    false,
-    "Indicator should disable separation for ordinary decimal KPIs without digit backgrounds",
+    true,
+    "Indicator should preserve an explicit separation setting for decimal KPIs",
   );
+
+  const invalidVisualSchema = generateComponentsSchema({
+    componentName: "Indicator",
+    logicalId: "indicator_invalid_visual_test",
+    parentLogicalId: "indicator_group",
+    textValue: 0,
+    decimal: 99,
+    separation: "yes",
+    titleOverflow: "scroll",
+    emptyText: "",
+    duration: 0,
+    globalConfig: {
+      flexDirection: "diagonal",
+      alignItems: "start",
+      space: 100,
+      padding: { top: -1, right: 999, bottom: 8, left: 6 },
+    },
+    style: {
+      position: "absolute",
+      left: 100,
+      top: 100,
+      width: 320,
+      height: 104,
+      borderRadius: 999,
+      borderWidth: -1,
+    },
+  });
+  const invalidVisualLayout = asChartObject(invalidVisualSchema.props.globalConfig);
+  const invalidVisualStyle = asChartObject(invalidVisualSchema.props.style);
+  assert.equal(invalidVisualSchema.props.decimal, 4);
+  assert.equal(invalidVisualSchema.props.separation, true);
+  assert.equal(invalidVisualSchema.props.titleOverflow, "ellipsis");
+  assert.equal(invalidVisualSchema.props.emptyText, "");
+  assert.equal(invalidVisualSchema.props.duration, 1);
+  assert.equal(invalidVisualLayout.flexDirection, "column");
+  assert.equal(invalidVisualLayout.alignItems, "flex-start");
+  assert.equal(invalidVisualLayout.space, 64);
+  assert.deepEqual(invalidVisualLayout.padding, { top: 0, right: 120, bottom: 8, left: 6 });
+  assert.equal(invalidVisualStyle.borderRadius, 100);
+  assert.equal(invalidVisualStyle.borderWidth, 0);
 
   const backgroundDigitKpiSchema = generateComponentsSchema({
     componentName: "Indicator",

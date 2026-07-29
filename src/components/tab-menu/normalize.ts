@@ -1,32 +1,11 @@
 import type { JsonObject, JsonValue } from "../../types/component.js";
+import { tabMenuDefaultProps } from "./defaultProps.js";
 
-const DEFAULT_STYLE: JsonObject = {
-  rotate: 0,
-  top: 136.14285714285717,
-  left: 356.2857142857142,
-  width: 782.2857142857142,
-  position: "absolute",
-  opacity: 1,
-  height: 46.57142857142857,
-  zIndex: 501,
-};
-
-const DEFAULT_MENU_STYLE: JsonObject = {
-  borderType: "solid",
-  backgroundColor: "rgba(181,210,252,1)",
-  borderColor: "rgba(0,0,0,0)",
-  color: "#fff",
-  textAlign: "flex-start",
-  letterSpacing: 2,
-  fontStyle: "italic",
-  fontFamily: "优设标题圆",
-  borderRadius: 4,
-  borderWidth: 0,
-  iconColor: "rgba(222,232,255,1)",
-  fontSize: 23,
-  lineHeight: 2,
-  fontWeight: "normal",
-  backgroundFillType: "color",
+const DEFAULT_STYLE = tabMenuDefaultProps.style as JsonObject;
+const DEFAULT_MENU_STYLES: Record<string, JsonObject> = {
+  menuDefaultStyle: tabMenuDefaultProps.menuDefaultStyle as JsonObject,
+  menuHoverStyle: tabMenuDefaultProps.menuHoverStyle as JsonObject,
+  menuSelectStyle: tabMenuDefaultProps.menuSelectStyle as JsonObject,
 };
 
 const DEFAULT_TABLE_MAP_DATA: JsonObject = {
@@ -59,6 +38,10 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   }
 
   return fallback;
+}
+
+function clampNumber(value: JsonValue | undefined, min: number, max: number, fallback: number): number {
+  return Math.min(max, Math.max(min, asNumber(value, fallback)));
 }
 
 function applyDefaults(target: JsonObject, defaults: JsonObject): void {
@@ -126,24 +109,40 @@ function normalizeStyle(props: JsonObject): void {
   }
 
   applyDefaults(style, DEFAULT_STYLE);
-  props.rotate = asNumber(props.rotate, style.rotate as number ?? 0);
-  props.opacity = asNumber(props.opacity, style.opacity as number ?? 1);
 }
 
 function normalizeMenuStyles(props: JsonObject): void {
   for (const key of ["menuDefaultStyle", "menuHoverStyle", "menuSelectStyle"]) {
+    const defaults = DEFAULT_MENU_STYLES[key];
     const styleObj = props[key];
     if (!isJsonObject(styleObj)) {
-      props[key] = { ...DEFAULT_MENU_STYLE };
+      props[key] = { ...defaults };
     } else {
-      applyDefaults(styleObj, DEFAULT_MENU_STYLE);
+      applyDefaults(styleObj, defaults);
+      styleObj.borderWidth = clampNumber(styleObj.borderWidth, 0, 20, defaults.borderWidth as number);
+      styleObj.borderRadius = clampNumber(styleObj.borderRadius, 0, 100, defaults.borderRadius as number);
+      styleObj.fontSize = clampNumber(styleObj.fontSize, 8, 64, defaults.fontSize as number);
+      styleObj.letterSpacing = clampNumber(styleObj.letterSpacing, 0, 20, defaults.letterSpacing as number);
+      styleObj.lineHeight = clampNumber(styleObj.lineHeight, 0.8, 3, defaults.lineHeight as number);
+      styleObj.borderType = ["solid", "dashed"].includes(styleObj.borderType as string)
+        ? styleObj.borderType
+        : defaults.borderType;
+      styleObj.backgroundFillType = ["color", "image"].includes(styleObj.backgroundFillType as string)
+        ? styleObj.backgroundFillType
+        : defaults.backgroundFillType;
+      styleObj.fontStyle = ["normal", "italic", "oblique"].includes(styleObj.fontStyle as string)
+        ? styleObj.fontStyle
+        : defaults.fontStyle;
+      styleObj.fontWeight = ["normal", "bold", "bolder"].includes(styleObj.fontWeight as string)
+        ? styleObj.fontWeight
+        : defaults.fontWeight;
     }
   }
 }
 
 function normalizeNumericProps(props: JsonObject): void {
-  props.rotate = asNumber(props.rotate, 0);
-  props.opacity = asNumber(props.opacity, 1);
+  props.rotate = clampNumber(props.rotate, -360, 360, 0);
+  props.opacity = clampNumber(props.opacity, 0, 1, 1);
 }
 
 function normalizeEntryAnimation(props: JsonObject): void {
@@ -180,13 +179,19 @@ export function normalizeTabMenuProps(props: JsonObject): JsonObject {
   props.alignType = ["start", "center", "end"].includes(props.alignType as string)
     ? props.alignType
     : "center";
-  props.cardSpace = asNumber(props.cardSpace, 6);
+  props.itemAlign = ["start", "center", "end"].includes(props.itemAlign as string)
+    ? props.itemAlign
+    : "center";
+  props.textOverflow = ["ellipsis", "wrap", "visible"].includes(props.textOverflow as string)
+    ? props.textOverflow
+    : "ellipsis";
+  props.cardSpace = clampNumber(props.cardSpace, 0, 64, 8);
   props.fillContainer = typeof props.fillContainer === "boolean" ? props.fillContainer : true;
   props.showIcon = typeof props.showIcon === "boolean" ? props.showIcon : false;
-  props.iconSize = asNumber(props.iconSize, 16);
-  props.iconSpace = asNumber(props.iconSpace, 6);
-  props.expandIconSize = asNumber(props.expandIconSize, 12);
-  props.expandIconColor = asString(props.expandIconColor, "rgba(227,240,255,1)");
+  props.iconSize = clampNumber(props.iconSize, 8, 64, 16);
+  props.iconSpace = clampNumber(props.iconSpace, 0, 64, 6);
+  props.expandIconSize = clampNumber(props.expandIconSize, 8, 64, 12);
+  props.expandIconColor = asString(props.expandIconColor, "#94a3b8");
   props.name = asString(props.name, "Tab列表");
   props.title = asString(props.title, "Tab列表");
 

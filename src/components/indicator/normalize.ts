@@ -26,6 +26,10 @@ function asIntegerInRange(value: JsonValue | undefined, min: number, max: number
   return Math.min(Math.max(Math.round(num), min), max);
 }
 
+function clampNumber(value: JsonValue | undefined, min: number, max: number, fallback: number): number {
+  return Math.min(Math.max(asNumber(value, fallback), min), max);
+}
+
 function cloneRows(rows: JsonValue[]): JsonObject[] {
   return rows
     .filter(isJsonObject)
@@ -67,12 +71,58 @@ function normalizeNumBackground(props: JsonObject): void {
   }
 
   const numBackground = isJsonObject(props.numBackground) ? props.numBackground : {};
-  numBackground.width = asNumber(numBackground.width, 36);
-  numBackground.height = asNumber(numBackground.height, 54);
+  numBackground.width = clampNumber(numBackground.width, 12, 120, 32);
+  numBackground.height = clampNumber(numBackground.height, 20, 160, 48);
   numBackground.isBgColor = typeof numBackground.isBgColor === "boolean" ? numBackground.isBgColor : true;
-  numBackground.bgColor = asString(numBackground.bgColor, "rgba(0,229,255,0.15)");
+  numBackground.bgColor = asString(numBackground.bgColor, "rgba(71,215,232,0.14)");
   numBackground.bgImg = asString(numBackground.bgImg, "");
   props.numBackground = numBackground;
+}
+
+function normalizeLayout(props: JsonObject): void {
+  const globalConfig = isJsonObject(props.globalConfig) ? props.globalConfig : {};
+  const validDirections = ["column", "column-reverse", "inherit", "row-reverse"];
+  const validAlignments = ["flex-start", "center", "flex-end", "baseline", "stretch"];
+
+  globalConfig.flexDirection = validDirections.includes(globalConfig.flexDirection as string)
+    ? globalConfig.flexDirection
+    : "column";
+  const rawAlignment = globalConfig.alignItems === "start"
+    ? "flex-start"
+    : globalConfig.alignItems === "end"
+      ? "flex-end"
+      : globalConfig.alignItems;
+  globalConfig.alignItems = validAlignments.includes(rawAlignment as string) ? rawAlignment : "flex-start";
+  globalConfig.space = clampNumber(globalConfig.space, 0, 64, 4);
+  globalConfig.useFlexGap = globalConfig.useFlexGap !== false;
+
+  const padding = isJsonObject(globalConfig.padding) ? globalConfig.padding : {};
+  globalConfig.padding = {
+    top: clampNumber(padding.top, 0, 120, 12),
+    right: clampNumber(padding.right, 0, 120, 16),
+    bottom: clampNumber(padding.bottom, 0, 120, 12),
+    left: clampNumber(padding.left, 0, 120, 16),
+  };
+  props.globalConfig = globalConfig;
+}
+
+function normalizeVisualProps(props: JsonObject): void {
+  props.decimal = asIntegerInRange(props.decimal, 0, 4, 0);
+  props.separation = typeof props.separation === "boolean" ? props.separation : true;
+  props.emptyText = typeof props.emptyText === "string" ? props.emptyText : "--";
+  props.titleOverflow = ["ellipsis", "clip", "wrap"].includes(props.titleOverflow as string)
+    ? props.titleOverflow
+    : "ellipsis";
+  props.animation = typeof props.animation === "boolean" ? props.animation : true;
+  props.animateType = [0, 1].includes(props.animateType as number) ? props.animateType : 1;
+  props.duration = clampNumber(props.duration, 1, 60, 1.2);
+
+  const style = isJsonObject(props.style) ? props.style : {};
+  style.borderRadius = clampNumber(style.borderRadius, 0, 100, 4);
+  style.borderWidth = clampNumber(style.borderWidth, 0, 20, 1);
+  style.borderStyle = "solid";
+  style.borderColor = asString(style.borderColor, "rgba(71,215,232,0.32)");
+  props.style = style;
 }
 
 function normalizeCompactTypography(props: JsonObject): void {
@@ -88,7 +138,7 @@ function normalizeCompactTypography(props: JsonObject): void {
   const prefixStyle = isJsonObject(props.prefixStyle) ? props.prefixStyle : {};
   const globalConfig = isJsonObject(props.globalConfig) ? props.globalConfig : {};
 
-  const titleFontSize = asNumber(titleStyle.fontSize, 18);
+  const titleFontSize = asNumber(titleStyle.fontSize, 14);
   const currentSpace = asNumber(globalConfig.space, 4);
   globalConfig.space = Math.min(currentSpace, 2);
 
@@ -97,7 +147,7 @@ function normalizeCompactTypography(props: JsonObject): void {
     return;
   }
 
-  const currentNumberFontSize = asNumber(numberStyle.fontSize, 48);
+  const currentNumberFontSize = asNumber(numberStyle.fontSize, 40);
   const compactNumberFontSize = Math.max(28, Math.floor(availableNumberHeight));
   if (currentNumberFontSize > compactNumberFontSize) {
     numberStyle.fontSize = compactNumberFontSize;
@@ -138,7 +188,7 @@ function estimateTextWidth(text: string, fontSize: number): number {
 
 function shouldApplyWideFloor(props: JsonObject, numberText: string): boolean {
   const numberStyle = isJsonObject(props.numberStyle) ? props.numberStyle : {};
-  const fontSize = asNumber(numberStyle.fontSize, 48);
+  const fontSize = asNumber(numberStyle.fontSize, 40);
   const hasDenseKpiLayout =
     props.prefix === true ||
     props.suffix === true ||
@@ -161,19 +211,19 @@ function estimateIndicatorMinWidth(props: JsonObject): number {
 
   let numberWidth: number;
   if (hasBackground) {
-    const bgWidth = asNumber(numBackground.width, 36);
-    const letterSpacing = asNumber(numberStyle.letterSpacing, 1);
+    const bgWidth = asNumber(numBackground.width, 32);
+    const letterSpacing = asNumber(numberStyle.letterSpacing, 0);
     numberWidth = numberText.length * (bgWidth + letterSpacing * 2);
   } else {
-    const fontSize = asNumber(numberStyle.fontSize, 48);
-    const letterSpacing = asNumber(numberStyle.letterSpacing, 1);
+    const fontSize = asNumber(numberStyle.fontSize, 40);
+    const letterSpacing = asNumber(numberStyle.letterSpacing, 0);
     numberWidth = estimateTextWidth(numberText, fontSize) + numberText.length * letterSpacing * 2;
   }
 
   let prefixWidth = 0;
   if (props.prefix === true) {
     const prefixStyle = isJsonObject(props.prefixStyle) ? props.prefixStyle : {};
-    const prefixFontSize = asNumber(prefixStyle.fontSize, 18);
+    const prefixFontSize = asNumber(prefixStyle.fontSize, 14);
     const prefixTitle = asString(props.prefixTitle, "");
     prefixWidth = estimateTextWidth(prefixTitle, prefixFontSize) + prefixFontSize * 0.8;
   }
@@ -181,7 +231,7 @@ function estimateIndicatorMinWidth(props: JsonObject): number {
   let suffixWidth = 0;
   if (props.suffix === true) {
     const suffixStyle = isJsonObject(props.suffixStyle) ? props.suffixStyle : {};
-    const suffixFontSize = asNumber(suffixStyle.fontSize, 18);
+    const suffixFontSize = asNumber(suffixStyle.fontSize, 14);
     const suffixTitle = asString(props.suffixTitle, "");
     suffixWidth = estimateTextWidth(suffixTitle, suffixFontSize) + suffixFontSize * 0.8;
   }
@@ -211,20 +261,6 @@ function normalizeStyleWidth(props: JsonObject): void {
   }
 }
 
-function normalizeReadableSeparation(props: JsonObject): void {
-  if (props.separation !== true || props.hasBackground === true) {
-    return;
-  }
-
-  const decimal = asIntegerInRange(props.decimal, 0, 4, 0);
-  const textValue = Math.abs(asNumber(props.textValue, 0));
-  const numberStyle = isJsonObject(props.numberStyle) ? props.numberStyle : {};
-  const fontSize = asNumber(numberStyle.fontSize, 48);
-  if (decimal > 0 || (fontSize >= 40 && textValue < 1000000)) {
-    props.separation = false;
-  }
-}
-
 function normalizeIndicatorData(props: JsonObject): void {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -233,7 +269,7 @@ function normalizeIndicatorData(props: JsonObject): void {
 
   const decimal = asIntegerInRange(props.decimal, 0, 4, 0);
   const textValue = props.textValue;
-  const normalizedValue = asNumber(textValue, 1234);
+  const normalizedValue = asNumber(textValue, 12480);
 
   const constant = chartData.constant;
   if (!isJsonObject(constant) || !Array.isArray(constant.data)) {
@@ -290,11 +326,12 @@ function normalizeIndicatorData(props: JsonObject): void {
 }
 
 export function normalizeIndicatorProps(props: JsonObject): JsonObject {
+  normalizeLayout(props);
+  normalizeVisualProps(props);
   normalizeTitleName(props);
   normalizeNumBackground(props);
   normalizeCompactTypography(props);
   normalizeStyleWidth(props);
-  normalizeReadableSeparation(props);
   normalizeIndicatorData(props);
   ensureEntryAnimation(props);
   return props;
