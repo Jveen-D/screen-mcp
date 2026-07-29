@@ -21,15 +21,38 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   return fallback;
 }
 
+function normalizeEnum(
+  value: JsonValue | undefined,
+  allowed: string[],
+  fallback: string,
+): string {
+  return typeof value === "string" && allowed.includes(value) ? value : fallback;
+}
+
+function normalizeValueFormat(props: JsonObject): void {
+  const valueFormat = isJsonObject(props.valueFormat) ? props.valueFormat : {};
+  valueFormat.precision = Math.min(
+    Math.max(Math.round(asNumber(valueFormat.precision, 0)), 0),
+    6,
+  );
+  valueFormat.useGrouping = typeof valueFormat.useGrouping === "boolean"
+    ? valueFormat.useGrouping
+    : true;
+  valueFormat.nullText = typeof valueFormat.nullText === "string"
+    ? valueFormat.nullText
+    : "--";
+  props.valueFormat = valueFormat;
+}
+
 function normalizeLineHeight(style: JsonObject): void {
   const lineHeight = style.lineHeight;
   if (typeof lineHeight !== "number") {
-    style.lineHeight = 1;
+    style.lineHeight = 1.2;
     return;
   }
 
   if (lineHeight <= 0) {
-    style.lineHeight = 1;
+    style.lineHeight = 1.2;
     return;
   }
 
@@ -39,7 +62,7 @@ function normalizeLineHeight(style: JsonObject): void {
 
   const fontSize = style.fontSize;
   const normalized =
-    typeof fontSize === "number" && fontSize > 0 ? lineHeight / fontSize : 1;
+    typeof fontSize === "number" && fontSize > 0 ? lineHeight / fontSize : 1.2;
 
   style.lineHeight = Math.min(Math.max(Number(normalized.toFixed(2)), 1), 2);
 }
@@ -51,7 +74,7 @@ function normalizeDynamicTextData(props: JsonObject): void {
   }
 
   const textValue = props.textValue;
-  const normalizedValue = asNumber(textValue, 0);
+  const normalizedValue = asNumber(textValue, 1234);
 
   const constant = chartData.constant;
   if (!isJsonObject(constant) || !Array.isArray(constant.data)) {
@@ -109,13 +132,25 @@ function normalizeDynamicTextData(props: JsonObject): void {
 
 export function normalizeDynamicTextProps(props: JsonObject): JsonObject {
   normalizeDynamicTextData(props);
+  normalizeValueFormat(props);
+  props.textOverflow = normalizeEnum(
+    props.textOverflow,
+    ["ellipsis", "clip", "visible"],
+    "ellipsis",
+  );
+  props.verticalAlign = normalizeEnum(
+    props.verticalAlign,
+    ["top", "center", "bottom"],
+    "center",
+  );
 
   const style = props.style;
   if (isJsonObject(style)) {
     normalizeLineHeight(style);
     if (typeof style.height !== "number") {
       const fontSize = style.fontSize;
-      style.height = typeof fontSize === "number" && fontSize > 0 ? fontSize : 32;
+      const lineHeight = typeof style.lineHeight === "number" ? style.lineHeight : 1.2;
+      style.height = typeof fontSize === "number" && fontSize > 0 ? Math.ceil(fontSize * lineHeight) : 40;
     }
   }
 

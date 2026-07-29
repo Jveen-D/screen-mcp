@@ -90,7 +90,11 @@ function shouldKeepForbiddenPath(
   path: string[],
   options: RemoveAiForbiddenOptions,
 ): boolean {
-  return Boolean(options.isChartComponent) && path[0] === "chartData";
+  if (Boolean(options.isChartComponent) && path[0] === "chartData") {
+    return true;
+  }
+
+  return options.componentName === "RingChart" && path[0] === "option" && path[1] === "title";
 }
 
 export function removeAiForbiddenProps<T extends JsonObject>(

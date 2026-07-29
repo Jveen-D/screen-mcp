@@ -59,29 +59,73 @@ export const lineChartCapability: JsonObject = {
         {
           path: "option.grid.left",
           type: "number",
-          description: "左侧边距，单位 px。",
+          defaultValue: 16,
+          description: "左侧内边距，单位 px，默认 16。",
         },
         {
           path: "option.grid.top",
           type: "number",
-          description: "顶部边距，单位 px。",
+          defaultValue: 40,
+          description: "顶部内边距，单位 px，默认 40。",
         },
         {
           path: "option.grid.right",
           type: "number",
-          description: "右侧边距，单位 px。",
+          defaultValue: 16,
+          description: "右侧内边距，单位 px，默认 16。",
         },
         {
           path: "option.grid.bottom",
           type: "number",
-          description: "底部边距，单位 px。",
+          defaultValue: 16,
+          description: "底部内边距，单位 px，默认 16。",
+        },
+        {
+          path: "option.grid.containLabel",
+          type: "boolean",
+          defaultValue: true,
+          description: "是否把坐标轴标签包含在网格区域内，默认开启以避免长标签被裁切。",
         },
       ],
     },
     {
-      path: "option.tooltip.formatter",
-      type: "string",
-      description: "tooltip 内容格式化字符串，支持 {b}（类目名）、{c}（数值）、{a}（系列名）及 <br/> 换行。",
+      path: "option.tooltip",
+      type: "object",
+      description: "提示框与坐标轴指示器配置。",
+      children: [
+        {
+          path: "option.tooltip.trigger",
+          type: "enum",
+          values: ["axis", "item", "none"],
+          defaultValue: "axis",
+          description: "提示框触发方式。趋势对比通常使用 axis。",
+        },
+        {
+          path: "option.tooltip.axisPointer.type",
+          type: "enum",
+          values: ["line", "shadow", "cross", "none"],
+          defaultValue: "line",
+          description: "坐标轴指示器类型。",
+        },
+        {
+          path: "option.tooltip.axisPointer.snap",
+          type: "boolean",
+          defaultValue: true,
+          description: "指示器是否吸附到最近的数据点。",
+        },
+        {
+          path: "option.tooltip.confine",
+          type: "boolean",
+          defaultValue: true,
+          description: "是否把提示框限制在图表容器内。",
+        },
+        {
+          path: "option.tooltip.formatter",
+          type: "string",
+          description:
+            "tooltip 内容格式化字符串，支持 {b}（类目名）、{c}（数值）、{a}（系列名）和 <br/> 换行；真实换行及字面量 \\n 会统一规范化为 <br/>。",
+        },
+      ],
     },
     {
       path: "option.xAxis",
@@ -98,6 +142,12 @@ export const lineChartCapability: JsonObject = {
           path: "option.xAxis.name",
           type: "string",
           description: "X 轴名称。",
+        },
+        {
+          path: "option.xAxis.boundaryGap",
+          type: "boolean",
+          defaultValue: false,
+          description: "分类轴两侧是否留白。默认关闭，使折线从首个分类位置开始。",
         },
         {
           path: "option.xAxis.axisLabel",
@@ -123,6 +173,27 @@ export const lineChartCapability: JsonObject = {
               path: "option.xAxis.axisLabel.fontSize",
               type: "number",
               description: "标签字号。",
+            },
+            {
+              path: "option.xAxis.axisLabel.hideOverlap",
+              type: "boolean",
+              defaultValue: true,
+              description: "是否自动隐藏重叠标签。",
+            },
+            {
+              path: "option.xAxis.axisLabel.overflow",
+              type: "enum",
+              values: ["truncate", "break", "breakAll", "none"],
+              defaultValue: "truncate",
+              description: "标签超出最大宽度时的处理方式。",
+            },
+            {
+              path: "option.xAxis.axisLabel.width",
+              type: "number",
+              min: 16,
+              max: 400,
+              defaultValue: 72,
+              description: "标签最大宽度，单位 px。",
             },
           ],
         },
@@ -177,6 +248,12 @@ export const lineChartCapability: JsonObject = {
           path: "option.yAxis.name",
           type: "string",
           description: "Y 轴名称。",
+        },
+        {
+          path: "option.yAxis.scale",
+          type: "boolean",
+          defaultValue: false,
+          description: "是否允许数值轴不强制包含零。默认关闭以保留基线语义。",
         },
         {
           path: "option.yAxis.axisLabel",
@@ -241,6 +318,28 @@ export const lineChartCapability: JsonObject = {
       ],
     },
     {
+      path: "option.legend",
+      type: "object",
+      description: "图例排列与项目间距配置。",
+      children: [
+        {
+          path: "option.legend.type",
+          type: "enum",
+          values: ["scroll", "plain"],
+          defaultValue: "scroll",
+          description: "图例较多时使用滚动翻页，默认 scroll。",
+        },
+        {
+          path: "option.legend.itemGap",
+          type: "number",
+          min: 0,
+          max: 64,
+          defaultValue: 16,
+          description: "图例项目间距，单位 px。",
+        },
+      ],
+    },
+    {
       path: "option.series",
       type: "array<object>",
       description:
@@ -254,7 +353,14 @@ export const lineChartCapability: JsonObject = {
             {
               path: "option.series[i].lineStyle.width",
               type: "number",
-              description: "线宽，单位 px。默认 3。",
+              description: "线宽，单位 px。默认 2。",
+            },
+            {
+              path: "option.series[i].lineStyle.type",
+              type: "enum",
+              values: ["solid", "dashed", "dotted"],
+              defaultValue: "solid",
+              description: "折线线型。",
             },
             {
               path: "option.series[i].lineStyle.color",
@@ -287,6 +393,14 @@ export const lineChartCapability: JsonObject = {
               path: "option.series[i].areaStyle.color",
               type: "object|string",
               description: "填充颜色，支持纯色字符串或 ECharts 渐变对象（如 linear gradient）。",
+            },
+            {
+              path: "option.series[i].areaStyle.opacity",
+              type: "number",
+              min: 0,
+              max: 1,
+              defaultValue: 1,
+              description: "面积填充透明度。",
             },
           ],
         },
@@ -385,7 +499,10 @@ export const lineChartCapability: JsonObject = {
         {
           path: "option.series[i].symbolSize",
           type: "number",
-          description: "标记大小，单位 px。",
+          min: 1,
+          max: 32,
+          defaultValue: 8,
+          description: "标记大小，单位 px。关闭 showSymbol 时运行时隐藏标记。",
         },
         {
           path: "option.series[i].markPoint",
@@ -396,6 +513,28 @@ export const lineChartCapability: JsonObject = {
           path: "option.series[i].markLine",
           type: "object",
           description: "标记线配置，用于标注平均值、阈值线等。支持 silent、lineStyle、label、data 等子属性。",
+        },
+        {
+          path: "option.series[i].connectNulls",
+          type: "boolean",
+          defaultValue: false,
+          description:
+            "跨空值连线：仅控制是否跨过 null、undefined、NaN 数据缺口绘制连续折线；不删除、填补、排序或修改源数据。默认关闭。",
+        },
+        {
+          path: "option.series[i].sampling",
+          type: "enum",
+          values: ["none", "lttb", "average", "min", "max", "minmax", "sum"],
+          defaultValue: "none",
+          description:
+            "大数据采样：仅影响数据量较大时的显示抽样，不修改源数据数组或点击事件返回的原始值。none 不采样；lttb 保留整体趋势和关键转折；average、min、max、sum 分别取分桶平均、最小、最大、求和；minmax 保留分桶最小值和最大值。",
+        },
+        {
+          path: "option.series[i].step",
+          type: "enum|boolean",
+          values: [false, "start", "middle", "end"],
+          defaultValue: false,
+          description: "阶梯线模式；false 为普通折线。",
         },
       ],
     },
@@ -461,7 +600,8 @@ export const lineChartCapability: JsonObject = {
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "option.xAxis.type 固定为 'category'，option.yAxis.type 固定为 'value'。",
-    "option.legend.offsetX/offsetY 会被归一化为数字；未提供时默认为 0。",
+    "新增布局、标签密度、提示框、图例和系列行为字段会按 capability 声明的枚举与范围归一化。",
+    "若提供 option.legend.offsetX/offsetY，MCP 会将其归一化为数字；未提供时不写入额外内部字段。",
   ],
   visualRules: [
     "折线图用于展示趋势变化，不要用于展示占比或构成关系；占比需求应使用饼图或环形图。",
@@ -473,7 +613,7 @@ export const lineChartCapability: JsonObject = {
     "折线宽度和数据点大小要协调：线宽 2–4px，symbolSize 4–8px；过细会看不清，过粗会显笨重。",
     "平滑曲线（smooth: true）适合展示宏观趋势，折线（smooth: false）适合展示精确拐点。根据数据语义选择。",
     "面积图（areaStyle）适合强调累积量或总量趋势，但不要所有系列都开面积图，多系列时只开主系列即可。",
-    "折线图的 tooltip trigger 固定为 'axis'，鼠标 hover 时展示该分类下所有系列的数值对比。",
+    "趋势对比通常使用 tooltip trigger='axis'；只有明确需要单点提示或关闭提示时再使用 item/none。",
     "数据点标签（label）不建议全部打开，数据密集时标签会严重重叠；只在关键点或数据量较少时开启。",
     "折线图没有侧边摘要卡，也不存在中心总数文本；数据解读通过 tooltip 和底部结论完成。",
     "禁止在折线图上添加饼图才有的装饰（如中心文本、环形内径、扇区抬升等概念）。",
@@ -578,9 +718,7 @@ export const lineChartCapability: JsonObject = {
               label: {
                 show: false,
               },
-              showSymbol: {
-                show: false,
-              },
+              showSymbol: false,
             },
           ],
         },

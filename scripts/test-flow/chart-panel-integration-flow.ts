@@ -429,4 +429,47 @@ export function runChartPanelIntegrationTests(): void {
     (fittedTableOrdinaryCol.columnWidth as number) >= 100,
     "BaseTable should expand ordinary column width to use available table width",
   );
+  assert.equal(fittedTableProps.emptyText, "暂无数据");
+  assert.deepEqual((fittedTableProps.rowConfig as JsonObject).stripe, {
+    isShow: true,
+    backgroundColor: "rgba(93,124,139,0.12)",
+  });
+  assert.deepEqual((fittedTableProps.rowConfig as JsonObject).hover, {
+    isShow: true,
+    backgroundColor: "rgba(45,212,191,0.16)",
+  });
+  assert.equal(fittedTableOrdinaryCol.cellPadding, 12);
+  assert.equal(fittedTableOrdinaryCol.showTooltip, true);
+  assert.equal((fittedTableProps.headerConfig as JsonObject).fontSize, 13);
+  const fittedTableSelectStyle = (fittedTableProps.rowConfig as JsonObject).selectStyle as JsonObject;
+  assert.equal(fittedTableSelectStyle.fontSize, 13);
+  assert.equal(fittedTableOrdinaryCol.fontSize, 13);
+
+  const normalizedTableVisuals = generateComponentsSchema({
+    componentName: "BaseTable",
+    logicalId: "normalized_table_visuals",
+    parentLogicalId: "table_group",
+    style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      width: 520,
+      height: 280,
+    },
+    columns: [{ field: "value", label: "数值", type: "number" }],
+    data: [{ value: 0 }],
+    columnConfig: {
+      ordinaryCol: {
+        cellPadding: 99,
+        showTooltip: false,
+      },
+    },
+  } as JsonObject);
+  const normalizedTableProps = normalizedTableVisuals.props as JsonObject;
+  const normalizedTableColumns = normalizedTableProps.columnConfig as JsonObject;
+  assert.equal((normalizedTableColumns.ordinaryCol as JsonObject).cellPadding, 32);
+  assert.equal((normalizedTableColumns.ordinaryCol as JsonObject).showTooltip, false);
+  const normalizedTableChartData = normalizedTableProps.chartData as JsonObject;
+  const normalizedTableConstant = normalizedTableChartData.constant as JsonObject;
+  assert.equal((normalizedTableConstant.data as JsonObject[])[0]?.value, 0);
 }

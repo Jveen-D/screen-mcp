@@ -81,6 +81,32 @@ export function runDataDisplayNormalizerTests(): void {
     (baseTableSelectStyle.lineHeight as number) >= 24,
     "BaseTable selected row lineHeight should stay visible",
   );
+  assert.equal(
+    baseTableSchema.props.emptyText,
+    "暂无数据",
+    "BaseTable missing emptyText should use the default empty-state copy",
+  );
+
+  const blankEmptyTextSchema = generateComponentsSchema({
+    componentName: "BaseTable",
+    logicalId: "base_table_blank_empty_text",
+    parentLogicalId: "table_group",
+    columns: [{ field: "region", label: "区域" }],
+    data: [],
+    emptyText: "   ",
+    style: {
+      position: "absolute",
+      left: 100,
+      top: 100,
+      width: 520,
+      height: 280,
+    },
+  });
+  assert.equal(
+    blankEmptyTextSchema.props.emptyText,
+    "暂无数据",
+    "BaseTable blank emptyText should normalize to the default empty-state copy",
+  );
 
   // ScrollList: columns/data should sync to datasource
   const scrollListCapability = getComponentCapability("ScrollList");

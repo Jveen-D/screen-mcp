@@ -144,6 +144,32 @@ export const baseTableCapability: JsonObject = {
           type: "color",
           description: "行背景色。",
         },
+        {
+          path: "rowConfig.stripe",
+          type: "object",
+          description: "斑马纹配置，帮助横向追踪数据行。",
+          children: [
+            { path: "rowConfig.stripe.isShow", type: "boolean", description: "是否显示斑马纹。" },
+            {
+              path: "rowConfig.stripe.backgroundColor",
+              type: "color",
+              description: "间隔行背景色。",
+            },
+          ],
+        },
+        {
+          path: "rowConfig.hover",
+          type: "object",
+          description: "鼠标悬停行的反馈样式。",
+          children: [
+            { path: "rowConfig.hover.isShow", type: "boolean", description: "是否启用悬停高亮。" },
+            {
+              path: "rowConfig.hover.backgroundColor",
+              type: "color",
+              description: "悬停行背景色。",
+            },
+          ],
+        },
             {
               path: "rowConfig.rowLineHeight",
               type: "number",
@@ -269,6 +295,17 @@ export const baseTableCapability: JsonObject = {
               description: "文字溢出处理方式。",
             },
             {
+              path: "columnConfig.ordinaryCol.cellPadding",
+              type: "number",
+              range: [0, 32],
+              description: "单元格左右内边距，单位 px。",
+            },
+            {
+              path: "columnConfig.ordinaryCol.showTooltip",
+              type: "boolean",
+              description: "是否在悬停单元格时展示完整内容。",
+            },
+            {
               path: "columnConfig.ordinaryCol.fontFamily",
               type: "string",
               description: "普通列字体。",
@@ -369,6 +406,12 @@ export const baseTableCapability: JsonObject = {
       description: "轮播速度，单位毫秒。",
     },
     {
+      path: "emptyText",
+      type: "string",
+      description:
+        "无有效数据时独立空状态显示的文案，此时不显示表头和表体；缺失或仅包含空白字符时统一回退为“暂无数据”。",
+    },
+    {
       path: "style",
       type: "object",
       description: "位置、尺寸、层级与背景色。",
@@ -403,6 +446,8 @@ export const baseTableCapability: JsonObject = {
     "chartData.dimension 固定为空数组。",
     "chartData.sourceType 固定为 'constant'。",
     "headerConfig.lineHeight、rowConfig.rowLineHeight 和 rowConfig.selectStyle.lineHeight 都按像素处理；如果 AI 误传 1 这类过小值，MCP 会抬升到可见高度。",
+    "cellPadding 会限制在 0~32；斑马纹、悬停态和 Tooltip 都由显式配置控制。",
+    "无有效数据时前端只渲染独立空状态，不渲染表头和表体；emptyText 缺失或仅含空白字符时由 MCP 归一化为“暂无数据”。",
   ],
   examples: [
     {

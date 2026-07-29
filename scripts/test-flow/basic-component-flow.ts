@@ -121,9 +121,103 @@ export function runBasicComponentFlowTests(): BasicComponentFlowFixtures {
     },
   });
   const defaultLineBoxTextStyle = defaultLineBoxTextSchema.props.style as JsonObject;
-  assert.equal(defaultLineBoxTextStyle.height, 20);
-  assert.equal(defaultLineBoxTextStyle.lineHeight, 1);
+  assert.equal(defaultLineBoxTextStyle.height, 27);
+  assert.equal(defaultLineBoxTextStyle.lineHeight, 1.35);
   assert.equal(defaultLineBoxTextStyle.backgroundColor, "rgba(0,0,0,0)");
+  assert.equal(defaultLineBoxTextSchema.props.textOverflow, "ellipsis");
+  assert.equal(defaultLineBoxTextSchema.props.verticalAlign, "center");
+
+  const invalidLineBoxTextSchema = generateComponentsSchema({
+    componentName: "SingleText",
+    logicalId: "invalid_single_line_box",
+    parentLogicalId: "panel_group",
+    textContent: "非法行高回退",
+    style: {
+      position: "absolute",
+      left: 80,
+      top: 155,
+      width: 160,
+      height: "invalid",
+      fontSize: 20,
+      lineHeight: "invalid",
+    },
+  } as JsonObject);
+  const invalidLineBoxTextStyle = invalidLineBoxTextSchema.props.style as JsonObject;
+  assert.equal(invalidLineBoxTextStyle.lineHeight, 1.35);
+  assert.equal(invalidLineBoxTextStyle.height, 27);
+
+  const normalizedTextLayoutSchema = generateComponentsSchema({
+    componentName: "SingleText",
+    logicalId: "normalized_text_layout",
+    parentLogicalId: "panel_group",
+    textContent: "超长文本布局",
+    textOverflow: "invalid",
+    verticalAlign: "invalid",
+    style: {
+      position: "absolute",
+      left: 80,
+      top: 160,
+      width: 120,
+      height: 32,
+    },
+  });
+  assert.equal(normalizedTextLayoutSchema.props.textOverflow, "ellipsis");
+  assert.equal(normalizedTextLayoutSchema.props.verticalAlign, "center");
+
+  const multiTextSchema = generateComponentsSchema({
+    componentName: "MultiText",
+    logicalId: "multi_text_layout",
+    parentLogicalId: "panel_group",
+    textContent: "第一行\n第二行",
+    textOverflow: "invalid",
+    wordBreak: "invalid",
+    style: {
+      position: "absolute",
+      left: 80,
+      top: 200,
+      width: 280,
+      height: 96,
+    },
+  });
+  assert.equal(multiTextSchema.props.textOverflow, "hidden");
+  assert.equal(multiTextSchema.props.wordBreak, "break-word");
+  const multiTextStyle = multiTextSchema.props.style as JsonObject;
+  assert.equal(multiTextStyle.fontSize, 16);
+  assert.equal(multiTextStyle.lineHeight, 1.6);
+
+  const dynamicTextSchema = generateComponentsSchema({
+    componentName: "DynamicText",
+    logicalId: "dynamic_text_format",
+    parentLogicalId: "panel_group",
+    textValue: 1234.567,
+    textOverflow: "invalid",
+    verticalAlign: "invalid",
+    valueFormat: {
+      precision: 9,
+      useGrouping: false,
+      nullText: "N/A",
+    },
+    style: {
+      position: "absolute",
+      left: 80,
+      top: 310,
+      width: 220,
+      height: 40,
+    },
+  });
+  const dynamicValueFormat = dynamicTextSchema.props.valueFormat as JsonObject;
+  assert.equal(dynamicValueFormat.precision, 6);
+  assert.equal(dynamicValueFormat.useGrouping, false);
+  assert.equal(dynamicValueFormat.nullText, "N/A");
+  assert.equal(dynamicTextSchema.props.textOverflow, "ellipsis");
+  assert.equal(dynamicTextSchema.props.verticalAlign, "center");
+  const dynamicTextStyle = dynamicTextSchema.props.style as JsonObject;
+  assert.equal(dynamicTextStyle.width, 220);
+  assert.equal(dynamicTextStyle.height, 40);
+  assert.equal(dynamicTextStyle.lineHeight, 1.2);
+  const dynamicChartData = dynamicTextSchema.props.chartData as JsonObject;
+  const dynamicConstant = dynamicChartData.constant as JsonObject;
+  assert.equal((dynamicConstant.data as JsonObject[])[0]?.value, 1234.567);
 
   const longHexColorSchema = generateComponentsSchema({
     componentName: "SingleText",

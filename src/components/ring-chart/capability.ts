@@ -51,6 +51,66 @@ export const ringChartCapability: JsonObject = {
       description: "图层名称，建议和用户语义一致。",
     },
     {
+      path: "option.title",
+      type: "object",
+      description:
+        "主图环形图的中心文字及其位置。开启外部标签时可移动中心文字，避免文字互相遮挡；开启 decorator.innerRing 时仍由主图单独渲染，装饰内环不会复制该文字。",
+      children: [
+        { path: "option.title.show", type: "boolean", description: "是否显示中心文字。" },
+        { path: "option.title.text", type: "string", description: "中心文字内容。" },
+        {
+          path: "option.title.left",
+          type: "string|number",
+          description: "水平位置，支持 left、center、right、像素数字或百分比字符串。",
+        },
+        {
+          path: "option.title.top",
+          type: "string|number",
+          description: "垂直位置，支持 top、center、bottom、像素数字或百分比字符串。",
+        },
+        { path: "option.title.textStyle.fontFamily", type: "string", description: "中心文字字体。" },
+        { path: "option.title.textStyle.fontSize", type: "number", range: [8, 100], description: "中心文字字号。" },
+        {
+          path: "option.title.textStyle.fontWeight",
+          type: "enum",
+          values: ["normal", "bold"],
+          description: "中心文字字重。",
+        },
+        { path: "option.title.textStyle.color", type: "color", description: "中心文字颜色。" },
+      ],
+    },
+    {
+      path: "option.tooltip",
+      type: "object",
+      description: "悬停提示框的显示、边框和文字样式。",
+      children: [
+        { path: "option.tooltip.show", type: "boolean", description: "是否显示提示框。" },
+        { path: "option.tooltip.confine", type: "boolean", description: "是否把提示框限制在组件容器内。" },
+        { path: "option.tooltip.backgroundColor", type: "color", description: "提示框背景色。" },
+        { path: "option.tooltip.borderColor", type: "color", description: "提示框边框颜色。" },
+        { path: "option.tooltip.borderWidth", type: "number", range: [0, 20], description: "提示框边框宽度。" },
+        { path: "option.tooltip.textStyle", type: "object", description: "提示框文字样式。" },
+      ],
+    },
+    {
+      path: "option.legend",
+      type: "object",
+      description: "图例布局与文字溢出配置。",
+      children: [
+        { path: "option.legend.show", type: "boolean", description: "是否显示图例。" },
+        { path: "option.legend.type", type: "enum", values: ["plain", "scroll"], description: "直接展示或滚动翻页。" },
+        { path: "option.legend.orient", type: "enum", values: ["horizontal", "vertical"], description: "图例排列方向。" },
+        { path: "option.legend.width", type: "string", description: "图例最大宽度，例如 96%。" },
+        { path: "option.legend.itemWidth", type: "number", range: [0, 100], description: "图例标记宽度。" },
+        { path: "option.legend.itemHeight", type: "number", range: [0, 100], description: "图例标记高度。" },
+        { path: "option.legend.itemGap", type: "number", range: [0, 100], description: "图例项目间距。" },
+        { path: "option.legend.selectedMode", type: "enum", values: [false, true, "single"], description: "禁用、多选或单选图例筛选。" },
+        { path: "option.legend.icon", type: "string", description: "图例标记形状。" },
+        { path: "option.legend.textStyle.width", type: "number", range: [0, 500], description: "图例文字最大宽度。" },
+        { path: "option.legend.textStyle.overflow", type: "enum", values: ["truncate", "break", "breakAll"], description: "图例长文本处理方式。" },
+      ],
+    },
+    {
       path: "option.series[0]",
       type: "object",
       description:
@@ -73,6 +133,15 @@ export const ringChartCapability: JsonObject = {
           type: "object",
           description: "扇区描边和阴影样式。",
         },
+        { path: "option.series[0].startAngle", type: "number", range: [0, 360], description: "起始角度。" },
+        { path: "option.series[0].clockwise", type: "boolean", description: "是否顺时针排列。" },
+        { path: "option.series[0].minShowLabelAngle", type: "number", range: [0, 360], description: "显示标签的最小扇区角度。" },
+        { path: "option.series[0].percentPrecision", type: "number", range: [0, 10], description: "百分比小数精度。" },
+        { path: "option.series[0].stillShowZeroSum", type: "boolean", description: "总和为零时是否平均展示扇区。" },
+        { path: "option.series[0].showEmptyCircle", type: "boolean", description: "无有效数据时是否显示空环。" },
+        { path: "option.series[0].emptyCircleStyle", type: "object", description: "空环颜色和边框样式。" },
+        { path: "option.series[0].emphasis.scale", type: "boolean", description: "悬停时是否放大扇区。" },
+        { path: "option.series[0].emphasis.scaleSize", type: "number", range: [0, 50], description: "悬停放大尺寸。" },
         {
           path: "option.series[0].label",
           type: "object",
@@ -124,6 +193,12 @@ export const ringChartCapability: JsonObject = {
           type: "object",
           description: "标签引导线样式。",
         },
+        {
+          path: "option.series[0].label.content",
+          type: "enum",
+          values: ["name", "value", "percent", "nameValue", "namePercent", "custom"],
+          description: "标签内容预设；custom 时使用 formatter。",
+        },
       ],
     },
     {
@@ -141,7 +216,8 @@ export const ringChartCapability: JsonObject = {
     {
       path: "decorator.innerRing",
       type: "object",
-      description: "内环装饰，开启后会在环形图中心叠加旋转内环。",
+      description:
+        "纯装饰性的旋转内环，开启后叠加在环形图中心；它不承载或复制 option.title，中心文字始终属于主图。",
       children: [
         {
           path: "decorator.innerRing.isActive",
@@ -151,27 +227,32 @@ export const ringChartCapability: JsonObject = {
         {
           path: "decorator.innerRing.innerRadius",
           type: "number",
+          range: [0, 0.99],
           description: "内环内半径，相对于组件的系数，例如 0.2。",
         },
         {
           path: "decorator.innerRing.outerRadius",
           type: "number",
+          range: [0.01, 1],
           description: "内环外半径，相对于组件的系数，例如 0.23。",
         },
         {
           path: "decorator.innerRing.opacity",
           type: "number",
+          range: [0, 1],
           description: "内环透明度，0~1。",
         },
         {
           path: "decorator.innerRing.animateSpeed",
           type: "number",
+          range: [0, 1],
           description: "内环旋转速度，0~1。",
         },
         {
           path: "decorator.innerRing.animateDirection",
-          type: "string",
-          description: "内环旋转方向，可选 clockwise 或 counterclockwise。",
+          type: "enum",
+          values: ["clockwise", "anticlockwise"],
+          description: "内环旋转方向。",
         },
       ],
     },
@@ -188,11 +269,13 @@ export const ringChartCapability: JsonObject = {
         {
           path: "decorator.outerRing.arcWidth",
           type: "number",
+          range: [0.01, 0.5],
           description: "外环宽度，相对于组件的系数，例如 0.15。",
         },
         {
           path: "decorator.outerRing.opacity",
           type: "number",
+          range: [0, 1],
           description: "外环透明度，0~1。",
         },
       ],
@@ -210,6 +293,7 @@ export const ringChartCapability: JsonObject = {
         {
           path: "ringText.fontSize",
           type: "number",
+          range: [8, 100],
           description: "环形文字字号。",
         },
         {
@@ -219,8 +303,9 @@ export const ringChartCapability: JsonObject = {
         },
         {
           path: "ringText.fontWeight",
-          type: "string",
-          description: "环形文字字重，例如 normal、bold、bolder。",
+          type: "enum",
+          values: ["normal", "bold", "bolder"],
+          description: "环形文字字重。",
         },
         {
           path: "ringText.color",
@@ -230,8 +315,22 @@ export const ringChartCapability: JsonObject = {
         {
           path: "ringText.distance",
           type: "number",
+          range: [0, 100],
           description: "环形文字与环图的间距。",
         },
+      ],
+    },
+    {
+      path: "rotatingAnimation",
+      type: "object",
+      description: "轮播强调配置，默认关闭；开启后会按系列和数据项轮播高亮。",
+      children: [
+        { path: "rotatingAnimation.isActive", type: "boolean", description: "是否开启轮播强调。" },
+        { path: "rotatingAnimation.height", type: "number", range: [0, 50], description: "高亮扇区放大尺寸。" },
+        { path: "rotatingAnimation.opacity", type: "number", range: [0, 1], description: "非高亮扇区透明度。" },
+        { path: "rotatingAnimation.duration", type: "number", range: [0.5, 60], description: "轮播间隔，单位秒。" },
+        { path: "rotatingAnimation.selectMode", type: "enum", values: ["none", "click"], description: "是否允许点击锁定高亮。" },
+        { path: "rotatingAnimation.isHover", type: "boolean", description: "悬停时是否暂停轮播。" },
       ],
     },
   ],
@@ -272,17 +371,8 @@ export const ringChartCapability: JsonObject = {
         "当前渲染链路不使用 ECharts dataset 驱动 RingChart 数据，AI 写入 dataset 会被忽略并造成误导。",
     },
     {
-      path: "option.title",
-      reason: "当前 RingChart schema 不需要 title，MCP 会移除 AI 输入的 option.title。",
-    },
-    {
       path: "eventConfigures",
       reason: "交互事件暂不由 AI 生成。",
-    },
-    {
-      path: "rotatingAnimation",
-      reason:
-        "轮播动画会强制隐藏标签，MCP 默认不开启，AI 不应配置 rotatingAnimation。",
     },
   ],
   mergeRules: [
@@ -293,9 +383,10 @@ export const ringChartCapability: JsonObject = {
     "数组按下标深合并。",
     "option.series[0] 只写 radius 时，会保留默认 type、label、itemStyle。",
     "option.legend.offsetX/offsetY 会被归一化为数字；未提供时默认为 0。",
-    "option.series[0].center 与 option.series[0].radius 会被归一化为两个字符串值；未提供时默认圆心 ['50%', '50%']、半径 ['30%', '45%']。",
-    "option.series[0].radius[0] 不允许为 '0%' 或 '0'，否则会被修正为默认内半径 '30%'。",
-    "rotatingAnimation 不在 AI 可写范围内，默认保持关闭。",
+    "option.series[0].center 与 option.series[0].radius 会被归一化为两个字符串值；未提供时默认圆心 ['50%', '58%']、半径 ['38%', '66%']。",
+    "option.series[0].radius[0] 不允许为 '0%' 或 '0'，否则会被修正为默认内半径 '38%'。",
+    "rotatingAnimation 默认关闭；开启属于交互语义变化，AI 必须根据用户意图显式配置。",
+    "label.content 是前端运行时预设字段，会在生成 ECharts option 前转换为 formatter 并剥离。",
   ],
   visualRules: [
     "环形图适合展示占比、构成关系；中心空洞明显时，应放置总数、核心指标或摘要，避免无意义留白。",

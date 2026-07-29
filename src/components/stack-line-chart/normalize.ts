@@ -21,6 +21,28 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   return fallback;
 }
 
+function clampNumber(
+  value: JsonValue | undefined,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  return Math.min(max, Math.max(min, asNumber(value, fallback)));
+}
+
+function asFiniteNumber(value: JsonValue | undefined): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
 function normalizeStackLineChartData(props: JsonObject): void {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -111,22 +133,26 @@ function normalizeShowSymbol(item: JsonObject): void {
   const raw = item.showSymbol;
 
   if (typeof raw === "boolean") {
-    item.showSymbol = { show: raw };
+    item.showSymbol = raw;
     return;
   }
 
   if (isJsonObject(raw)) {
-    item.showSymbol = {
-      show: typeof raw.show === "boolean" ? raw.show : false,
-    };
+    item.showSymbol = raw.show === true;
     return;
   }
 
-  item.showSymbol = { show: false };
+  item.showSymbol = false;
 }
 
 function normalizeAreaStyle(item: JsonObject): void {
-  item.areaStyle = !!item.areaStyle;
+  if (item.areaStyle === true) {
+    item.areaStyle = { opacity: 0.18 };
+  } else if (isJsonObject(item.areaStyle)) {
+    item.areaStyle.opacity = clampNumber(item.areaStyle.opacity, 0, 1, 0.18);
+  } else if (item.areaStyle !== false) {
+    item.areaStyle = false;
+  }
 }
 
 function normalizeStackLineSeries(option: JsonObject): void {
@@ -139,11 +165,28 @@ function normalizeStackLineSeries(option: JsonObject): void {
     if (isJsonObject(item)) {
       item.type = "line";
       item.stack = "__stackLine";
-      item.left = 0;
-      item.top = 0;
-      item.right = 0;
-      item.bottom = 0;
+      delete item.left;
+      delete item.top;
+      delete item.right;
+      delete item.bottom;
       normalizeShowSymbol(item);
+      item.symbolSize = clampNumber(item.symbolSize, 1, 32, 8);
+      item.connectNulls = item.connectNulls === true;
+      item.sampling = ["none", "average", "min", "max", "minmax", "sum", "lttb"].includes(
+        item.sampling as string,
+      )
+        ? item.sampling
+        : "none";
+      item.step = [false, "start", "middle", "end"].includes(item.step as string | false)
+        ? item.step
+        : false;
+
+      const lineStyle = item.lineStyle;
+      if (isJsonObject(lineStyle)) {
+        lineStyle.type = ["solid", "dashed", "dotted"].includes(lineStyle.type as string)
+          ? lineStyle.type
+          : "solid";
+      }
       normalizeAreaStyle(item);
     }
   }
@@ -153,16 +196,43 @@ function normalizeAxes(option: JsonObject): void {
   const xAxis = option.xAxis;
   if (isJsonObject(xAxis)) {
     xAxis.type = "category";
+    xAxis.boundaryGap = xAxis.boundaryGap === true;
     if (typeof xAxis.show !== "boolean") {
       xAxis.show = true;
+    }
+    const axisLabel = xAxis.axisLabel;
+    if (isJsonObject(axisLabel)) {
+      axisLabel.hideOverlap = axisLabel.hideOverlap !== false;
+      axisLabel.overflow = ["break", "breakAll", "truncate", "none"].includes(axisLabel.overflow as string)
+        ? axisLabel.overflow
+        : "truncate";
+      axisLabel.width = clampNumber(axisLabel.width, 16, 400, 72);
     }
   }
 
   const yAxis = option.yAxis;
   if (isJsonObject(yAxis)) {
     yAxis.type = "value";
+    yAxis.scale = yAxis.scale === true;
     if (typeof yAxis.show !== "boolean") {
       yAxis.show = true;
+    }
+
+    const min = asFiniteNumber(yAxis.min);
+    const max = asFiniteNumber(yAxis.max);
+    if (min === undefined) {
+      delete yAxis.min;
+    } else {
+      yAxis.min = min;
+    }
+    if (max === undefined) {
+      delete yAxis.max;
+    } else {
+      yAxis.max = max;
+    }
+    if (min !== undefined && max !== undefined && min > max) {
+      delete yAxis.min;
+      delete yAxis.max;
     }
   }
 }
@@ -173,6 +243,12 @@ function cleanFormatter(value: unknown): JsonValue {
   }
 
   return value.replace(/\\n|\\r|\\t|\n|\r|\t/g, " ");
+}
+
+function normalizeTooltipFormatter(value: JsonValue): JsonValue {
+  return typeof value === "string"
+    ? value.replace(/\\r\\n|\\n|\\r|\r\n|\r|\n/g, "<br/>")
+    : value;
 }
 
 function normalizeLabelFormatters(option: JsonObject): void {
@@ -187,27 +263,75 @@ function normalizeLabelFormatters(option: JsonObject): void {
     }
 
     const label = item.label;
-    if (isJsonObject(label)) {
+    if (isJsonObject(label) && "formatter" in label) {
       label.formatter = cleanFormatter(label.formatter);
     }
   }
 }
 
 function normalizeGrid(option: JsonObject): void {
-  const grid = option.grid;
-  if (!isJsonObject(grid)) {
-    return;
-  }
+  const grid = isJsonObject(option.grid) ? option.grid : {};
+  option.grid = grid;
 
-  const top = asNumber(grid.top, 50);
-  const right = asNumber(grid.right, 22);
-  const bottom = asNumber(grid.bottom, 38);
-  const left = asNumber(grid.left, 30);
+  const top = asNumber(grid.top, 40);
+  const right = asNumber(grid.right, 16);
+  const bottom = asNumber(grid.bottom, 16);
+  const left = asNumber(grid.left, 16);
 
   grid.top = top;
   grid.right = right;
   grid.bottom = bottom;
   grid.left = left;
+  grid.containLabel = typeof grid.containLabel === "boolean" ? grid.containLabel : true;
+}
+
+function normalizeTooltip(option: JsonObject): void {
+  const tooltip = option.tooltip;
+  if (!isJsonObject(tooltip)) {
+    return;
+  }
+
+  tooltip.trigger = ["axis", "item", "none"].includes(tooltip.trigger as string)
+    ? tooltip.trigger
+    : "axis";
+  tooltip.confine = tooltip.confine !== false;
+  if ("formatter" in tooltip) {
+    tooltip.formatter = normalizeTooltipFormatter(tooltip.formatter);
+  }
+
+  const axisPointer = tooltip.axisPointer;
+  if (!isJsonObject(axisPointer)) {
+    return;
+  }
+  axisPointer.type = ["line", "shadow", "cross", "none"].includes(axisPointer.type as string)
+    ? axisPointer.type
+    : "line";
+  axisPointer.snap = axisPointer.snap === true;
+}
+
+function normalizeLegend(option: JsonObject): void {
+  const legend = option.legend;
+  if (!isJsonObject(legend)) {
+    return;
+  }
+
+  legend.type = ["plain", "scroll"].includes(legend.type as string)
+    ? legend.type
+    : "scroll";
+  legend.itemGap = clampNumber(legend.itemGap, 0, 64, 16);
+  if (
+    typeof legend.left !== "string" ||
+    typeof legend.top !== "string"
+  ) {
+    legend.left = "center";
+    legend.top = "top";
+  }
+  if ("offsetX" in legend) {
+    legend.offsetX = asNumber(legend.offsetX, 0);
+  }
+  if ("offsetY" in legend) {
+    legend.offsetY = asNumber(legend.offsetY, 0);
+  }
 }
 
 export function normalizeStackLineChartProps(props: JsonObject): JsonObject {
@@ -227,25 +351,8 @@ export function normalizeStackLineChartProps(props: JsonObject): JsonObject {
   normalizeAxes(option);
   normalizeLabelFormatters(option);
   normalizeGrid(option);
-
-  const legend = option.legend;
-  if (!isJsonObject(legend)) {
-    return props;
-  }
-
-  if (
-    typeof legend.left === "string" &&
-    typeof legend.top === "string"
-  ) {
-    legend.offsetX = asNumber(legend.offsetX, 0);
-    legend.offsetY = asNumber(legend.offsetY, 0);
-    return props;
-  }
-
-  legend.left = "center";
-  legend.top = "top";
-  legend.offsetX = asNumber(legend.offsetX, 0);
-  legend.offsetY = asNumber(legend.offsetY, 0);
+  normalizeTooltip(option);
+  normalizeLegend(option);
 
   return props;
 }

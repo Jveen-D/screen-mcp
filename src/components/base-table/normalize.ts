@@ -26,6 +26,36 @@ function asIntegerInRange(value: JsonValue | undefined, min: number, max: number
   return Math.min(Math.max(Math.round(num), min), max);
 }
 
+function normalizeBoolean(value: JsonValue | undefined, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function normalizeTableVisualConfig(props: JsonObject): void {
+  props.emptyText =
+    typeof props.emptyText === "string" && props.emptyText.trim() !== ""
+      ? props.emptyText
+      : "暂无数据";
+
+  const rowConfig = isJsonObject(props.rowConfig) ? props.rowConfig : {};
+  const stripe = isJsonObject(rowConfig.stripe) ? rowConfig.stripe : {};
+  stripe.isShow = normalizeBoolean(stripe.isShow, true);
+  stripe.backgroundColor = asString(stripe.backgroundColor, "rgba(93,124,139,0.12)");
+  rowConfig.stripe = stripe;
+
+  const hover = isJsonObject(rowConfig.hover) ? rowConfig.hover : {};
+  hover.isShow = normalizeBoolean(hover.isShow, true);
+  hover.backgroundColor = asString(hover.backgroundColor, "rgba(45,212,191,0.16)");
+  rowConfig.hover = hover;
+  props.rowConfig = rowConfig;
+
+  const columnConfig = isJsonObject(props.columnConfig) ? props.columnConfig : {};
+  const ordinaryCol = isJsonObject(columnConfig.ordinaryCol) ? columnConfig.ordinaryCol : {};
+  ordinaryCol.cellPadding = asIntegerInRange(ordinaryCol.cellPadding, 0, 32, 12);
+  ordinaryCol.showTooltip = normalizeBoolean(ordinaryCol.showTooltip, true);
+  columnConfig.ordinaryCol = ordinaryCol;
+  props.columnConfig = columnConfig;
+}
+
 function isNumberColumn(column: JsonObject): boolean {
   return asString(column.type, "").toLowerCase() === "number";
 }
@@ -295,6 +325,7 @@ export function normalizeBaseTableProps(props: JsonObject): JsonObject {
   normalizeExistingChartData(props);
   normalizeTableLineHeights(props);
   normalizeColumnFit(props);
+  normalizeTableVisualConfig(props);
   ensureEntryAnimation(props);
   return props;
 }

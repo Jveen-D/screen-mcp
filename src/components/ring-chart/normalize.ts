@@ -11,8 +11,8 @@ export const legendPositionOptions = [
   ["right", "bottom"],
 ] as const;
 
-const DEFAULT_INNER_RADIUS = "30%";
-const DEFAULT_OUTER_RADIUS = "45%";
+const DEFAULT_INNER_RADIUS = "38%";
+const DEFAULT_OUTER_RADIUS = "66%";
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -33,6 +33,27 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   }
 
   return fallback;
+}
+
+function asBoolean(value: JsonValue | undefined, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function clampNumber(
+  value: JsonValue | undefined,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  return Math.min(Math.max(asNumber(value, fallback), min), max);
+}
+
+function normalizeEnum(
+  value: JsonValue | undefined,
+  allowed: string[],
+  fallback: string,
+): string {
+  return typeof value === "string" && allowed.includes(value) ? value : fallback;
 }
 
 function asPercentString(value: JsonValue | undefined, fallback: string): string {
@@ -115,6 +136,20 @@ function isValidLegendPosition(left: JsonValue, top: JsonValue): boolean {
   );
 }
 
+function isValidLegendCoordinate(
+  value: JsonValue,
+  allowedKeywords: string[],
+): boolean {
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  if (typeof value !== "string") {
+    return false;
+  }
+  const normalized = value.trim();
+  return allowedKeywords.includes(normalized) || /^-?\d+(?:\.\d+)?%?$/u.test(normalized);
+}
+
 function normalizeLegendCenterOverlap(legend: JsonObject): void {
   if (legend.top !== "center") {
     return;
@@ -159,7 +194,7 @@ function normalizeSideLegendRingLayout(option: JsonObject, style: JsonObject): v
       continue;
     }
 
-    item.center = normalizeStringPair(item.center, ["50%", "50%"]);
+    item.center = normalizeStringPair(item.center, ["50%", "58%"]);
     item.radius = normalizeStringPair(item.radius, [DEFAULT_INNER_RADIUS, DEFAULT_OUTER_RADIUS]);
 
     const center = item.center as [string, string];
@@ -190,7 +225,7 @@ function cleanFormatter(value: unknown): JsonValue {
     return value as JsonValue;
   }
 
-  return value.replace(/\\n|\\r|\\t|\n|\r|\t/g, " ");
+  return value.replace(/\r\n|\r|\n/gu, "\\n").replace(/\t/gu, " ");
 }
 
 function normalizeLabelFormatters(option: JsonObject): void {
@@ -224,7 +259,7 @@ function normalizeRingSeries(option: JsonObject): void {
       item.top = 0;
       item.right = 0;
       item.bottom = 0;
-      item.center = normalizeStringPair(item.center, ["50%", "50%"]);
+      item.center = normalizeStringPair(item.center, ["50%", "58%"]);
       item.radius = normalizeStringPair(item.radius, [
         DEFAULT_INNER_RADIUS,
         DEFAULT_OUTER_RADIUS,
@@ -237,8 +272,131 @@ function normalizeRingSeries(option: JsonObject): void {
       if (isZeroRadius(radius[1])) {
         radius[1] = DEFAULT_OUTER_RADIUS;
       }
+
+      item.startAngle = clampNumber(item.startAngle, 0, 360, 90);
+      item.clockwise = asBoolean(item.clockwise, true);
+      item.minShowLabelAngle = clampNumber(item.minShowLabelAngle, 0, 360, 4);
+      item.percentPrecision = Math.round(clampNumber(item.percentPrecision, 0, 10, 1));
+      item.stillShowZeroSum = asBoolean(item.stillShowZeroSum, false);
+      item.showEmptyCircle = asBoolean(item.showEmptyCircle, true);
+
+      const emptyCircleStyle = isJsonObject(item.emptyCircleStyle) ? item.emptyCircleStyle : {};
+      emptyCircleStyle.borderWidth = clampNumber(emptyCircleStyle.borderWidth, 0, 20, 1);
+      item.emptyCircleStyle = emptyCircleStyle;
+
+      const emphasis = isJsonObject(item.emphasis) ? item.emphasis : {};
+      emphasis.scale = asBoolean(emphasis.scale, true);
+      emphasis.scaleSize = clampNumber(emphasis.scaleSize, 0, 50, 6);
+      item.emphasis = emphasis;
+
+      const itemStyle = isJsonObject(item.itemStyle) ? item.itemStyle : {};
+      itemStyle.borderWidth = clampNumber(itemStyle.borderWidth, 0, 20, 2);
+      itemStyle.borderRadius = clampNumber(itemStyle.borderRadius, 0, 100, 4);
+      itemStyle.shadowBlur = clampNumber(itemStyle.shadowBlur, 0, 100, 0);
+      item.itemStyle = itemStyle;
+
+      const label = isJsonObject(item.label) ? item.label : {};
+      label.content = normalizeEnum(
+        label.content,
+        ["name", "value", "percent", "nameValue", "namePercent", "custom"],
+        "namePercent",
+      );
+      label.fontSize = clampNumber(label.fontSize, 8, 100, 14);
+      item.label = label;
+
+      const labelLine = isJsonObject(item.labelLine) ? item.labelLine : {};
+      labelLine.length = clampNumber(labelLine.length, 0, 500, 10);
+      labelLine.length2 = clampNumber(labelLine.length2, 0, 500, 14);
+      labelLine.smooth = asBoolean(labelLine.smooth, true);
+      item.labelLine = labelLine;
     }
   }
+}
+
+function normalizeRingRuntimeConfig(props: JsonObject): void {
+  props.borderGap = clampNumber(props.borderGap, 0, 1, 0);
+
+  const decorator = isJsonObject(props.decorator) ? props.decorator : {};
+  const innerRing = isJsonObject(decorator.innerRing) ? decorator.innerRing : {};
+  const outerRing = isJsonObject(decorator.outerRing) ? decorator.outerRing : {};
+  let innerRadius = clampNumber(innerRing.innerRadius, 0, 0.99, 0.2);
+  const outerRadius = clampNumber(innerRing.outerRadius, 0.01, 1, 0.23);
+  if (innerRadius >= outerRadius) {
+    innerRadius = Math.max(0, outerRadius - 0.01);
+  }
+  innerRing.isActive = asBoolean(innerRing.isActive, false);
+  innerRing.innerRadius = innerRadius;
+  innerRing.outerRadius = outerRadius;
+  innerRing.opacity = clampNumber(innerRing.opacity, 0, 1, 0.5);
+  innerRing.animateSpeed = clampNumber(innerRing.animateSpeed, 0, 1, 0.8);
+  innerRing.animateDirection = normalizeEnum(
+    innerRing.animateDirection,
+    ["clockwise", "anticlockwise"],
+    "clockwise",
+  );
+  outerRing.isActive = asBoolean(outerRing.isActive, false);
+  outerRing.arcWidth = clampNumber(outerRing.arcWidth, 0.01, 0.5, 0.15);
+  outerRing.opacity = clampNumber(outerRing.opacity, 0, 1, 0.2);
+  decorator.innerRing = innerRing;
+  decorator.outerRing = outerRing;
+  props.decorator = decorator;
+
+  const rotatingAnimation = isJsonObject(props.rotatingAnimation) ? props.rotatingAnimation : {};
+  rotatingAnimation.isActive = asBoolean(rotatingAnimation.isActive, false);
+  rotatingAnimation.height = clampNumber(rotatingAnimation.height, 0, 50, 6);
+  rotatingAnimation.opacity = clampNumber(rotatingAnimation.opacity, 0, 1, 1);
+  rotatingAnimation.duration = clampNumber(rotatingAnimation.duration, 0.5, 60, 5);
+  rotatingAnimation.selectMode = normalizeEnum(rotatingAnimation.selectMode, ["none", "click"], "none");
+  rotatingAnimation.isHover = asBoolean(rotatingAnimation.isHover, false);
+  props.rotatingAnimation = rotatingAnimation;
+
+  const ringText = isJsonObject(props.ringText) ? props.ringText : {};
+  ringText.isActive = asBoolean(ringText.isActive, false);
+  ringText.fontSize = clampNumber(ringText.fontSize, 8, 100, 14);
+  ringText.fontFamily = asString(ringText.fontFamily, "Microsoft YaHei");
+  ringText.fontWeight = normalizeEnum(ringText.fontWeight, ["normal", "bold", "bolder"], "normal");
+  ringText.color = asString(ringText.color, "#F8FAFC");
+  ringText.distance = clampNumber(ringText.distance, 0, 100, 10);
+  props.ringText = ringText;
+}
+
+function normalizeRingVisualOption(option: JsonObject): void {
+  const title = isJsonObject(option.title) ? option.title : {};
+  title.show = asBoolean(title.show, false);
+  title.text = typeof title.text === "string" ? title.text : "";
+  title.left = isValidLegendCoordinate(title.left, ["left", "center", "right"])
+    ? title.left
+    : "center";
+  title.top = isValidLegendCoordinate(title.top, ["top", "center", "bottom"])
+    ? title.top
+    : "center";
+  const titleTextStyle = isJsonObject(title.textStyle) ? title.textStyle : {};
+  titleTextStyle.fontFamily = asString(titleTextStyle.fontFamily, "Microsoft YaHei");
+  titleTextStyle.fontSize = clampNumber(titleTextStyle.fontSize, 8, 100, 18);
+  titleTextStyle.fontWeight = normalizeEnum(titleTextStyle.fontWeight, ["normal", "bold"], "normal");
+  titleTextStyle.color = asString(titleTextStyle.color, "#F8FAFC");
+  title.textStyle = titleTextStyle;
+  option.title = title;
+
+  const tooltip = isJsonObject(option.tooltip) ? option.tooltip : {};
+  tooltip.confine = asBoolean(tooltip.confine, true);
+  tooltip.borderWidth = clampNumber(tooltip.borderWidth, 0, 20, 1);
+  option.tooltip = tooltip;
+
+  const legend = isJsonObject(option.legend) ? option.legend : {};
+  legend.type = normalizeEnum(legend.type, ["plain", "scroll"], "scroll");
+  legend.orient = normalizeEnum(legend.orient, ["horizontal", "vertical"], "horizontal");
+  legend.itemWidth = clampNumber(legend.itemWidth, 0, 100, 10);
+  legend.itemHeight = clampNumber(legend.itemHeight, 0, 100, 10);
+  legend.itemGap = clampNumber(legend.itemGap, 0, 100, 16);
+  if (legend.selectedMode !== true && legend.selectedMode !== false && legend.selectedMode !== "single") {
+    legend.selectedMode = false;
+  }
+  const textStyle = isJsonObject(legend.textStyle) ? legend.textStyle : {};
+  textStyle.width = clampNumber(textStyle.width, 0, 500, 72);
+  textStyle.overflow = normalizeEnum(textStyle.overflow, ["truncate", "break", "breakAll"], "truncate");
+  legend.textStyle = textStyle;
+  option.legend = legend;
 }
 
 function normalizeCompactLegendLabelLayout(props: JsonObject): void {
@@ -287,7 +445,7 @@ function normalizeCompactLegendLabelLayout(props: JsonObject): void {
       continue;
     }
 
-    item.center = normalizeStringPair(item.center, ["50%", "50%"]);
+      item.center = normalizeStringPair(item.center, ["50%", "58%"]);
     item.radius = normalizeStringPair(item.radius, [
       DEFAULT_INNER_RADIUS,
       DEFAULT_OUTER_RADIUS,
@@ -407,13 +565,14 @@ function normalizeRingChartData(props: JsonObject): void {
 
 export function normalizeRingChartProps(props: JsonObject): JsonObject {
   normalizeRingChartData(props);
+  normalizeRingRuntimeConfig(props);
 
   const option = props.option;
   if (!isJsonObject(option)) {
     return props;
   }
 
-  delete option.title;
+  normalizeRingVisualOption(option);
   normalizeRingSeries(option);
   normalizeLabelFormatters(option);
 
@@ -427,7 +586,10 @@ export function normalizeRingChartProps(props: JsonObject): JsonObject {
   normalizeCompactLegendLabelLayout(props);
   normalizeBottomLegendOffset(legend);
 
-  if (isValidLegendPosition(legend.left, legend.top)) {
+  const hasNativeLegendPosition =
+    isValidLegendCoordinate(legend.left, ["left", "center", "right"]) &&
+    isValidLegendCoordinate(legend.top, ["top", "center", "bottom"]);
+  if (isValidLegendPosition(legend.left, legend.top) || hasNativeLegendPosition) {
     legend.offsetX = asNumber(legend.offsetX, 0);
     legend.offsetY = asNumber(legend.offsetY, 0);
     return props;

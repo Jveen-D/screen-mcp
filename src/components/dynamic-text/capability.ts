@@ -47,6 +47,41 @@ export const dynamicTextCapability: JsonObject = {
       type: "string",
       description: "数值后缀文案，例如“%”。",
     },
+    {
+      path: "valueFormat",
+      type: "object",
+      description: "动态数值的显示格式。",
+      children: [
+        {
+          path: "valueFormat.precision",
+          type: "number",
+          range: [0, 6],
+          description: "固定小数位数。",
+        },
+        {
+          path: "valueFormat.useGrouping",
+          type: "boolean",
+          description: "是否显示千分位分隔符。",
+        },
+        {
+          path: "valueFormat.nullText",
+          type: "string",
+          description: "空值或无数据时显示的文案。",
+        },
+      ],
+    },
+    {
+      path: "textOverflow",
+      type: "enum",
+      values: ["ellipsis", "clip", "visible"],
+      description: "动态文本超出容器时的处理方式。",
+    },
+    {
+      path: "verticalAlign",
+      type: "enum",
+      values: ["top", "center", "bottom"],
+      description: "动态文本在固定高度容器内的垂直对齐方式。",
+    },
     { path: "style", type: "object", description: "位置、尺寸、字体、颜色、对齐和背景。" },
     { path: "style.fontFamily", type: "string", description: "字体族。" },
     { path: "style.fontSize", type: "number", description: "字号。" },
@@ -75,7 +110,7 @@ export const dynamicTextCapability: JsonObject = {
       type: "number",
       range: [1, 2],
       description:
-        "行高是 React/CSS 无单位倍率，不是 px。单行文本默认使用 1；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
+        "行高是 React/CSS 无单位倍率，不是 px。动态文本默认使用 1.2；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
     },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
@@ -102,7 +137,7 @@ export const dynamicTextCapability: JsonObject = {
   mergeRules: [
     "对象按 key 深合并。",
     "chartData 永远使用默认结构，MCP 会把 textValue 同步到 chartData.constant.data[0].value。",
-    "动态文本默认 style.lineHeight = 1，且 style.height 与 style.fontSize 保持一致。",
+    "新建动态文本默认千分位、0 位小数、空值显示 --，并使用省略号和垂直居中控制固定容器。",
     "style.lineHeight 使用无单位倍率；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
   ],
   examples: [

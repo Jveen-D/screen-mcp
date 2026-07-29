@@ -21,6 +21,105 @@ function asNumber(value: JsonValue | undefined, fallback: number): number {
   return fallback;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeOptionalNumber(
+  target: JsonObject,
+  key: string,
+  min: number,
+  max: number,
+  allowString = false,
+): void {
+  if (!(key in target)) {
+    return;
+  }
+
+  const value = target[key];
+  if (allowString && typeof value === "string") {
+    return;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    delete target[key];
+    return;
+  }
+
+  target[key] = clamp(value, min, max);
+}
+
+function normalizeOptionalBoolean(target: JsonObject, key: string): void {
+  if (key in target && typeof target[key] !== "boolean") {
+    delete target[key];
+  }
+}
+
+function normalizeOptionalEnum(
+  target: JsonObject,
+  key: string,
+  values: string[],
+  fallback: string,
+): void {
+  if (key in target && !values.includes(target[key] as string)) {
+    target[key] = fallback;
+  }
+}
+
+function normalizeOptionalBorderRadius(target: JsonObject, key: string): void {
+  if (!(key in target)) {
+    return;
+  }
+
+  const value = target[key];
+  if (Array.isArray(value)) {
+    if (
+      value.length > 0 &&
+      value.length <= 4 &&
+      value.every((item) => typeof item === "number" && Number.isFinite(item))
+    ) {
+      target[key] = value.map((item) => clamp(item as number, 0, 100));
+    } else {
+      delete target[key];
+    }
+    return;
+  }
+
+  normalizeOptionalNumber(target, key, 0, 100);
+}
+
+function normalizeGapValue(value: JsonValue | undefined): number | string | undefined {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return value;
+  }
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  const percentage = normalized.match(/^(-?\d+(?:\.\d+)?)%$/);
+  if (percentage && Number(percentage[1]) >= 0) {
+    return normalized;
+  }
+
+  const numericValue = Number(normalized);
+  return normalized !== "" && Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : undefined;
+}
+
+function normalizeOptionalGap(target: JsonObject, key: string): boolean {
+  if (!(key in target)) {
+    return false;
+  }
+
+  const value = normalizeGapValue(target[key]);
+  if (value === undefined) {
+    delete target[key];
+    return false;
+  }
+
+  target[key] = value;
+  return true;
+}
+
 function normalizeStackBarChartData(props: JsonObject): void {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -85,6 +184,39 @@ function normalizeStackBarSeries(option: JsonObject): void {
       item.top = 0;
       item.right = 0;
       item.bottom = 0;
+
+      normalizeOptionalNumber(item, "barWidth", 0, 200, true);
+      normalizeOptionalNumber(item, "barMinWidth", 0, 200, true);
+      normalizeOptionalNumber(item, "barMaxWidth", 0, 200, true);
+      normalizeOptionalNumber(item, "barMinHeight", 0, 200);
+      if (normalizeOptionalGap(item, "barCategoryGap")) {
+        delete item.barWidth;
+      }
+      normalizeOptionalEnum(item, "stackStrategy", ["samesign", "all", "positive", "negative"], "samesign");
+
+      if (
+        typeof item.barMinWidth === "number" &&
+        typeof item.barMaxWidth === "number" &&
+        item.barMaxWidth < item.barMinWidth
+      ) {
+        item.barMaxWidth = item.barMinWidth;
+      }
+
+      const itemStyle = item.itemStyle;
+      if (isJsonObject(itemStyle)) {
+        normalizeOptionalNumber(itemStyle, "borderWidth", 0, 20);
+        normalizeOptionalBorderRadius(itemStyle, "borderRadius");
+      }
+
+      const emphasis = item.emphasis;
+      if (isJsonObject(emphasis)) {
+        normalizeOptionalEnum(emphasis, "focus", ["none", "series", "self"], "series");
+      }
+
+      const labelLayout = item.labelLayout;
+      if (isJsonObject(labelLayout)) {
+        normalizeOptionalBoolean(labelLayout, "hideOverlap");
+      }
     }
   }
 }
@@ -95,6 +227,13 @@ function normalizeAxes(option: JsonObject): void {
     xAxis.type = "category";
     if (typeof xAxis.show !== "boolean") {
       xAxis.show = true;
+    }
+
+    const axisLabel = xAxis.axisLabel;
+    if (isJsonObject(axisLabel)) {
+      normalizeOptionalBoolean(axisLabel, "hideOverlap");
+      normalizeOptionalNumber(axisLabel, "width", 0, 1000);
+      normalizeOptionalEnum(axisLabel, "overflow", ["truncate", "break", "breakAll", "none"], "truncate");
     }
   }
 
@@ -134,20 +273,62 @@ function normalizeLabelFormatters(option: JsonObject): void {
 }
 
 function normalizeGrid(option: JsonObject): void {
-  const grid = option.grid;
-  if (!isJsonObject(grid)) {
-    return;
-  }
+  const grid = isJsonObject(option.grid) ? option.grid : {};
+  option.grid = grid;
 
-  const top = asNumber(grid.top, 50);
-  const right = asNumber(grid.right, 22);
-  const bottom = asNumber(grid.bottom, 38);
-  const left = asNumber(grid.left, 30);
+  const top = asNumber(grid.top, 40);
+  const right = asNumber(grid.right, 16);
+  const bottom = asNumber(grid.bottom, 16);
+  const left = asNumber(grid.left, 16);
 
   grid.top = top;
   grid.right = right;
   grid.bottom = bottom;
   grid.left = left;
+  grid.containLabel = typeof grid.containLabel === "boolean" ? grid.containLabel : true;
+}
+
+function normalizeTooltip(option: JsonObject): void {
+  const tooltip = option.tooltip;
+  if (!isJsonObject(tooltip)) {
+    return;
+  }
+
+  normalizeOptionalNumber(tooltip, "borderWidth", 0, 20);
+  const axisPointer = tooltip.axisPointer;
+  if (isJsonObject(axisPointer)) {
+    normalizeOptionalEnum(axisPointer, "type", ["shadow", "line", "cross", "none"], "shadow");
+  }
+}
+
+function normalizeLegend(option: JsonObject): void {
+  const legend = option.legend;
+  if (!isJsonObject(legend)) {
+    return;
+  }
+
+  normalizeOptionalNumber(legend, "itemWidth", 0, 100);
+  normalizeOptionalNumber(legend, "itemHeight", 0, 100);
+  normalizeOptionalNumber(legend, "itemGap", 0, 200);
+
+  if (typeof legend.left !== "string" || typeof legend.top !== "string") {
+    legend.left = "center";
+    legend.top = "top";
+  }
+  legend.offsetX = asNumber(legend.offsetX, 0);
+  legend.offsetY = asNumber(legend.offsetY, 0);
+}
+
+function normalizeBarStyle(option: JsonObject): void {
+  const barStyle = option.barStyle;
+  if (!isJsonObject(barStyle)) {
+    return;
+  }
+
+  barStyle.gradient = typeof barStyle.gradient === "boolean" ? barStyle.gradient : false;
+  const darken = barStyle.gradientDarken;
+  barStyle.gradientDarken =
+    typeof darken === "number" && Number.isFinite(darken) ? clamp(darken, 0, 0.5) : 0.12;
 }
 
 export function normalizeStackBarChartProps(props: JsonObject): JsonObject {
@@ -162,25 +343,9 @@ export function normalizeStackBarChartProps(props: JsonObject): JsonObject {
   normalizeAxes(option);
   normalizeLabelFormatters(option);
   normalizeGrid(option);
-
-  const legend = option.legend;
-  if (!isJsonObject(legend)) {
-    return props;
-  }
-
-  if (
-    typeof legend.left === "string" &&
-    typeof legend.top === "string"
-  ) {
-    legend.offsetX = asNumber(legend.offsetX, 0);
-    legend.offsetY = asNumber(legend.offsetY, 0);
-    return props;
-  }
-
-  legend.left = "center";
-  legend.top = "top";
-  legend.offsetX = asNumber(legend.offsetX, 0);
-  legend.offsetY = asNumber(legend.offsetY, 0);
+  normalizeTooltip(option);
+  normalizeLegend(option);
+  normalizeBarStyle(option);
 
   return props;
 }

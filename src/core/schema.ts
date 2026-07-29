@@ -145,11 +145,11 @@ function applySingleTextLineBoxDefaults(props: JsonObject): JsonObject {
   }
 
   if (style.lineHeight === undefined) {
-    style.lineHeight = 1;
+    style.lineHeight = 1.35;
   }
 
   if (style.height === undefined && typeof style.fontSize === "number" && style.fontSize > 0) {
-    style.height = style.fontSize;
+    style.height = Math.ceil(style.fontSize * 1.35);
   }
 
   return nextProps;

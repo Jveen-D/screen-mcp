@@ -65,7 +65,19 @@ export const multiTextCapability: JsonObject = {
       type: "number",
       range: [1, 2],
       description:
-        "行高是 React/CSS 无单位倍率，不是 px。多行文本默认使用 1.5；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
+        "行高是 React/CSS 无单位倍率，不是 px。多行文本默认使用 1.6；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
+    },
+    {
+      path: "textOverflow",
+      type: "enum",
+      values: ["hidden", "auto", "visible"],
+      description: "内容超过固定高度时选择裁剪、滚动或继续显示。",
+    },
+    {
+      path: "wordBreak",
+      type: "enum",
+      values: ["break-word", "break-all", "normal"],
+      description: "长单词和连续字符的换行策略。",
     },
     { path: "rotate", type: "number", range: [-360, 360], description: "旋转角度。" },
     { path: "opacity", type: "number", range: [0, 1], description: "不透明度。" },
@@ -87,7 +99,7 @@ export const multiTextCapability: JsonObject = {
   ],
   mergeRules: [
     "对象按 key 深合并。",
-    "多行文本默认 style.lineHeight = 1.5，且 style.height 会根据 fontSize、lineHeight 和 textContent 行数自动估算。",
+    "多行文本默认 style.lineHeight = 1.6、按词换行并裁剪容器溢出；需要浏览长内容时可显式启用滚动。",
     "style.lineHeight 使用无单位倍率；如果 AI 误传大于 4 的像素式值，MCP 会按 lineHeight / fontSize 转成 1 到 2 之间的倍率。",
   ],
   examples: [

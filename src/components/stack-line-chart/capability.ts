@@ -60,34 +60,78 @@ export const stackLineChartCapability: JsonObject = {
       path: "option.grid",
       type: "object",
       description:
-        "图表网格边距配置，控制堆叠折线区域与容器边界的距离。AI 可适当调整 left/top/right/bottom 以适配标题和图例位置。",
+        "图表网格内边距配置，left/right/top/bottom 的单位均为 px；新建组件默认依次为 16/16/40/16。AI 可适当调整以适配标题、图例和坐标轴标签。",
       children: [
         {
           path: "option.grid.left",
           type: "number",
-          description: "左侧边距，单位 px。",
+          defaultValue: 16,
+          description: "左侧内边距，单位 px。",
         },
         {
           path: "option.grid.top",
           type: "number",
-          description: "顶部边距，单位 px。",
+          defaultValue: 40,
+          description: "顶部内边距，单位 px，为顶部图例预留空间。",
         },
         {
           path: "option.grid.right",
           type: "number",
-          description: "右侧边距，单位 px。",
+          defaultValue: 16,
+          description: "右侧内边距，单位 px。",
         },
         {
           path: "option.grid.bottom",
           type: "number",
-          description: "底部边距，单位 px。",
+          defaultValue: 16,
+          description: "底部内边距，单位 px。",
+        },
+        {
+          path: "option.grid.containLabel",
+          type: "boolean",
+          defaultValue: true,
+          description: "是否把坐标轴标签包含在网格区域内，默认开启以避免长标签被裁切。",
         },
       ],
     },
     {
-      path: "option.tooltip.formatter",
-      type: "string",
-      description: "tooltip 内容格式化字符串，支持 {b}（类目名）、{c}（数值）、{a}（系列名）及 <br/> 换行。",
+      path: "option.tooltip",
+      type: "object",
+      description: "提示框与坐标轴指示器配置。",
+      children: [
+        {
+          path: "option.tooltip.trigger",
+          type: "enum",
+          values: ["axis", "item", "none"],
+          defaultValue: "axis",
+          description: "提示框触发方式。累计趋势对比通常使用 axis。",
+        },
+        {
+          path: "option.tooltip.axisPointer.type",
+          type: "enum",
+          values: ["line", "shadow", "cross", "none"],
+          defaultValue: "line",
+          description: "坐标轴指示器类型。",
+        },
+        {
+          path: "option.tooltip.axisPointer.snap",
+          type: "boolean",
+          defaultValue: true,
+          description: "指示器是否吸附到最近的数据点。",
+        },
+        {
+          path: "option.tooltip.confine",
+          type: "boolean",
+          defaultValue: true,
+          description: "是否把提示框限制在图表容器内。",
+        },
+        {
+          path: "option.tooltip.formatter",
+          type: "string",
+          description:
+            "tooltip 内容格式化字符串，支持 {b}（类目名）、{c}（数值）、{a}（系列名）和 <br/> 换行；真实换行及字面量 \\n 会统一规范化为 <br/>。",
+        },
+      ],
     },
     {
       path: "option.xAxis",
@@ -104,6 +148,12 @@ export const stackLineChartCapability: JsonObject = {
           path: "option.xAxis.name",
           type: "string",
           description: "X 轴名称。",
+        },
+        {
+          path: "option.xAxis.boundaryGap",
+          type: "boolean",
+          defaultValue: false,
+          description: "分类轴两侧是否留白。默认关闭，使堆叠面积从首个分类位置开始。",
         },
         {
           path: "option.xAxis.axisLabel",
@@ -129,6 +179,27 @@ export const stackLineChartCapability: JsonObject = {
               path: "option.xAxis.axisLabel.fontSize",
               type: "number",
               description: "标签字号。",
+            },
+            {
+              path: "option.xAxis.axisLabel.hideOverlap",
+              type: "boolean",
+              defaultValue: true,
+              description: "是否自动隐藏重叠标签。",
+            },
+            {
+              path: "option.xAxis.axisLabel.overflow",
+              type: "enum",
+              values: ["truncate", "break", "breakAll", "none"],
+              defaultValue: "truncate",
+              description: "标签超出最大宽度时的处理方式。",
+            },
+            {
+              path: "option.xAxis.axisLabel.width",
+              type: "number",
+              min: 16,
+              max: 400,
+              defaultValue: 72,
+              description: "标签最大宽度，单位 px。",
             },
           ],
         },
@@ -183,6 +254,12 @@ export const stackLineChartCapability: JsonObject = {
           path: "option.yAxis.name",
           type: "string",
           description: "Y 轴名称。",
+        },
+        {
+          path: "option.yAxis.scale",
+          type: "boolean",
+          defaultValue: false,
+          description: "是否允许数值轴不强制包含零。默认关闭以保留累计基线语义。",
         },
         {
           path: "option.yAxis.axisLabel",
@@ -247,6 +324,28 @@ export const stackLineChartCapability: JsonObject = {
       ],
     },
     {
+      path: "option.legend",
+      type: "object",
+      description: "图例排列与项目间距配置。",
+      children: [
+        {
+          path: "option.legend.type",
+          type: "enum",
+          values: ["scroll", "plain"],
+          defaultValue: "scroll",
+          description: "图例较多时使用滚动翻页，默认 scroll。",
+        },
+        {
+          path: "option.legend.itemGap",
+          type: "number",
+          min: 0,
+          max: 64,
+          defaultValue: 16,
+          description: "图例项目间距，单位 px。",
+        },
+      ],
+    },
+    {
       path: "option.series",
       type: "array<object>",
       description:
@@ -260,7 +359,14 @@ export const stackLineChartCapability: JsonObject = {
             {
               path: "option.series[i].lineStyle.width",
               type: "number",
-              description: "线宽，单位 px。默认 3。",
+              description: "线宽，单位 px。默认 2。",
+            },
+            {
+              path: "option.series[i].lineStyle.type",
+              type: "enum",
+              values: ["solid", "dashed", "dotted"],
+              defaultValue: "solid",
+              description: "折线线型。",
             },
             {
               path: "option.series[i].lineStyle.color",
@@ -286,8 +392,23 @@ export const stackLineChartCapability: JsonObject = {
         },
         {
           path: "option.series[i].areaStyle",
-          type: "boolean",
-          description: "是否开启面积图填充。true 时前端会自动转换为渐变面积样式，false 时关闭填充。",
+          type: "object|boolean",
+          description: "面积填充配置。false 关闭；对象可配置颜色和透明度，颜色转换由前端负责。",
+          children: [
+            {
+              path: "option.series[i].areaStyle.color",
+              type: "object|string",
+              description: "填充颜色，支持纯色、CSS 渐变字符串或 ECharts 渐变对象。",
+            },
+            {
+              path: "option.series[i].areaStyle.opacity",
+              type: "number",
+              min: 0,
+              max: 1,
+              defaultValue: 0.18,
+              description: "面积填充透明度。",
+            },
+          ],
         },
         {
           path: "option.series[i].itemStyle",
@@ -363,7 +484,7 @@ export const stackLineChartCapability: JsonObject = {
           ],
         },
         {
-          path: "option.series[i].showSymbol.show",
+          path: "option.series[i].showSymbol",
           type: "boolean",
           description: "是否显示数据点标记。false 时隐藏所有 symbol。",
         },
@@ -380,6 +501,36 @@ export const stackLineChartCapability: JsonObject = {
             "arrow",
           ],
           description: "标记样式。",
+        },
+        {
+          path: "option.series[i].symbolSize",
+          type: "number",
+          min: 1,
+          max: 32,
+          defaultValue: 8,
+          description: "标记大小，单位 px。关闭 showSymbol 时运行时隐藏标记。",
+        },
+        {
+          path: "option.series[i].connectNulls",
+          type: "boolean",
+          defaultValue: false,
+          description:
+            "跨空值连线：仅控制是否跨过 null、undefined、NaN 数据缺口绘制连续折线；不删除、填补、排序或修改源数据。默认关闭。",
+        },
+        {
+          path: "option.series[i].sampling",
+          type: "enum",
+          values: ["none", "lttb", "average", "min", "max", "minmax", "sum"],
+          defaultValue: "none",
+          description:
+            "大数据采样：仅影响数据量较大时的显示抽样，不修改源数据数组或点击事件返回的原始值。none 不采样；lttb 保留整体趋势和关键转折；average、min、max、sum 分别取分桶平均、最小、最大、求和；minmax 保留分桶最小值和最大值。",
+        },
+        {
+          path: "option.series[i].step",
+          type: "enum|boolean",
+          values: [false, "start", "middle", "end"],
+          defaultValue: false,
+          description: "阶梯线模式；false 为普通折线。",
         },
       ],
     },
@@ -410,10 +561,6 @@ export const stackLineChartCapability: JsonObject = {
       path: "option.series[i].stack",
       reason:
         "StackLineChart 的 series stack 固定为 '__stackLine'，MCP 会强制回写以保证所有系列堆叠。",
-    },
-    {
-      path: "option.series[i].symbolSize",
-      reason: "StackLineChart 当前不支持 symbolSize setter，AI 不应写入。",
     },
     {
       path: "option.series[i].markPoint",
@@ -465,7 +612,8 @@ export const stackLineChartCapability: JsonObject = {
     "对象按 key 深合并。",
     "数组按下标深合并。",
     "option.xAxis.type 固定为 'category'，option.yAxis.type 固定为 'value'。",
-    "option.legend.offsetX/offsetY 会被归一化为数字；未提供时默认为 0。",
+    "新增布局、标签密度、提示框、图例和系列行为字段会按 capability 声明的枚举与范围归一化。",
+    "若提供 option.legend.offsetX/offsetY，MCP 会将其归一化为数字；未提供时不写入额外内部字段。",
   ],
   visualRules: [
     "堆叠折线图用于展示多系列累计趋势变化，不要用于展示占比或构成关系；占比需求应使用饼图或环形图。",
@@ -479,8 +627,8 @@ export const stackLineChartCapability: JsonObject = {
     "Y 轴网格线（splitLine）应使用低透明度虚线，保持背景干净，不要让网格线和折线同等视觉重量。",
     "折线宽度要协调：线宽 2–4px；过细会看不清，过粗会显笨重。",
     "平滑曲线（smooth: true）适合展示宏观趋势，折线（smooth: false）适合展示精确拐点。根据数据语义选择。",
-    "面积图（areaStyle: true）适合强调累积量或总量趋势，但不要所有系列都开面积图，多系列时只开主系列即可。",
-    "堆叠折线图的 tooltip trigger 固定为 'axis'，鼠标 hover 时展示该分类下所有系列的累计数值对比。",
+    "需要表达累计构成时可为各堆叠系列保留低透明度 areaStyle；只比较折线走势时应关闭面积填充。",
+    "累计趋势对比通常使用 tooltip trigger='axis'；只有明确需要单点提示或关闭提示时再使用 item/none。",
     "数据点标签（label）不建议全部打开，数据密集时标签会严重重叠；只在关键点或数据量较少时开启。",
     "堆叠折线图没有侧边摘要卡，也不存在中心总数文本；数据解读通过 tooltip 和底部结论完成。",
     "禁止在堆叠折线图上添加饼图才有的装饰（如中心文本、环形内径、扇区抬升等概念）。",
@@ -643,9 +791,7 @@ export const stackLineChartCapability: JsonObject = {
               label: {
                 show: false,
               },
-              showSymbol: {
-                show: false,
-              },
+              showSymbol: false,
             },
           ],
         },

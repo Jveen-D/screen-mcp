@@ -2,8 +2,16 @@ import type { JsonObject } from "../../types/component.js";
 
 export const dynamicTextDefaultProps: JsonObject = {
   componentName: "DynamicText",
+  textValue: 1234,
   prefixTitle: "",
   affixTitle: "",
+  textOverflow: "ellipsis",
+  verticalAlign: "center",
+  valueFormat: {
+    precision: 0,
+    useGrouping: true,
+    nullText: "--",
+  },
   chartData: {
     isPolling: false,
     indicator: [
@@ -54,21 +62,21 @@ export const dynamicTextDefaultProps: JsonObject = {
     polling: 3,
   },
   style: {
-    width: 200,
-    height: 32,
+    width: 220,
+    height: 40,
     position: "absolute",
     left: 992,
     top: 228.923582580115,
     fontFamily:
       '-apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, "WenQuanYi Zen Hei Sharp", sans-serif',
     fontSize: 24,
-    color: "#00E5FF",
+    color: "#F4FBFF",
     textAlign: "left",
     backgroundColor: "rgba(0,0,0,0)",
     fontStyle: "normal",
     fontWeight: "bold",
-    letterSpacing: 1,
-    lineHeight: 1,
+    letterSpacing: 0,
+    lineHeight: 1.2,
     zIndex: 501,
   },
   rotate: 0,
