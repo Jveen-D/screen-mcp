@@ -7,6 +7,8 @@ import {
 } from "../src/mcp/screenServer.js";
 import { listComponents } from "../src/core/registry.js";
 import { listModules } from "../src/core/modules.js";
+import { listBlackHoleModules } from "../src/core/blackholeSdk.js";
+import type { JsonObject } from "../src/types/component.js";
 
 const CHECK_MODE = process.argv.includes("--check");
 const README_PATH = "README.md";
@@ -14,6 +16,7 @@ const DOCS_DIR = "docs";
 const TOOL_REFERENCE_PATH = path.join(DOCS_DIR, "tool-reference.md");
 const COMPONENT_REFERENCE_PATH = path.join(DOCS_DIR, "component-reference.md");
 const MODULE_REFERENCE_PATH = path.join(DOCS_DIR, "module-reference.md");
+const BLACKHOLE_REFERENCE_PATH = path.join(DOCS_DIR, "blackhole-sdk-reference.md");
 
 function writeOrCheck(filePath: string, content: string): boolean {
   if (!CHECK_MODE) {
@@ -79,6 +82,7 @@ function generateCapabilitySummary(): string {
     bulletLink("工具参考", "docs/tool-reference.md"),
     bulletLink("组件参考", "docs/component-reference.md"),
     bulletLink("模块参考", "docs/module-reference.md"),
+    bulletLink("BlackHole SDK 参考", "docs/blackhole-sdk-reference.md"),
     bulletLink("开发规范", "docs/development-rules.md"),
     "",
   ].join("\n");
@@ -160,10 +164,57 @@ function generateModuleReference(): string {
   return `${lines.join("\n").trim()}\n`;
 }
 
+function generateBlackHoleReference(): string {
+  const catalog = listBlackHoleModules();
+  const modules = Array.isArray(catalog.modules) ? catalog.modules as JsonObject[] : [];
+  const lines = [
+    "<!-- AUTO GENERATED DO NOT EDIT - run npm run docs:generate -->",
+    "",
+    "# BlackHole Engine WebSDK Reference",
+    "",
+    "LLM 负责理解用户意图并设计 `BlackHoleScriptSpec`；MCP 负责从官方 SDK 能力中检索、校验并编译代码，不根据自然语言套用固定代码模板。",
+    "",
+    `- SDK version: \`${catalog.sdkVersion}\``,
+    `- API count: ${catalog.apiCount}`,
+    `- Source document: [${catalog.sourceDocument}](${path.basename(String(catalog.sourceDocument)).replace(/ /g, "%20")})`,
+    `- Source SHA-256: \`${catalog.sourceSha256}\``,
+    "",
+    "## Tool Flow",
+    "",
+    "1. `list_blackhole_sdk_modules` discovers namespaces.",
+    "2. `search_blackhole_sdk` locates candidate APIs by name or description.",
+    "3. `get_blackhole_api_capability` reads the exact qualified API contract.",
+    "4. The LLM authors `BlackHoleScriptSpec` with explicit inputs and operations.",
+    "5. `validate_blackhole_script_spec` reports errors and uncertain optional-parameter warnings.",
+    "6. `generate_blackhole_code` compiles JavaScript without executing it.",
+    "",
+    "## Script Value References",
+    "",
+    "- `{ \"$input\": \"dataSetList\" }` references a declared runtime input.",
+    "- `{ \"$ref\": \"selectedIds\" }` references an earlier operation's `assignTo` value.",
+    "- `{ \"$constructor\": \"REColor\", \"args\": [0, 229, 255, 255] }` creates a documented SDK value object.",
+    "- Plain JSON values compile as literals. Arbitrary raw code expressions are not supported.",
+    "",
+    "The generated setup function receives a ready BlackHole3D-compatible SDK instance as its first argument. Resource URLs, credentials, component IDs, dataset IDs, element IDs, and other project-specific values must come from the user through `inputs`; the MCP must not invent them.",
+    "",
+    "## Modules",
+    "",
+    "| ID | SDK namespace | Type | APIs | Name |",
+    "| --- | --- | --- | ---: | --- |",
+  ];
+  for (const module of modules) {
+    lines.push(
+      `| \`${module.id}\` | \`${module.namespace || "BlackHole3D"}\` | ${module.kind} | ${module.apiCount} | ${module.name} |`,
+    );
+  }
+  return `${lines.join("\n").trim()}\n`;
+}
+
 let ok = true;
 ok = writeOrCheck(TOOL_REFERENCE_PATH, generateToolReference()) && ok;
 ok = writeOrCheck(COMPONENT_REFERENCE_PATH, generateComponentReference()) && ok;
 ok = writeOrCheck(MODULE_REFERENCE_PATH, generateModuleReference()) && ok;
+ok = writeOrCheck(BLACKHOLE_REFERENCE_PATH, generateBlackHoleReference()) && ok;
 ok = updateReadmeCapabilities(generateCapabilitySummary()) && ok;
 
 if (!ok) {

@@ -3,6 +3,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import type { ComponentFlowFixtures } from "./component-flow.js";
 import type { DashboardFlowFixtures } from "./dashboard-flow.js";
 import { runMcpComponentToolTests } from "./mcp-component-tools-flow.js";
+import { runMcpBlackHoleToolTests } from "./mcp-blackhole-tools-flow.js";
 import { runMcpDashboardToolTests } from "./mcp-dashboard-tools-flow.js";
 import { runMcpDiagnosticsTests } from "./mcp-diagnostics-flow.js";
 import { runMcpDiscoveryTests } from "./mcp-discovery-flow.js";
@@ -55,6 +56,7 @@ export async function runMcpToolTests({
     await runMcpDiscoveryTests(context);
     await runMcpDiagnosticsTests(context);
     await runMcpComponentToolTests(context);
+    await runMcpBlackHoleToolTests(context);
     await runMcpModuleToolTests(context);
     await runMcpDashboardToolTests(context);
     await runMcpPromptToolTests(context);

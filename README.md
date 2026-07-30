@@ -19,13 +19,14 @@
 
 此区块由 `npm run docs:generate` 生成，请不要手写维护。
 
-当前 MCP 工具：14 个。
+当前 MCP 工具：19 个。
 当前内置组件：53 个。
 当前内置模块：2 个。
 
 - [工具参考](docs/tool-reference.md)
 - [组件参考](docs/component-reference.md)
 - [模块参考](docs/module-reference.md)
+- [BlackHole SDK 参考](docs/blackhole-sdk-reference.md)
 - [开发规范](docs/development-rules.md)
 
 <!-- END AUTO GENERATED CAPABILITIES -->
@@ -126,6 +127,42 @@ http://localhost:3456/v1/messages?target=https%3A%2F%2Fapi.kimi.com%2Fcoding%2Fv
 - `ai-proxy/cloudflare-worker.js`：Cloudflare Worker 版本，可部署到边缘节点
 - `ai-proxy/vercel-edge-function.ts`：Vercel Edge Function 版本
 - `ai-proxy/test-kimi.js`：快速验证 Kimi Code API 连通性
+
+## BlackHole Engine WebSDK 代码生成
+
+项目使用 [`docs/BlackHole Engine API_Web-v3.2.0.3808.docx`](docs/BlackHole%20Engine%20API_Web-v3.2.0.3808.docx) 作为 BlackHole Engine WebSDK 的唯一真相源。`npm run blackhole:generate` 会机械提取版本、模块、API、参数、嵌套模型、调用说明和示例，生成运行时 catalog；`npm run check:blackhole` 用源文件 SHA-256 检查派生产物是否同步。
+
+这里继续遵循同一职责边界：LLM 负责理解用户描述、选择 SDK API 并设计 `BlackHoleScriptSpec`，MCP 负责能力检索、API 消歧、结构校验和确定性 JavaScript 编译。MCP 不直接把自然语言套成固定代码模板，也不猜测资源 URL、账号、组件 ID、数据集 ID 或构件 ID。
+
+推荐调用顺序：
+
+1. `list_blackhole_sdk_modules`
+2. `search_blackhole_sdk`
+3. `get_blackhole_api_capability`
+4. `validate_blackhole_script_spec`
+5. `generate_blackhole_code`
+
+简化结构示例：
+
+```json
+{
+  "sdkVersion": "3.2.0.3808",
+  "functionName": "setupModelScene",
+  "inputs": [
+    { "name": "dataSetList", "description": "用户明确提供的模型数据集" }
+  ],
+  "operations": [
+    {
+      "api": "Model.loadDataSet",
+      "args": [{ "$input": "dataSetList" }]
+    }
+  ]
+}
+```
+
+生成结果是一个接收“已就绪 BlackHole3D 兼容实例”和显式 `inputs` 的 JavaScript setup 函数。代码只作为文本返回，MCP 不会执行它。首版不内置 Nebulix `waitReady(componentId)` 获取逻辑；宿主如何取得多实例 SDK 对象属于运行时契约，应由调用方在实例就绪后传入。
+
+完整版本、模块清单和结构化值写法见 [BlackHole SDK 参考](docs/blackhole-sdk-reference.md)。
 
 ## 用 MCP Inspector 测试
 

@@ -63,6 +63,18 @@ export async function runMcpDiscoveryTests({ client }: McpToolContext): Promise<
     tools.tools.some((tool) => tool.name === "generate_dashboard_project_schema"),
     "MCP server should expose project and master compilation",
   );
+  for (const toolName of [
+    "list_blackhole_sdk_modules",
+    "search_blackhole_sdk",
+    "get_blackhole_api_capability",
+    "validate_blackhole_script_spec",
+    "generate_blackhole_code",
+  ]) {
+    assert.ok(
+      tools.tools.some((tool) => tool.name === toolName),
+      `MCP server should expose ${toolName}`,
+    );
+  }
   const serverInstructions = client.getInstructions();
   assert.ok(
     serverInstructions?.includes("LLM owns design decisions") &&
@@ -72,7 +84,9 @@ export async function runMcpDiscoveryTests({ client }: McpToolContext): Promise<
       serverInstructions.includes("masters") &&
       serverInstructions.includes("masterLogicalIds") &&
       serverInstructions.includes("FreeformModule") &&
-      serverInstructions.includes("grouping.singleChildGroup"),
+      serverInstructions.includes("grouping.singleChildGroup") &&
+      serverInstructions.includes("BlackHoleScriptSpec") &&
+      serverInstructions.includes("generate_blackhole_code"),
     "MCP server instructions should steer full dashboards through LLM-authored DashboardSpec",
   );
   assert.ok(

@@ -90,6 +90,38 @@
 - Mode: writes schema output
 - Description: Compile a complete LLM-authored DashboardProjectSpec into an editor-ready project schema with documents. Every masters/pages item is a full DashboardSpec and must meet the same quality bar as an independently generated dashboard: complete information hierarchy, balanced content density, meaningful canvas usage, explicit absolute layout, real chart data and text, intentional groups/modules, readable contrast, sufficient text boxes, and LLM-authored backgrounds and decorations. Do not simplify pages, leave meaningless empty regions, or mechanically repeat one layout merely because the project contains multiple pages. Shared masters carry only reusable visual structure and must not replace page-specific business design. Each masters item becomes an independent pageType='master' document; each pages item becomes a pageType='page' document whose masterLogicalIds compile to Master reference nodes using the exact master document ids. Automatic full-canvas backgrounds are suppressed for masters and pages using masters so inherited layers cannot cover each other; author an explicit background component when needed. Normal pages are emitted first, and existing single-dashboard generation remains unchanged.
 
+## BlackHole SDK
+
+### `list_blackhole_sdk_modules`
+
+- Title: List BlackHole SDK Modules
+- Mode: read-only
+- Description: List BlackHole Engine WebSDK v3.2.0.3808 modules and API counts from the generated catalog. Use this before searching when the relevant SDK namespace is unknown.
+
+### `search_blackhole_sdk`
+
+- Title: Search BlackHole SDK
+- Mode: read-only
+- Description: Search the official BlackHole SDK catalog by API name or Chinese capability description. Results are references for LLM reasoning, not prompt-to-code templates; read the exact capability before authoring a script spec.
+
+### `get_blackhole_api_capability`
+
+- Title: Get BlackHole API Capability
+- Mode: read-only
+- Description: Return a versioned SDK capability by qualified id such as Model.loadDataSet or Event.REDataSetLoadFinish. Defaults to compact; use detail:'full' for nested models, notes, returns, and official examples.
+
+### `validate_blackhole_script_spec`
+
+- Title: Validate BlackHole Script Spec
+- Mode: read-only
+- Description: Validate a LLM-authored BlackHoleScriptSpec against SDK v3.2.0.3808. Rejects unknown or ambiguous APIs, invalid references, unsupported assignments, duplicate identifiers, and version mismatches without executing code.
+
+### `generate_blackhole_code`
+
+- Title: Generate BlackHole SDK Code
+- Mode: writes schema output
+- Description: Compile a validated LLM-authored BlackHoleScriptSpec into deterministic JavaScript. The generated function receives a ready SDK instance and explicit user inputs; the MCP never invents runtime identifiers or executes the code.
+
 ## Legacy compatibility
 
 ### `generate_full_screen_from_prompt`

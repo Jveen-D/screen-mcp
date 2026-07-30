@@ -29,14 +29,24 @@ import {
   generateDashboardProjectSchema,
   validateDashboardProjectSpec,
 } from "../core/dashboardProject.js";
+import {
+  blackHoleApiCount,
+  blackHoleCatalogVersion,
+  generateBlackHoleCode,
+  getBlackHoleApiCapability,
+  listBlackHoleModules,
+  searchBlackHoleSdk,
+  validateBlackHoleScriptSpec,
+} from "../core/blackholeSdk.js";
 import type { EditorTreeNode, JsonObject } from "../types/component.js";
 
 export const SERVER_VERSION = "0.1.0";
-export const RULES_VERSION = "2026-07-21.02-explicit-layer-role";
+export const RULES_VERSION = "2026-07-30.01-blackhole-sdk-code-compiler";
 
 const SERVER_STARTED_AT = new Date();
 
 export const SCREEN_MCP_INSTRUCTIONS =
+  "For BlackHole Engine WebSDK code, the LLM interprets the user request and owns the operation design. Discover modules with list_blackhole_sdk_modules, search exact SDK capabilities, read get_blackhole_api_capability, author and validate a BlackHoleScriptSpec, then call generate_blackhole_code. Never invent API names, resource URLs, credentials, component ids, dataset ids, or element ids; pass user-provided runtime values through spec.inputs. The compiler returns JavaScript that receives a ready SDK instance explicitly and never executes generated code. " +
   "Every returned editor node uses props.layerRole=content, decoration, or background. SingleImage also keeps imageLayerRole identical to layerRole. Siblings are compiled in content, decoration, background order; callers must set explicit layerRole for groups, SvgDecoration, and SingleImage instead of relying on names or zIndex. " +
   "This MCP server compiles large-screen/dashboard designs into editor schema. The LLM owns design decisions: theme colors, module list, chart choices, layout coordinates, copy, background, and decorations. For full-screen dashboards, first create a structured DashboardSpec, call validate_dashboard_spec, then call generate_dashboard_schema. Do not call generate_full_screen_from_prompt for production generation; it is disabled because prompt-only generation encourages fixed templates. Use ChartPanel for chart-analysis panels and FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components. Use DashboardSpec.groups for LLM-declared related top-level component regions such as headers, KPI rows, and custom mixed panels; every DashboardSpec.groups item must declare a complete absolute style left/top/width/height and should not be used as an unpositioned bucket. Do not flatten many unrelated elements into DashboardSpec.components. Full-screen dashboards should treat left/right/bottom canvas padding as active visual space: add LLM-authored custom SvgDecoration edge rails, tick marks, scan lines, signal ticks, corner structures, or subtle texture accents when those bands would otherwise be empty, while keeping them below business content and above only the background. When the user explicitly asks for a BIM/model screen, the LLM may add DashboardSpec.reservedAreas with purpose/type/kind 'bim-model' and a complete absolute style to keep that model space empty; reservedAreas are compile-time constraints only, are not emitted into the final schema, and suppress only the automatic full-canvas background fallback. ChartPanel defaults to manual layout and only compiles slots explicitly provided by the LLM; DashboardSpec and direct module generation for manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion. Module/grouping is common: set grouping.mode='semantic' and grouping.singleChildGroup=true when you want semantic sections grouped; earlier siblings render above later siblings, so main content must be above decorations/background and background groups must stay last. __Group__ is only an editor grouping container and is not a visual background; module root groups may carry style only for editor positioning. DashboardSpec child components should prefer canvas absolute coordinates; when a module/group child is clearly using local coordinates, generate_dashboard_schema offsets it to canvas coordinates for editor rendering. DashboardSpec compilation adds real SvgDecoration background carriers for the full canvas and bare groups/modules when no explicit BIM/model reserved area exists; bare groups/modules still receive background carriers. DashboardSpec and direct chart component generation must carry real chartData.constant.data, or supported ChartPanel dataItems, and SingleText must carry real textContent; do not rely on demo categories or placeholder copy. Reserve enough width and height for SingleText content and keep explicit text/background colors readable; validate_dashboard_spec reports objective contrast and text-fit warnings without replacing LLM-authored design choices. Theme is compile-time context and is stripped from final component props. SvgDecoration decorations should use LLM-authored custom svgContent unless a non-empty preset id is explicitly chosen; MCP does not fall back to a default preset icon and rejects empty decoration placeholders in DashboardSpec. Do not guess or select existing project asset paths; use imageSrc only when the user explicitly provides a path. SingleImage uses imageLayerRole='background' for full-screen or panel backgrounds and imageLayerRole='content' for photos, renders, logos, or complex illustrations that must stay in the main content layer above panel backgrounds. Hard constraints: Indicator width should be at least 280px and text lineHeight should be 1; KPI labels should be explicit SingleText siblings and Indicator should focus on value/prefix/suffix, with DashboardSpec compilation externalizing real Indicator titleName as SingleText when needed; Weather in a 1920x1080 header should be 280-300px wide; Gauge renders its own value, so do not overlay duplicate SingleText and set indicatorConfig.suffix correctly. For multi-page projects with shared masters, create a DashboardProjectSpec, put reusable LLM-authored designs into masters, put normal screens into pages, reference masters from each page with masterLogicalIds, call validate_dashboard_project_spec, then call generate_dashboard_project_schema. Every page must meet the same quality bar as an independently generated DashboardSpec: complete information hierarchy, balanced visual density, meaningful use of canvas space, real business data, and page-specific component composition. Do not thin or mechanically duplicate pages merely because one project contains several documents. Master documents and pages using masters do not receive automatic full-canvas backgrounds, so the LLM must author explicit background components when needed. If the user asks for 完整schema, 完整JSON, full schema, or complete schema, include the complete JSON returned by the tool.";
 
@@ -157,6 +167,9 @@ export const RULES_FINGERPRINT = [
   "dashboard-master-reference-validation",
   "dashboard-project-page-quality-parity",
   "dashboard-base-table-real-data-validation",
+  "blackhole-sdk-v3.2.0.3808-catalog",
+  "blackhole-script-spec-validation",
+  "blackhole-deterministic-code-compiler",
 ] as const;
 
 export type ScreenToolCategory =
@@ -164,6 +177,7 @@ export type ScreenToolCategory =
   | "component"
   | "module"
   | "dashboard"
+  | "blackhole"
   | "legacy";
 
 export const SCREEN_TOOL_CATEGORY_LABELS: Record<ScreenToolCategory, string> = {
@@ -171,6 +185,7 @@ export const SCREEN_TOOL_CATEGORY_LABELS: Record<ScreenToolCategory, string> = {
   component: "Component schema",
   module: "Module schema",
   dashboard: "DashboardSpec",
+  blackhole: "BlackHole SDK",
   legacy: "Legacy compatibility",
 };
 
@@ -245,6 +260,10 @@ function serverDiagnostics(options: ScreenServerOptions = {}): JsonObject {
     source: {
       entryFile: fileURLToPath(entryFileUrl),
       importMetaUrl: entryFileUrl,
+    },
+    blackHoleSdk: {
+      version: blackHoleCatalogVersion(),
+      apiCount: blackHoleApiCount(),
     },
   };
 }
@@ -341,6 +360,36 @@ const moduleCapabilityDetailInput = {
   moduleName: z.string().min(1),
   detail: z.enum(["compact", "full"]).optional(),
 };
+
+const blackHoleOperationInput = z
+  .object({
+    kind: z.enum(["call", "assign"]).optional(),
+    api: z.string().min(1),
+    args: z.array(z.unknown()).optional(),
+    value: z.unknown().optional(),
+    assignTo: z.string().min(1).optional(),
+  })
+  .passthrough();
+
+const blackHoleScriptSpecInput = z
+  .object({
+    sdkVersion: z.string().min(1).optional(),
+    language: z.literal("javascript").optional(),
+    functionName: z.string().min(1).optional(),
+    engineParameter: z.string().min(1).optional(),
+    inputs: z.array(z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+    }).passthrough()).optional(),
+    operations: z.array(blackHoleOperationInput).optional(),
+    eventHandlers: z.array(z.object({
+      event: z.string().min(1),
+      handlerName: z.string().min(1).optional(),
+      operations: z.array(blackHoleOperationInput).optional(),
+    }).passthrough()).optional(),
+    cleanup: z.array(blackHoleOperationInput).optional(),
+  })
+  .passthrough();
 
 export function getScreenToolDefinitions(
   options: ScreenServerOptions = {},
@@ -631,6 +680,119 @@ export function getScreenToolDefinitions(
       handler: async (input) => {
         try {
           return asToolContent(generateDashboardProjectSchema(input));
+        } catch (error) {
+          return handleToolError(error);
+        }
+      },
+    },
+    {
+      name: "list_blackhole_sdk_modules",
+      category: "blackhole",
+      config: {
+        title: "List BlackHole SDK Modules",
+        description:
+          "List BlackHole Engine WebSDK v3.2.0.3808 modules and API counts from the generated catalog. Use this before searching when the relevant SDK namespace is unknown.",
+        inputSchema: {},
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async () => asToolContent(listBlackHoleModules()),
+    },
+    {
+      name: "search_blackhole_sdk",
+      category: "blackhole",
+      config: {
+        title: "Search BlackHole SDK",
+        description:
+          "Search the official BlackHole SDK catalog by API name or Chinese capability description. Results are references for LLM reasoning, not prompt-to-code templates; read the exact capability before authoring a script spec.",
+        inputSchema: {
+          query: z.string().min(1),
+          module: z.string().min(1).optional(),
+          limit: z.number().int().min(1).max(20).optional(),
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async (input) => {
+        try {
+          return asToolContent(searchBlackHoleSdk(input));
+        } catch (error) {
+          return handleToolError(error);
+        }
+      },
+    },
+    {
+      name: "get_blackhole_api_capability",
+      category: "blackhole",
+      config: {
+        title: "Get BlackHole API Capability",
+        description:
+          "Return a versioned SDK capability by qualified id such as Model.loadDataSet or Event.REDataSetLoadFinish. Defaults to compact; use detail:'full' for nested models, notes, returns, and official examples.",
+        inputSchema: {
+          apiId: z.string().min(1),
+          detail: z.enum(["compact", "full"]).optional(),
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async (input) => {
+        try {
+          return asToolContent(
+            getBlackHoleApiCapability(String(input.apiId), String(input.detail ?? "compact")),
+          );
+        } catch (error) {
+          return handleToolError(error);
+        }
+      },
+    },
+    {
+      name: "validate_blackhole_script_spec",
+      category: "blackhole",
+      config: {
+        title: "Validate BlackHole Script Spec",
+        description:
+          "Validate a LLM-authored BlackHoleScriptSpec against SDK v3.2.0.3808. Rejects unknown or ambiguous APIs, invalid references, unsupported assignments, duplicate identifiers, and version mismatches without executing code.",
+        inputSchema: blackHoleScriptSpecInput,
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async (input) => {
+        try {
+          return asToolContent(validateBlackHoleScriptSpec(input));
+        } catch (error) {
+          return handleToolError(error);
+        }
+      },
+    },
+    {
+      name: "generate_blackhole_code",
+      category: "blackhole",
+      config: {
+        title: "Generate BlackHole SDK Code",
+        description:
+          "Compile a validated LLM-authored BlackHoleScriptSpec into deterministic JavaScript. The generated function receives a ready SDK instance and explicit user inputs; the MCP never invents runtime identifiers or executes the code.",
+        inputSchema: blackHoleScriptSpecInput,
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+      },
+      handler: async (input) => {
+        try {
+          return asToolContent(generateBlackHoleCode(input));
         } catch (error) {
           return handleToolError(error);
         }

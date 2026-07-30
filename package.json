@@ -14,14 +14,18 @@
     "start:http": "node dist/src/http-server.js",
     "build": "tsc -p tsconfig.json",
     "test:flow": "tsx scripts/test-flow.ts",
-    "docs:generate": "tsx scripts/generate-docs.ts",
-    "check:docs": "tsx scripts/generate-docs.ts --check",
+    "blackhole:generate": "tsx scripts/generate-blackhole-catalog.ts",
+    "check:blackhole": "tsx scripts/generate-blackhole-catalog.ts --check",
+    "docs:generate": "npm run blackhole:generate && tsx scripts/generate-docs.ts",
+    "check:docs": "npm run check:blackhole && tsx scripts/generate-docs.ts --check",
     "check:rules": "tsx scripts/check-project-rules.ts",
-    "check": "npm run build && npm run test:flow && npm run check:docs && npm run check:rules"
+    "check": "npm run check:blackhole && npm run build && npm run test:flow && npm run check:docs && npm run check:rules"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
+    "fast-xml-parser": "^5.10.1",
+    "fflate": "^0.8.3",
     "zod": "^3.25.28"
   },
   "devDependencies": {
