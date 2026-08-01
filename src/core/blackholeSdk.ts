@@ -5,6 +5,8 @@ import type {
 import type { JsonObject, JsonValue } from "../types/component.js";
 
 const IDENTIFIER_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
+const INTEGRATION_ID_PATTERN = /^blackhole-[a-z0-9]+$/u;
+const HAN_CHARACTER_PATTERN = /\p{Script=Han}/u;
 const DEFAULT_SEARCH_LIMIT = 8;
 const MAX_SEARCH_LIMIT = 20;
 
@@ -16,6 +18,43 @@ type ValidationResult = {
 
 type CompileContext = {
   engineParameter: string;
+};
+
+type ElementEffectTarget = "elementValidity" | "elementAppearance" | "elementUv";
+
+type ElementEffectSemantics = {
+  effectTarget: ElementEffectTarget;
+  summary: string;
+  chooseWhen: string;
+  avoidWhen: string;
+};
+
+const ELEMENT_EFFECT_SEMANTICS: Record<string, ElementEffectSemantics> = {
+  "BIM.setElemsValidState": {
+    effectTarget: "elementValidity",
+    summary:
+      "控制整个构件的有效性；false 会隐藏构件，并使后续 SDK 接口不再作用于该构件。",
+    chooseWhen:
+      "普通构件显示/隐藏且需要同步改变后续 API 参与状态时使用。",
+    avoidWhen: "不要用于仅控制构件 UV，或只通过透明度改变外观的需求。",
+  },
+  "BIM.setElemAttr": {
+    effectTarget: "elementAppearance",
+    summary:
+      "控制构件颜色、透明度、自发光、光泽度和金属质感等外观，构件仍保持有效。",
+    chooseWhen:
+      "需要改变构件外观时使用；可通过透明度在不改变有效性的情况下实现视觉隐藏。",
+    avoidWhen:
+      "不要用于需要让构件失效的场景，也不要用于明确的 UV 显隐需求。",
+  },
+  "BIM.setElemUVVisible": {
+    effectTarget: "elementUv",
+    summary: "只控制构件 UV 的显示状态，不代表普通的整个构件显示/隐藏。",
+    chooseWhen:
+      "只有用户明确要求 UV、纹理坐标或 UV 映射表面显隐时才使用。",
+    avoidWhen:
+      "绝不能替代普通的构件显示/隐藏 API。",
+  },
 };
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
@@ -61,6 +100,7 @@ function resolveBlackHoleApi(apiId: string, kind?: "api" | "event"): BlackHoleAp
 }
 
 function compactApi(api: BlackHoleApiDefinition): JsonObject {
+  const effectSemantics = ELEMENT_EFFECT_SEMANTICS[api.id];
   return {
     id: api.id,
     name: api.name,
@@ -79,6 +119,7 @@ function compactApi(api: BlackHoleApiDefinition): JsonObject {
     noteCount: api.notes.length,
     exampleCount: api.examples.length,
     usageForms: api.usageForms,
+    ...(effectSemantics ? { effectSemantics } : {}),
     source: api.source as unknown as JsonValue,
   };
 }
@@ -101,10 +142,19 @@ function queryTerms(query: string): string[] {
       terms.push(sequence.slice(index, index + 2));
     }
   }
+  const aliases: Record<string, string[]> = {
+    "点击": ["单击", "鼠标", "探测"],
+    "点选": ["选择", "单击", "鼠标", "探测"],
+    "拾取": ["鼠标", "探测"],
+  };
+  for (const term of [...terms]) {
+    terms.push(...(aliases[term] ?? []));
+  }
   return [...new Set([normalized, ...terms].filter(Boolean))];
 }
 
 function searchableText(api: BlackHoleApiDefinition): string {
+  const effectSemantics = ELEMENT_EFFECT_SEMANTICS[api.id];
   return [
     api.id,
     api.callPath,
@@ -118,6 +168,14 @@ function searchableText(api: BlackHoleApiDefinition): string {
       model.name,
       ...model.fields.flatMap((field) => [field.name, field.description]),
     ]),
+    ...(effectSemantics
+      ? [
+        effectSemantics.effectTarget,
+        effectSemantics.summary,
+        effectSemantics.chooseWhen,
+        effectSemantics.avoidWhen,
+      ]
+      : []),
   ].join(" ").toLowerCase();
 }
 
@@ -182,11 +240,13 @@ export function searchBlackHoleSdk(input: JsonObject): JsonObject {
 
 export function getBlackHoleApiCapability(apiId: string, detail = "compact"): JsonObject {
   const api = resolveBlackHoleApi(apiId);
+  const effectSemantics = ELEMENT_EFFECT_SEMANTICS[api.id];
   if (detail === "full") {
     return {
       sdkVersion: blackHoleCatalog.sdkVersion,
       compact: false,
       ...api,
+      ...(effectSemantics ? { effectSemantics } : {}),
     } as unknown as JsonObject;
   }
   return {
@@ -194,6 +254,29 @@ export function getBlackHoleApiCapability(apiId: string, detail = "compact"): Js
     compact: true,
     ...compactApi(api),
   };
+}
+
+function validateElementEffectTarget(
+  operation: JsonObject,
+  api: BlackHoleApiDefinition,
+  fieldName: string,
+  errors: string[],
+): void {
+  const semantics = ELEMENT_EFFECT_SEMANTICS[api.id];
+  if (!semantics) {
+    if (operation.effectTarget !== undefined) {
+      errors.push(
+        `${fieldName}.effectTarget is only supported for APIs with declared element-effect semantics`,
+      );
+    }
+    return;
+  }
+
+  if (operation.effectTarget !== semantics.effectTarget) {
+    errors.push(
+      `${fieldName}.effectTarget must be ${semantics.effectTarget} for ${api.id}. ${semantics.summary} ${semantics.avoidWhen}`,
+    );
+  }
 }
 
 function inputNames(input: JsonObject, errors: string[]): Set<string> {
@@ -329,6 +412,7 @@ function validateOperations(
       errors.push(`${operationField}.api: ${error instanceof Error ? error.message : String(error)}`);
       return;
     }
+    validateElementEffectTarget(rawOperation, api, operationField, errors);
 
     if (kind === "assign") {
       if (!api.usageForms.includes("assignment")) {
@@ -412,6 +496,14 @@ function validateEventHandlers(
     } else {
       handlerNames.add(handlerName);
     }
+    const callbackInput = stringValue(rawHandler.callbackInput);
+    if (callbackInput !== "") {
+      if (!IDENTIFIER_PATTERN.test(callbackInput)) {
+        errors.push(`${fieldName}.callbackInput must be a valid JavaScript identifier`);
+      } else if (!inputs.has(callbackInput)) {
+        errors.push(`${fieldName}.callbackInput must reference a declared input: ${callbackInput}`);
+      }
+    }
     if (rawHandler.operations !== undefined) {
       validateOperations(
         rawHandler.operations,
@@ -422,7 +514,241 @@ function validateEventHandlers(
         warnings,
       );
     }
+    if ((!Array.isArray(rawHandler.operations) || rawHandler.operations.length === 0) && callbackInput === "") {
+      errors.push(`${fieldName} must include operations or callbackInput`);
+    }
   });
+}
+
+const HOST_EXECUTION_TARGETS = new Set([
+  "componentDidMount",
+  "componentWillUnMount",
+  "componentEvent",
+  "manualMethod",
+]);
+const HOST_CLEANUP_TARGETS = new Set(["componentWillUnMount", "none"]);
+const HOST_SELECTION_ROLES = new Set(["eventSource", "outputTarget", "contextTarget", "unused"]);
+const HOST_INPUT_SOURCE_TYPES = new Set([
+  "state",
+  "stateSetter",
+  "event",
+  "extraParam",
+  "customMethod",
+  "nodeVisibility",
+  "unresolved",
+]);
+
+function validateHostInputBindings(
+  value: JsonObject,
+  inputs: Set<string>,
+  executionTarget: string,
+  errors: string[],
+): void {
+  const rawBindings = value.inputBindings;
+  if (inputs.size === 0 && rawBindings === undefined) {
+    return;
+  }
+  if (!Array.isArray(rawBindings)) {
+    errors.push("hostIntegration.inputBindings must be an array covering every declared input");
+    return;
+  }
+
+  const boundInputs = new Set<string>();
+  rawBindings.forEach((rawBinding, index) => {
+    const fieldName = `hostIntegration.inputBindings[${index}]`;
+    if (!isJsonObject(rawBinding)) {
+      errors.push(`${fieldName} must be an object`);
+      return;
+    }
+    const inputName = stringValue(rawBinding.input);
+    if (!inputs.has(inputName)) {
+      errors.push(`${fieldName}.input must reference a declared input: ${inputName || "<empty>"}`);
+    } else if (boundInputs.has(inputName)) {
+      errors.push(`${fieldName}.input is duplicated: ${inputName}`);
+    } else {
+      boundInputs.add(inputName);
+    }
+
+    if (!isJsonObject(rawBinding.source)) {
+      errors.push(`${fieldName}.source must be an object`);
+      return;
+    }
+    const source = rawBinding.source;
+    const sourceType = stringValue(source.type);
+    if (!HOST_INPUT_SOURCE_TYPES.has(sourceType)) {
+      errors.push(`${fieldName}.source.type is invalid`);
+      return;
+    }
+
+    if (sourceType === "state" || sourceType === "stateSetter") {
+      const literal = stringValue(source.literal);
+      if (!IDENTIFIER_PATTERN.test(literal)) {
+        errors.push(`${fieldName}.source.literal must be a valid JavaScript identifier`);
+      }
+      if (source.createState !== undefined) {
+        if (!isJsonObject(source.createState)) {
+          errors.push(`${fieldName}.source.createState must be an object`);
+        } else if (!("initialValue" in source.createState)) {
+          errors.push(`${fieldName}.source.createState.initialValue is required`);
+        }
+      }
+    } else if (sourceType === "event" || sourceType === "extraParam") {
+      if (executionTarget !== "componentEvent" && executionTarget !== "manualMethod") {
+        errors.push(`${fieldName}.source.type ${sourceType} requires a custom method execution target`);
+      }
+      if (
+        source.path !== undefined &&
+        (!Array.isArray(source.path) || source.path.some((segment) => typeof segment !== "string" || segment === ""))
+      ) {
+        errors.push(`${fieldName}.source.path must be an array of non-empty strings`);
+      }
+    } else if (sourceType === "customMethod") {
+      if (!IDENTIFIER_PATTERN.test(stringValue(source.methodName))) {
+        errors.push(`${fieldName}.source.methodName must be a valid JavaScript identifier`);
+      }
+    } else if (sourceType === "nodeVisibility") {
+      if (stringValue(source.nodeId) === "") {
+        errors.push(`${fieldName}.source.nodeId is required`);
+      }
+      if (source.action !== "show" && source.action !== "hide") {
+        errors.push(`${fieldName}.source.action must be show or hide`);
+      }
+    } else if (sourceType === "unresolved" && stringValue(source.reason) === "") {
+      errors.push(`${fieldName}.source.reason is required`);
+    }
+  });
+
+  for (const inputName of inputs) {
+    if (!boundInputs.has(inputName)) {
+      errors.push(`hostIntegration.inputBindings is missing declared input: ${inputName}`);
+    }
+  }
+}
+
+function validateHostIntegration(
+  value: JsonValue | undefined,
+  inputs: Set<string>,
+  hasEventHandlers: boolean,
+  hasCleanupOperations: boolean,
+  errors: string[],
+): void {
+  if (value === undefined) {
+    return;
+  }
+  if (!isJsonObject(value)) {
+    errors.push("hostIntegration must be an object");
+    return;
+  }
+
+  const executionTarget = stringValue(value.executionTarget);
+  const cleanupTarget = stringValue(value.cleanupTarget);
+  const customMethodName = stringValue(value.customMethodName);
+  const chineseComment = stringValue(value.chineseComment);
+  const replaceIntegrationId = stringValue(value.replaceIntegrationId);
+  const reason = stringValue(value.reason);
+  if (!HOST_EXECUTION_TARGETS.has(executionTarget)) {
+    errors.push("hostIntegration.executionTarget is invalid");
+  }
+  if (!HOST_CLEANUP_TARGETS.has(cleanupTarget)) {
+    errors.push("hostIntegration.cleanupTarget is invalid");
+  }
+  if (reason === "") {
+    errors.push("hostIntegration.reason is required");
+  }
+  if (executionTarget === "componentDidMount") {
+    if (chineseComment === "" || !HAN_CHARACTER_PATTERN.test(chineseComment)) {
+      errors.push("hostIntegration.chineseComment must contain a Chinese explanation for componentDidMount code");
+    } else if (/\r|\n|\u2028|\u2029/u.test(chineseComment)) {
+      errors.push("hostIntegration.chineseComment must be a single-line comment");
+    } else if (chineseComment.length > 100) {
+      errors.push("hostIntegration.chineseComment must not exceed 100 characters");
+    }
+  } else if (value.chineseComment !== undefined) {
+    errors.push("hostIntegration.chineseComment is only valid for componentDidMount execution");
+  }
+  if (replaceIntegrationId !== "") {
+    if (executionTarget !== "componentDidMount") {
+      errors.push("hostIntegration.replaceIntegrationId is only valid for componentDidMount execution");
+    } else if (!INTEGRATION_ID_PATTERN.test(replaceIntegrationId)) {
+      errors.push("hostIntegration.replaceIntegrationId must be a valid BlackHole integration id");
+    }
+  }
+  validateHostInputBindings(value, inputs, executionTarget, errors);
+
+  const componentEvent = isJsonObject(value.componentEvent) ? value.componentEvent : undefined;
+  if (executionTarget === "componentEvent") {
+    if (!componentEvent || stringValue(componentEvent.nodeId) === "" || stringValue(componentEvent.eventName) === "") {
+      errors.push("hostIntegration.componentEvent requires nodeId and eventName for componentEvent execution");
+    }
+    if (!IDENTIFIER_PATTERN.test(customMethodName)) {
+      errors.push("hostIntegration.customMethodName must be a valid JavaScript identifier for componentEvent execution");
+    }
+  } else if (componentEvent) {
+    errors.push("hostIntegration.componentEvent is only valid for componentEvent execution");
+  }
+
+  if (executionTarget === "manualMethod") {
+    if (!IDENTIFIER_PATTERN.test(customMethodName)) {
+      errors.push("hostIntegration.customMethodName must be a valid JavaScript identifier for manualMethod execution");
+    }
+  } else if (executionTarget !== "componentEvent" && customMethodName !== "") {
+    errors.push("hostIntegration.customMethodName is only valid for componentEvent or manualMethod execution");
+  }
+
+  if ((hasEventHandlers || hasCleanupOperations) && executionTarget === "componentWillUnMount") {
+    errors.push(
+      "componentWillUnMount execution cannot register handlers or declare cleanup; put teardown calls in operations",
+    );
+  }
+  if (hasCleanupOperations && cleanupTarget !== "componentWillUnMount") {
+    errors.push(
+      "hostIntegration.cleanupTarget must be componentWillUnMount when the script declares cleanup operations",
+    );
+  } else if (!hasCleanupOperations && cleanupTarget !== "none") {
+    errors.push(
+      "hostIntegration.cleanupTarget must be none when the script has no cleanup operations; event handlers are not automatically removed",
+    );
+  }
+
+  if (value.selectedNodeUsages !== undefined && !Array.isArray(value.selectedNodeUsages)) {
+    errors.push("hostIntegration.selectedNodeUsages must be an array");
+    return;
+  }
+  const usedNodeIds = new Set<string>();
+  for (const [index, rawUsage] of (value.selectedNodeUsages ?? []).entries()) {
+    const fieldName = `hostIntegration.selectedNodeUsages[${index}]`;
+    if (!isJsonObject(rawUsage)) {
+      errors.push(`${fieldName} must be an object`);
+      continue;
+    }
+    const nodeId = stringValue(rawUsage.nodeId);
+    const role = stringValue(rawUsage.role);
+    if (nodeId === "") {
+      errors.push(`${fieldName}.nodeId is required`);
+    } else if (usedNodeIds.has(nodeId)) {
+      errors.push(`${fieldName}.nodeId is duplicated: ${nodeId}`);
+    } else {
+      usedNodeIds.add(nodeId);
+    }
+    if (!HOST_SELECTION_ROLES.has(role)) {
+      errors.push(`${fieldName}.role is invalid`);
+    }
+    if (stringValue(rawUsage.reason) === "") {
+      errors.push(`${fieldName}.reason is required`);
+    }
+  }
+
+  if (executionTarget === "componentEvent" && componentEvent) {
+    const eventNodeId = stringValue(componentEvent.nodeId);
+    const eventSource = (value.selectedNodeUsages ?? []).some((rawUsage) =>
+      isJsonObject(rawUsage) &&
+      stringValue(rawUsage.nodeId) === eventNodeId &&
+      stringValue(rawUsage.role) === "eventSource"
+    );
+    if (!eventSource) {
+      errors.push("hostIntegration.componentEvent.nodeId must have an eventSource selected-node usage");
+    }
+  }
 }
 
 export function validateBlackHoleScriptSpec(input: JsonObject): JsonObject {
@@ -468,6 +794,13 @@ export function validateBlackHoleScriptSpec(input: JsonObject): JsonObject {
   if (input.cleanup !== undefined) {
     validateOperations(input.cleanup, "cleanup", inputs, references, errors, warnings);
   }
+  validateHostIntegration(
+    input.hostIntegration,
+    inputs,
+    hasEventHandlers,
+    Array.isArray(input.cleanup) && input.cleanup.length > 0,
+    errors,
+  );
 
   return {
     valid: errors.length === 0,
@@ -556,6 +889,355 @@ function uniqueApis(apis: BlackHoleApiDefinition[]): JsonObject[] {
   });
 }
 
+function compileHostEngineLookup(context: CompileContext, indentLevel: number): string[] {
+  const indent = "  ".repeat(indentLevel);
+  return [
+    `${indent}const ${context.engineParameter} = window.BlackHole3D;`,
+    `${indent}if (!${context.engineParameter}) {`,
+    `${indent}  throw new Error("BlackHole3D SDK is not ready");`,
+    `${indent}}`,
+  ];
+}
+
+function compileSetupBody(
+  input: JsonObject,
+  context: CompileContext,
+  usedApis: BlackHoleApiDefinition[],
+): string[] {
+  const lines: string[] = [];
+  const inputs = asObjects(input.inputs).map((item) => stringValue(item.name));
+  const topLevelOperations = asObjects(input.operations);
+  const cleanupOperations = asObjects(input.cleanup);
+  if (inputs.length > 0) {
+    lines.push(`  const { ${inputs.join(", ")} } = inputs;`, "");
+  }
+  asObjects(input.eventHandlers).forEach((handler, index) => {
+    const event = resolveBlackHoleApi(stringValue(handler.event), "event");
+    const handlerName = stringValue(handler.handlerName) || `onBlackHoleEvent${index + 1}`;
+    const callbackInput = stringValue(handler.callbackInput);
+    lines.push(`  const ${handlerName} = (event) => {`);
+    const operations = asObjects(handler.operations);
+    if (operations.length === 0 && callbackInput === "") {
+      lines.push("    void event;");
+    } else {
+      for (const operation of operations) {
+        const compiled = compileOperation(operation, context, 2);
+        lines.push(compiled.line);
+        usedApis.push(compiled.api);
+      }
+      if (callbackInput !== "") {
+        lines.push(
+          `    if (typeof ${callbackInput} === "function") {`,
+          `      ${callbackInput}(event);`,
+          "    }",
+        );
+      }
+    }
+    lines.push("  };", `  document.addEventListener(${JSON.stringify(event.name)}, ${handlerName});`, "");
+    usedApis.push(event);
+  });
+
+  for (const operation of topLevelOperations) {
+    const compiled = compileOperation(operation, context, 1);
+    lines.push(compiled.line);
+    usedApis.push(compiled.api);
+  }
+  if (topLevelOperations.length > 0) {
+    lines.push("");
+  }
+  lines.push("  return function cleanupBlackHole() {");
+  for (const operation of cleanupOperations) {
+    const compiled = compileOperation(operation, context, 2);
+    lines.push(compiled.line);
+    usedApis.push(compiled.api);
+  }
+  if (cleanupOperations.length === 0) {
+    lines.push("    // No SDK cleanup operations were declared by the LLM-authored spec.");
+  }
+  lines.push("  };");
+  return lines;
+}
+
+function stableHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function canonicalizeJson(value: JsonValue): JsonValue {
+  if (Array.isArray(value)) {
+    return value.map(canonicalizeJson);
+  }
+  if (!isJsonObject(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.keys(value).sort().map((key) => [key, canonicalizeJson(value[key])]),
+  );
+}
+
+function semanticInputBindingSource(value: JsonValue | undefined): JsonValue {
+  if (!isJsonObject(value)) {
+    return {};
+  }
+  const source = value;
+  const createState = isJsonObject(source.createState)
+    ? {
+      initialValue: source.createState.initialValue,
+      ...(typeof source.createState.updateExisting === "boolean"
+        ? { updateExisting: source.createState.updateExisting }
+        : {}),
+    }
+    : undefined;
+  return {
+    ...Object.fromEntries(Object.entries(source).filter(([key]) => key !== "createState" && key !== "reason")),
+    ...(createState ? { createState } : {}),
+  } as JsonObject;
+}
+
+function semanticIntegrationSource(input: JsonObject): JsonValue {
+  const integration = isJsonObject(input.hostIntegration) ? input.hostIntegration : {};
+  const componentEvent = isJsonObject(integration.componentEvent)
+    ? {
+      nodeId: integration.componentEvent.nodeId,
+      eventName: integration.componentEvent.eventName,
+    }
+    : undefined;
+  return {
+    inputs: asObjects(input.inputs).map((item) => ({ name: item.name })),
+    operations: input.operations ?? [],
+    eventHandlers: asObjects(input.eventHandlers).map((handler) => ({
+      event: handler.event,
+      ...(handler.callbackInput !== undefined ? { callbackInput: handler.callbackInput } : {}),
+      operations: handler.operations ?? [],
+    })),
+    cleanup: input.cleanup ?? [],
+    hostIntegration: {
+      executionTarget: integration.executionTarget,
+      cleanupTarget: integration.cleanupTarget,
+      ...(integration.customMethodName !== undefined
+        ? { customMethodName: integration.customMethodName }
+        : {}),
+      ...(componentEvent ? { componentEvent } : {}),
+      inputBindings: asObjects(integration.inputBindings).map((binding) => ({
+        input: binding.input,
+        source: semanticInputBindingSource(binding.source),
+      })),
+    },
+  };
+}
+
+function compileOptionalPath(base: string, value: JsonValue | undefined): string {
+  if (!Array.isArray(value) || value.length === 0) {
+    return base;
+  }
+  return (value as string[]).reduce((expression, segment) => {
+    return `${expression}?.[${JSON.stringify(segment)}]`;
+  }, base);
+}
+
+function compileHostInputSource(source: JsonObject): string {
+  const sourceType = stringValue(source.type);
+  if (sourceType === "state") {
+    return `ctx.state[${JSON.stringify(stringValue(source.literal))}]`;
+  }
+  if (sourceType === "stateSetter") {
+    const literal = JSON.stringify(stringValue(source.literal));
+    return `(value) => ctx.setState({ [${literal}]: value })`;
+  }
+  if (sourceType === "event") {
+    return compileOptionalPath("event", source.path);
+  }
+  if (sourceType === "extraParam") {
+    return compileOptionalPath("extraParam", source.path);
+  }
+  if (sourceType === "customMethod") {
+    return `(...args) => ctx.methods[${JSON.stringify(stringValue(source.methodName))}](...args)`;
+  }
+  if (sourceType === "nodeVisibility") {
+    const action = source.action === "show" ? "show" : "hide";
+    const includeDescendants = typeof source.includeDescendants === "boolean"
+      ? source.includeDescendants
+      : true;
+    return `() => ctx.getNodeById(${JSON.stringify(stringValue(source.nodeId))}).${action}(${includeDescendants})`;
+  }
+  return "undefined";
+}
+
+function compileHostInputBindings(inputBindings: JsonObject[]): string[] {
+  return inputBindings.map((binding) => {
+    const source = isJsonObject(binding.source) ? binding.source : {};
+    return `const ${stringValue(binding.input)} = ${compileHostInputSource(source)};`;
+  });
+}
+
+function appendSection(lines: string[], section: string[]): void {
+  if (section.length === 0) {
+    return;
+  }
+  if (lines.length > 0 && lines[lines.length - 1] !== "") {
+    lines.push("");
+  }
+  lines.push(...section);
+}
+
+function compileHostMethodBodies(
+  input: JsonObject,
+  context: CompileContext,
+  inputBindings: JsonObject[],
+): { mainCode: string; cleanupCode: string } {
+  const mainLines: string[] = [];
+  const cleanupLines: string[] = [];
+  const hostInputLines = compileHostInputBindings(inputBindings);
+  appendSection(mainLines, hostInputLines);
+
+  asObjects(input.eventHandlers).forEach((handler, index) => {
+    const event = resolveBlackHoleApi(stringValue(handler.event), "event");
+    const handlerName = stringValue(handler.handlerName) || `onBlackHoleEvent${index + 1}`;
+    const operations = asObjects(handler.operations);
+    const callbackInput = stringValue(handler.callbackInput);
+    const handlerLines = [`const ${handlerName} = (event) => {`];
+    if (operations.length === 0 && callbackInput === "") {
+      handlerLines.push("  void event;");
+    } else {
+      if (operations.length > 0) {
+        handlerLines.push(...compileHostEngineLookup(context, 1));
+      }
+      for (const operation of operations) {
+        handlerLines.push(compileOperation(operation, context, 1).line);
+      }
+      if (callbackInput !== "") {
+        handlerLines.push(
+          `  if (typeof ${callbackInput} === "function") {`,
+          `    ${callbackInput}(event);`,
+          "  }",
+        );
+      }
+    }
+    handlerLines.push(
+      "};",
+      `document.addEventListener(${JSON.stringify(event.name)}, ${handlerName});`,
+    );
+    appendSection(mainLines, handlerLines);
+  });
+
+  const topLevelOperations = asObjects(input.operations);
+  if (topLevelOperations.length > 0) {
+    const operationLines = [...compileHostEngineLookup(context, 0)];
+    for (const operation of topLevelOperations) {
+      operationLines.push(compileOperation(operation, context, 0).line);
+    }
+    appendSection(mainLines, operationLines);
+  }
+
+  const cleanupOperations = asObjects(input.cleanup);
+  if (cleanupOperations.length > 0) {
+    appendSection(cleanupLines, hostInputLines);
+    const operationLines = [...compileHostEngineLookup(context, 0)];
+    for (const operation of cleanupOperations) {
+      operationLines.push(compileOperation(operation, context, 0).line);
+    }
+    appendSection(cleanupLines, operationLines);
+  }
+
+  return {
+    mainCode: mainLines.join("\n"),
+    cleanupCode: cleanupLines.join("\n"),
+  };
+}
+
+function compileBlackHoleHostPatch(
+  input: JsonObject,
+  context: CompileContext,
+): JsonObject | undefined {
+  if (!isJsonObject(input.hostIntegration)) {
+    return undefined;
+  }
+  const integration = input.hostIntegration;
+  const integrationId = `blackhole-${stableHash(JSON.stringify(canonicalizeJson(semanticIntegrationSource(input))))}`;
+  const executionTarget = stringValue(integration.executionTarget);
+  const cleanupTarget = stringValue(integration.cleanupTarget);
+  const customMethodName = stringValue(integration.customMethodName);
+  const replaceIntegrationId = stringValue(integration.replaceIntegrationId);
+  const inputBindings = asObjects(integration.inputBindings);
+  const unresolvedInputs = inputBindings.flatMap((binding) => {
+    const source = isJsonObject(binding.source) ? binding.source : undefined;
+    return source?.type === "unresolved"
+      ? [{ input: binding.input, reason: source.reason }]
+      : [];
+  });
+  const statesByLiteral = new Map<string, JsonObject>();
+  inputBindings.forEach((binding) => {
+    const source = isJsonObject(binding.source) ? binding.source : undefined;
+    const createState = source && isJsonObject(source.createState) ? source.createState : undefined;
+    if (!source || !createState) {
+      return;
+    }
+    const literal = stringValue(source.literal);
+    const initialValue = createState.initialValue;
+    statesByLiteral.set(literal, {
+      literal,
+      name: stringValue(createState.displayName) || literal,
+      defaultValueType: typeof initialValue === "string" ? "string" : "representation",
+      defaultValue: typeof initialValue === "string" ? initialValue : JSON.stringify(initialValue),
+      ...(typeof createState.updateExisting === "boolean"
+        ? { updateExisting: createState.updateExisting }
+        : {}),
+    });
+  });
+
+  const { mainCode, cleanupCode } = compileHostMethodBodies(input, context, inputBindings);
+  const decoratedMainCode = executionTarget === "componentDidMount"
+    ? `// ${stringValue(integration.chineseComment)}\n${mainCode}`
+    : mainCode;
+
+  const mainMethodId = executionTarget === "componentDidMount" || executionTarget === "componentWillUnMount"
+    ? executionTarget
+    : `screen-mcp-${integrationId}`;
+  const mainMethodName = executionTarget === "componentDidMount" || executionTarget === "componentWillUnMount"
+    ? executionTarget
+    : customMethodName;
+  const methods: JsonObject[] = [{
+    id: mainMethodId,
+    name: mainMethodName,
+    param: executionTarget === "componentEvent" || executionTarget === "manualMethod"
+      ? "event, extraParam"
+      : "",
+    target: executionTarget,
+    code: decoratedMainCode,
+  }];
+
+  if (cleanupTarget === "componentWillUnMount" && executionTarget !== "componentWillUnMount") {
+    methods.push({
+      id: "componentWillUnMount",
+      name: "componentWillUnMount",
+      param: "",
+      target: "componentWillUnMount",
+      code: cleanupCode,
+    });
+  }
+
+  const componentEvent = isJsonObject(integration.componentEvent)
+    ? {
+      nodeId: integration.componentEvent.nodeId,
+      eventName: integration.componentEvent.eventName,
+      methodId: mainMethodId,
+    }
+    : undefined;
+  return {
+    integrationId,
+    applicable: unresolvedInputs.length === 0,
+    unresolvedInputs,
+    states: [...statesByLiteral.values()],
+    methods,
+    ...(replaceIntegrationId ? { replaceIntegrationId } : {}),
+    ...(componentEvent ? { componentEvent } : {}),
+  };
+}
+
 export function generateBlackHoleCode(input: JsonObject): JsonObject {
   const validation = validateBlackHoleScriptSpec(input) as unknown as ValidationResult;
   if (!validation.valid) {
@@ -565,61 +1247,20 @@ export function generateBlackHoleCode(input: JsonObject): JsonObject {
   const engineParameter = stringValue(input.engineParameter) || "BlackHole3D";
   assertIdentifier(functionName, "functionName");
   assertIdentifier(engineParameter, "engineParameter");
-  const inputs = asObjects(input.inputs).map((item) => stringValue(item.name));
   const context: CompileContext = {
     engineParameter,
   };
+  const usedApis: BlackHoleApiDefinition[] = [];
+  const setupBody = compileSetupBody(input, context, usedApis);
   const lines = [
     `// Generated for BlackHole Engine WebSDK v${blackHoleCatalog.sdkVersion}.`,
     "// Pass the ready SDK instance and all user-provided runtime values explicitly.",
     `export function ${functionName}(${engineParameter}, inputs = {}) {`,
+    ...setupBody,
+    "}",
+    "",
   ];
-  if (inputs.length > 0) {
-    lines.push(`  const { ${inputs.join(", ")} } = inputs;`, "");
-  }
-
-  const usedApis: BlackHoleApiDefinition[] = [];
-  const registeredHandlers: Array<{ event: BlackHoleApiDefinition; handlerName: string }> = [];
-  asObjects(input.eventHandlers).forEach((handler, index) => {
-    const event = resolveBlackHoleApi(stringValue(handler.event), "event");
-    const handlerName = stringValue(handler.handlerName) || `onBlackHoleEvent${index + 1}`;
-    lines.push(`  const ${handlerName} = (event) => {`);
-    const operations = asObjects(handler.operations);
-    if (operations.length === 0) {
-      lines.push("    void event;");
-    } else {
-      for (const operation of operations) {
-        const compiled = compileOperation(operation, context, 2);
-        lines.push(compiled.line);
-        usedApis.push(compiled.api);
-      }
-    }
-    lines.push("  };", `  document.addEventListener(${JSON.stringify(event.name)}, ${handlerName});`, "");
-    registeredHandlers.push({ event, handlerName });
-    usedApis.push(event);
-  });
-
-  for (const operation of asObjects(input.operations)) {
-    const compiled = compileOperation(operation, context, 1);
-    lines.push(compiled.line);
-    usedApis.push(compiled.api);
-  }
-  if (asObjects(input.operations).length > 0) {
-    lines.push("");
-  }
-  lines.push("  return function cleanupBlackHole() {");
-  for (const { event, handlerName } of registeredHandlers) {
-    lines.push(`    document.removeEventListener(${JSON.stringify(event.name)}, ${handlerName});`);
-  }
-  for (const operation of asObjects(input.cleanup)) {
-    const compiled = compileOperation(operation, context, 2);
-    lines.push(compiled.line);
-    usedApis.push(compiled.api);
-  }
-  if (registeredHandlers.length === 0 && asObjects(input.cleanup).length === 0) {
-    lines.push("    // No SDK cleanup operations were declared by the LLM-authored spec.");
-  }
-  lines.push("  };", "}", "");
+  const hostPatch = compileBlackHoleHostPatch(input, context);
 
   return {
     sdkVersion: blackHoleCatalog.sdkVersion,
@@ -630,6 +1271,8 @@ export function generateBlackHoleCode(input: JsonObject): JsonObject {
       ...(typeof item.description === "string" ? { description: item.description } : {}),
     })),
     usedApis: uniqueApis(usedApis),
+    ...(isJsonObject(input.hostIntegration) ? { hostIntegration: input.hostIntegration } : {}),
+    ...(hostPatch ? { hostPatch } : {}),
     warnings: validation.warnings,
     assumptions: [
       `${engineParameter} is a ready BlackHole3D SDK instance compatible with v${blackHoleCatalog.sdkVersion}`,

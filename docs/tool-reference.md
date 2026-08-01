@@ -102,25 +102,25 @@
 
 - Title: Search BlackHole SDK
 - Mode: read-only
-- Description: Search the official BlackHole SDK catalog by API name or Chinese capability description. Results are references for LLM reasoning, not prompt-to-code templates; read the exact capability before authoring a script spec.
+- Description: Search the official BlackHole SDK catalog by API name or Chinese capability description. Results are references for LLM reasoning, not prompt-to-code templates; read the exact capability before authoring a script spec. Element visibility results expose effectSemantics so whole-element validity, appearance/transparency, and UV-only display are not conflated.
 
 ### `get_blackhole_api_capability`
 
 - Title: Get BlackHole API Capability
 - Mode: read-only
-- Description: Return a versioned SDK capability by qualified id such as Model.loadDataSet or Event.REDataSetLoadFinish. Defaults to compact; use detail:'full' for nested models, notes, returns, and official examples.
+- Description: Return a versioned SDK capability by qualified id such as Model.loadDataSet or Event.REDataSetLoadFinish. Defaults to compact; use detail:'full' for nested models, notes, returns, and official examples. APIs that affect element validity, appearance, or UV display include the required effectSemantics contract.
 
 ### `validate_blackhole_script_spec`
 
 - Title: Validate BlackHole Script Spec
 - Mode: read-only
-- Description: Validate a LLM-authored BlackHoleScriptSpec against SDK v3.2.0.3808. Rejects unknown or ambiguous APIs, invalid references, unsupported assignments, duplicate identifiers, and version mismatches without executing code.
+- Description: Validate a LLM-authored BlackHoleScriptSpec against SDK v3.2.0.3808. Also validates element effectTarget/API consistency, hostIntegration execution targets, the required Chinese componentDidMount comment, an optional host-verified replaceIntegrationId for managed partial updates, explicit cleanup ownership, safe inputBindings, custom method requirements, and selected-node usage structure without executing code. Event handlers are local and do not imply automatic unmount cleanup.
 
 ### `generate_blackhole_code`
 
 - Title: Generate BlackHole SDK Code
 - Mode: writes schema output
-- Description: Compile a validated LLM-authored BlackHoleScriptSpec into deterministic JavaScript. The generated function receives a ready SDK instance and explicit user inputs; the MCP never invents runtime identifiers or executes the code.
+- Description: Compile a validated LLM-authored BlackHoleScriptSpec into deterministic JavaScript and a structured hostPatch for editor methods, variables, and component bindings. The hostPatch integration id is derived from executable semantics rather than comments, local handler names, or explanatory prose, and preserves a validated replaceIntegrationId for host-side managed-block replacement. Standalone code receives a ready SDK instance; hostPatch lifecycle methods contain direct readable statements, prepend the validated Chinese comment for componentDidMount, resolve the SDK only at use time, and declare event handlers as local functions without adding ctx properties or automatic listener teardown. The MCP never invents runtime identifiers or executes the code.
 
 ## Legacy compatibility
 
