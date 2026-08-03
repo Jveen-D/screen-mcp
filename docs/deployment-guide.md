@@ -1,223 +1,185 @@
-# Screen MCP dev 服务器部署说明
+# Screen MCP Windows dev 服务器部署说明
 
-适用于 Linux、systemd、Nginx。服务以单实例运行，对外地址为 `https://mcp-dev.example.com/mcp`。
+部署方式：Node.js 运行构建产物，NSSM 托管为 Windows 服务，Windows 防火墙限制访问来源。
 
-部署前准备：
+对内访问地址示例：`http://mcp-dev.internal:3460/mcp`。
 
-- Node.js `24.14.1`、npm、Git、Nginx。
-- 一个已通过测试的完整 Git commit SHA。
-- dev 域名、TLS 证书和允许访问的内网/VPN 网段。
-- 服务器仅开放 443，应用端口 3460 不对公网开放。
+## 1. 准备环境
 
-下面的 `mcp-dev.example.com`、证书路径、网段和 Git SHA 需要替换为实际值。
+在 Windows Server 安装：
 
-## 1. 创建运行用户
+- Node.js `24.14.1`
+- Git
+- NSSM，本文假设路径为 `C:\Tools\nssm\win64\nssm.exe`
 
-首次部署执行：
+使用管理员 PowerShell 检查：
 
-```bash
-sudo useradd --system --create-home --home-dir /opt/screen-mcp --shell /usr/sbin/nologin screen-mcp
-sudo install -d -o screen-mcp -g screen-mcp -m 0750 /opt/screen-mcp/releases
-sudo install -d -o root -g screen-mcp -m 0750 /etc/screen-mcp
-
+```powershell
 node --version
-command -v node
+npm --version
+git --version
+Test-Path 'C:\Tools\nssm\win64\nssm.exe'
 ```
-
-Node.js 应显示 `v24.14.1`。下文假设 Node 路径为 `/usr/bin/node`，如果 `command -v node` 返回其他路径，需要修改 systemd 的 `ExecStart`。
 
 ## 2. 拉取并构建
 
-将 `RELEASE_REF` 替换为本次发布的完整 commit SHA：
+把 `$ReleaseRef` 替换为需要发布的完整 Git commit SHA：
 
-```bash
-REPOSITORY_URL='https://github.com/Jveen-D/screen-mcp.git'
-RELEASE_REF='0123456789abcdef0123456789abcdef01234567'
-RELEASE_ID="$(date +%Y%m%d%H%M%S)-$(printf '%s' "$RELEASE_REF" | cut -c1-8)"
-RELEASE_DIR="/opt/screen-mcp/releases/$RELEASE_ID"
+```powershell
+$RepositoryUrl = 'https://github.com/Jveen-D/screen-mcp.git'
+$ReleaseRef = '0123456789abcdef0123456789abcdef01234567'
+$ReleaseId = "$(Get-Date -Format yyyyMMddHHmmss)-$($ReleaseRef.Substring(0, 8))"
+$ReleaseDir = "C:\screen-mcp\releases\$ReleaseId"
 
-sudo -u screen-mcp git clone --no-checkout "$REPOSITORY_URL" "$RELEASE_DIR"
-sudo -u screen-mcp git -C "$RELEASE_DIR" checkout --detach "$RELEASE_REF"
-sudo -u screen-mcp npm --prefix "$RELEASE_DIR" ci
-sudo -u screen-mcp npm --prefix "$RELEASE_DIR" run check
-test -f "$RELEASE_DIR/dist/src/http-server.js"
-sudo -u screen-mcp npm --prefix "$RELEASE_DIR" prune --omit=dev
+New-Item -ItemType Directory -Force -Path 'C:\screen-mcp\releases', 'C:\screen-mcp\logs'
+git clone --no-checkout $RepositoryUrl $ReleaseDir
+git -C $ReleaseDir checkout --detach $ReleaseRef
+npm --prefix $ReleaseDir ci
+npm --prefix $ReleaseDir run check
+Test-Path "$ReleaseDir\dist\src\http-server.js"
+npm --prefix $ReleaseDir prune --omit=dev
 ```
 
-`npm run check` 失败时停止部署，不要切换版本。
+每条命令都必须成功。`npm run check` 或文件检查失败时停止部署。
 
-## 3. 配置环境变量
+创建指向本次版本的目录联接：
 
-创建 `/etc/screen-mcp/screen-mcp.env`：
-
-```ini
-NODE_ENV=production
-HOST=127.0.0.1
-PORT=3460
-MCP_ALLOWED_HOSTS=mcp-dev.example.com,localhost,127.0.0.1
+```powershell
+New-Item -ItemType Junction -Path 'C:\screen-mcp\current' -Target $ReleaseDir
 ```
 
-设置权限：
+## 3. 注册 Windows 服务
 
-```bash
-sudo chown root:screen-mcp /etc/screen-mcp/screen-mcp.env
-sudo chmod 0640 /etc/screen-mcp/screen-mcp.env
+首次部署执行：
+
+```powershell
+$Nssm = 'C:\Tools\nssm\win64\nssm.exe'
+$Node = (Get-Command node).Source
+
+& $Nssm install ScreenMcp $Node 'C:\screen-mcp\current\dist\src\http-server.js'
+& $Nssm set ScreenMcp AppDirectory 'C:\screen-mcp\current'
+& $Nssm set ScreenMcp AppEnvironmentExtra `
+  'NODE_ENV=production' `
+  'HOST=0.0.0.0' `
+  'PORT=3460' `
+  'MCP_ALLOWED_HOSTS=mcp-dev.internal,服务器IP,localhost,127.0.0.1'
+& $Nssm set ScreenMcp AppExit Default Restart
+& $Nssm set ScreenMcp AppRestartDelay 5000
+& $Nssm set ScreenMcp AppStdout 'C:\screen-mcp\logs\stdout.log'
+& $Nssm set ScreenMcp AppStderr 'C:\screen-mcp\logs\stderr.log'
+& $Nssm set ScreenMcp AppRotateFiles 1
+& $Nssm set ScreenMcp AppRotateBytes 10485760
+& $Nssm set ScreenMcp Start SERVICE_AUTO_START
 ```
 
-`MCP_ALLOWED_HOSTS` 中填写域名，不要带协议和端口。
+将 `mcp-dev.internal` 和 `服务器IP` 替换为客户端实际使用的域名和 IP。`MCP_ALLOWED_HOSTS` 不要填写协议或端口。
 
-## 4. 配置并启动 systemd
+让服务使用权限较低的 LocalService 账户，并授予目录权限：
 
-创建 `/etc/systemd/system/screen-mcp.service`：
-
-```ini
-[Unit]
-Description=Screen Component MCP HTTP Server
-After=network.target
-
-[Service]
-Type=simple
-User=screen-mcp
-Group=screen-mcp
-WorkingDirectory=/opt/screen-mcp/current
-EnvironmentFile=/etc/screen-mcp/screen-mcp.env
-ExecStartPre=/usr/bin/test -f /opt/screen-mcp/current/dist/src/http-server.js
-ExecStart=/usr/bin/node /opt/screen-mcp/current/dist/src/http-server.js
-Restart=on-failure
-RestartSec=5s
-KillSignal=SIGINT
-TimeoutStopSec=30s
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
+```powershell
+& $Nssm set ScreenMcp ObjectName 'NT AUTHORITY\LocalService'
+icacls 'C:\screen-mcp' /grant '*S-1-5-19:(OI)(CI)RX' /T
+icacls 'C:\screen-mcp\logs' /grant '*S-1-5-19:(OI)(CI)M' /T
 ```
 
-切换到本次版本并启动：
+启动服务：
 
-```bash
-sudo ln -sfnT "$RELEASE_DIR" /opt/screen-mcp/current
-sudo systemctl daemon-reload
-sudo systemctl enable --now screen-mcp
-sudo systemctl status screen-mcp --no-pager
+```powershell
+& $Nssm start ScreenMcp
+Get-Service ScreenMcp
 ```
 
-常用命令：
+状态应为 `Running`。
 
-```bash
-sudo systemctl restart screen-mcp
-sudo systemctl stop screen-mcp
-sudo systemctl start screen-mcp
-journalctl -u screen-mcp -f
+## 4. 配置 Windows 防火墙
+
+将示例网段替换为允许访问 dev 服务的真实内网或 VPN 网段：
+
+```powershell
+New-NetFirewallRule `
+  -DisplayName 'Screen MCP 3460' `
+  -Direction Inbound `
+  -Action Allow `
+  -Protocol TCP `
+  -LocalPort 3460 `
+  -RemoteAddress '10.0.0.0/8' `
+  -Profile Domain,Private
 ```
 
-## 5. 配置 Nginx
+不要把 3460 对公网开放。应用没有内置鉴权；如果需要公网访问，必须通过公司 HTTPS 网关、VPN、mTLS 或其他认证措施访问。
 
-创建 dev 域名的 Nginx 配置。`10.0.0.0/8` 必须替换为实际允许访问的网段：
+## 5. 验证部署
 
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name mcp-dev.example.com;
+在服务器执行：
 
-    ssl_certificate     /etc/nginx/tls/mcp-dev.example.com/fullchain.pem;
-    ssl_certificate_key /etc/nginx/tls/mcp-dev.example.com/privkey.pem;
-
-    client_max_body_size 10m;
-
-    location = /mcp {
-        allow 10.0.0.0/8;
-        deny all;
-
-        proxy_pass http://127.0.0.1:3460;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Connection "";
-
-        proxy_buffering off;
-        proxy_request_buffering off;
-        proxy_cache off;
-        gzip off;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-    }
-
-    location / {
-        return 404;
-    }
-}
+```powershell
+Get-Service ScreenMcp
+Get-NetTCPConnection -LocalPort 3460 -State Listen
+Get-Content 'C:\screen-mcp\logs\stdout.log' -Tail 30
+Get-Content 'C:\screen-mcp\logs\stderr.log' -Tail 30
+curl.exe -i -H 'Host: mcp-dev.internal' 'http://127.0.0.1:3460/mcp'
 ```
 
-检查并加载：
+预期结果：
 
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
+- 服务状态为 `Running`。
+- 3460 正常监听。
+- stdout 包含 `Streamable HTTP endpoint`。
+- 最后一条命令返回 HTTP 400 和 `Missing mcp-session-id header`。这是无会话 GET 的正常响应，表示 MCP 路由可用。
+
+最后使用 MCP 客户端连接：
+
+```text
+http://mcp-dev.internal:3460/mcp
 ```
 
-应用没有内置鉴权。如果该域名可以从公网访问，必须在公司网关增加 OAuth、mTLS 或其他认证方式。
+确认能够列出工具并调用 `get_server_diagnostics`。
 
-## 6. 验证部署
+## 6. 更新版本
 
-检查服务和监听地址：
+先按第 2 章创建并构建新的 `$ReleaseDir`，然后执行：
 
-```bash
-systemctl is-active screen-mcp
-sudo ss -lntp | grep ':3460'
-journalctl -u screen-mcp -n 50 --no-pager
+```powershell
+$Nssm = 'C:\Tools\nssm\win64\nssm.exe'
+$PreviousRelease = (Get-Item 'C:\screen-mcp\current').Target
+
+& $Nssm stop ScreenMcp
+Remove-Item -LiteralPath 'C:\screen-mcp\current'
+New-Item -ItemType Junction -Path 'C:\screen-mcp\current' -Target $ReleaseDir
+& $Nssm start ScreenMcp
+
+Get-Service ScreenMcp
 ```
 
-3460 应只监听 `127.0.0.1`。
+记录 `$PreviousRelease`，并重复第 5 章验证。服务重启后，客户端需要重新连接 MCP。
 
-检查 MCP 初始化：
+## 7. 回滚
 
-```bash
-curl --include --request POST 'https://mcp-dev.example.com/mcp' \
-  --header 'Content-Type: application/json' \
-  --header 'Accept: application/json, text/event-stream' \
-  --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"deploy-check","version":"1.0.0"}}}'
+把 `$RollbackDir` 设置为上一个可用版本：
+
+```powershell
+$Nssm = 'C:\Tools\nssm\win64\nssm.exe'
+$RollbackDir = 'C:\screen-mcp\releases\上一版本目录'
+
+Test-Path "$RollbackDir\dist\src\http-server.js"
+& $Nssm stop ScreenMcp
+Remove-Item -LiteralPath 'C:\screen-mcp\current'
+New-Item -ItemType Junction -Path 'C:\screen-mcp\current' -Target $RollbackDir
+& $Nssm start ScreenMcp
+
+Get-Service ScreenMcp
 ```
 
-部署成功时应返回：
+回滚后重复第 5 章验证。
 
-- HTTP 200。
-- 响应头包含 `mcp-session-id`。
-- 响应体包含 `"name":"screen-component-mcp"`。
+## 常用命令
 
-## 7. 更新版本
-
-重复第 2 章构建新 release，然后执行：
-
-```bash
-PREVIOUS_RELEASE="$(readlink -f /opt/screen-mcp/current)"
-sudo ln -sfnT "$RELEASE_DIR" /opt/screen-mcp/current
-sudo systemctl restart screen-mcp
-sudo systemctl status screen-mcp --no-pager
+```powershell
+Start-Service ScreenMcp
+Stop-Service ScreenMcp
+Restart-Service ScreenMcp
+Get-Service ScreenMcp
+Get-Content 'C:\screen-mcp\logs\stderr.log' -Tail 100
 ```
 
-记录 `PREVIOUS_RELEASE`，并重复第 6 章验证。重启后旧 MCP 会话失效，客户端需要重新连接。
-
-## 8. 回滚
-
-将 `ROLLBACK_DIR` 设置为上一个可用 release：
-
-```bash
-ROLLBACK_DIR='/opt/screen-mcp/releases/上一版本目录'
-test -f "$ROLLBACK_DIR/dist/src/http-server.js"
-sudo ln -sfnT "$ROLLBACK_DIR" /opt/screen-mcp/current
-sudo systemctl restart screen-mcp
-sudo systemctl status screen-mcp --no-pager
-```
-
-回滚后重复第 6 章验证。
-
-## 注意事项
-
-- 服务器必须运行 `dist/src/http-server.js`，不要使用 `npm run dev:http`。
-- 当前会话保存在进程内存中，只部署一个实例。
-- 应用没有 `/health` 接口；不要使用 `/mcp` 的 2xx 结果作为普通健康检查。
-- 不要将 3460 直接暴露到公网。
+当前 MCP 会话保存在单个 Node.js 进程内存中，dev 服务器只启动一个服务实例。
