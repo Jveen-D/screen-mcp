@@ -20,7 +20,7 @@ Nginx / 公司网关（TLS + 鉴权或来源限制）
 screen-component-mcp（Node.js，单实例，systemd 托管）
 ```
 
-这里发布的是 Streamable HTTP MCP 服务，公共端点为 `https://mcp-dev.example.com/mcp`。`ai-proxy/` 是浏览器开发辅助代理，不属于本服务，不应随 Screen MCP 一起启动。
+这里发布的是 Streamable HTTP MCP 服务，公共端点为 `https://mcp-dev.example.com/mcp`。
 
 ## 2. 当前服务事实与限制
 
