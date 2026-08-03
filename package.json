@@ -5,7 +5,12 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": ">=24.14.1 <25"
+  },
+  "packageManager": "npm@11.11.0",
+  "volta": {
+    "node": "24.14.1",
+    "npm": "11.11.0"
   },
   "scripts": {
     "dev": "tsx src/server.ts",
@@ -30,7 +35,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
-    "@types/node": "^20.19.43",
+    "@types/node": "^24.13.3",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }

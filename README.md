@@ -33,7 +33,7 @@
 
 ## 安装依赖
 
-要求 Node.js `>=18`。
+要求 Node.js `24.14.1`。
 
 ```bash
 npm install
@@ -68,7 +68,7 @@ npm run dev:http
 
 部署到容器或跨主机反向代理时，设置 `HOST=0.0.0.0`；Nginx 与 MCP 同机部署时优先保留 `HOST=127.0.0.1`。通过逗号分隔的 `MCP_ALLOWED_HOSTS` 配置允许访问的域名（不含端口），例如 `MCP_ALLOWED_HOSTS=platform.example.com`。生产环境应由网关提供 HTTPS、身份认证和访问控制，不要直接将未鉴权的 MCP 端口暴露到公网。
 
-dev 服务器的完整发布、systemd/Nginx 配置、验收、回滚和排障流程见 [dev 服务器发布与运维手册](docs/deployment-guide.md)。
+dev 服务器部署步骤见 [dev 服务器部署说明](docs/deployment-guide.md)。
 
 Agent 配置示例：
 
