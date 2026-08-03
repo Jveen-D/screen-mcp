@@ -66,7 +66,9 @@ npm run dev:http
 
 默认运行在 `http://localhost:3460`，Streamable HTTP 端点为 `http://localhost:3460/mcp`。
 
-部署到容器或反向代理后时，设置 `HOST=0.0.0.0`，并通过逗号分隔的 `MCP_ALLOWED_HOSTS` 配置允许访问的域名（不含端口），例如 `MCP_ALLOWED_HOSTS=platform.example.com`。生产环境应由网关提供 HTTPS、身份认证和访问控制，不要直接将未鉴权的 MCP 端口暴露到公网。
+部署到容器或跨主机反向代理时，设置 `HOST=0.0.0.0`；Nginx 与 MCP 同机部署时优先保留 `HOST=127.0.0.1`。通过逗号分隔的 `MCP_ALLOWED_HOSTS` 配置允许访问的域名（不含端口），例如 `MCP_ALLOWED_HOSTS=platform.example.com`。生产环境应由网关提供 HTTPS、身份认证和访问控制，不要直接将未鉴权的 MCP 端口暴露到公网。
+
+dev 服务器的完整发布、systemd/Nginx 配置、验收、回滚和排障流程见 [dev 服务器发布与运维手册](docs/deployment-guide.md)。
 
 Agent 配置示例：
 
@@ -142,6 +144,17 @@ http://localhost:3456/v1/messages?target=https%3A%2F%2Fapi.kimi.com%2Fcoding%2Fv
 4. `validate_blackhole_script_spec`
 5. `generate_blackhole_code`
 
+宿主集成的端到端工作流：
+
+1. 前端冻结当前选中组件，并提供变量、方法、数据源、节点能力和脱敏后的 `componentDidMount` 方法体。
+2. LLM 先判断需求是已完整实现、已有托管块部分实现，还是需要新增；同时按真实触发源选择生命周期、SDK 事件、组件事件或手动方法。
+3. LLM 按上述工具顺序检索并读取 SDK 真相，设计完整 `BlackHoleScriptSpec`。MCP 不根据提示词硬编码 API 选择。
+4. MCP 校验 SDK 参数、构件效果语义、生命周期位置、安全输入映射和中文注释，并确定性编译 JavaScript 与 `hostPatch`。
+5. 相同可执行语义生成稳定 `integrationId`。只有宿主已核验的 Screen MCP 托管块允许通过 `hostIntegration.replaceIntegrationId` 更新；普通手写代码或无效 marker 不允许替换。
+6. 前端再次校验选中节点、组件事件、旧 marker 和重复事件监听，生成写入差异预览后，事务写入 methods、变量和组件绑定；失败时不保留部分变更。
+
+生命周期约束：页面自动执行逻辑写入 `componentDidMount`，但挂载不代表三维场景或模型已经 ready。依赖 SDK/模型就绪的逻辑必须在这里注册文档确认的 SDK 事件，并把操作放入对应事件处理器。监听函数是方法内局部变量，不写入 `ctx`；当前契约不自动生成监听销毁代码。只有 `cleanup` 显式声明的 SDK 清理操作才写入 `componentWillUnMount`。
+
 简化结构示例：
 
 ```json
@@ -160,7 +173,7 @@ http://localhost:3456/v1/messages?target=https%3A%2F%2Fapi.kimi.com%2Fcoding%2Fv
 }
 ```
 
-生成结果是一个接收“已就绪 BlackHole3D 兼容实例”和显式 `inputs` 的 JavaScript setup 函数。代码只作为文本返回，MCP 不会执行它。首版不内置 Nebulix `waitReady(componentId)` 获取逻辑；宿主如何取得多实例 SDK 对象属于运行时契约，应由调用方在实例就绪后传入。
+未提供 `hostIntegration` 时，生成结果是一个接收“已就绪 BlackHole3D 兼容实例”和显式 `inputs` 的独立 JavaScript setup 函数。提供 `hostIntegration` 时，结果还包含结构化 `hostPatch`：生命周期代码在 SDK 实际调用时读取 `window.BlackHole3D`，变量和组件绑定由宿主负责预览与事务写入。两种结果都只作为文本和结构化数据返回，MCP 不执行生成代码，也不直接修改大屏项目。
 
 完整版本、模块清单和结构化值写法见 [BlackHole SDK 参考](docs/blackhole-sdk-reference.md)。
 
