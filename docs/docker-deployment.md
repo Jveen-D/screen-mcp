@@ -19,6 +19,22 @@ docker push registry.example.com/screen-component-mcp:0.1.0
 
 将仓库地址和版本替换为实际值；推送前先完成 `docker login`。
 
+本机没有 Docker 时，也可以从 GitHub Actions 下载镜像文件：
+
+1. 推送代码并等待 `CI` 工作流完成。
+2. 打开仓库的 `Actions`，进入对应运行记录。
+3. 在页面底部的 `Artifacts` 下载 `screen-component-mcp-<commit SHA>`。
+4. 解压下载的 ZIP，得到 `screen-component-mcp-<commit SHA>.tar.gz`。
+5. 将文件传到服务器并导入：
+
+```bash
+IMAGE_SHA='填写完整commit SHA'
+docker load --input "screen-component-mcp-${IMAGE_SHA}.tar.gz"
+docker image ls screen-component-mcp
+```
+
+Artifact 保留 7 天。导入后的镜像 tag 是完整 commit SHA。
+
 ## 启动容器
 
 `MCP_ALLOWED_HOSTS` 填写客户端访问时使用的域名或 IP，不要带协议和端口：

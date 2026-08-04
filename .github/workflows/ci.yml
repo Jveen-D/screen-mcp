@@ -40,4 +40,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build --tag screen-component-mcp:ci .
+        run: docker build --tag screen-component-mcp:${{ github.sha }} .
+
+      - name: Export Docker image
+        run: docker save screen-component-mcp:${{ github.sha }} | gzip > screen-component-mcp-${{ github.sha }}.tar.gz
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-component-mcp-${{ github.sha }}
+          path: screen-component-mcp-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
