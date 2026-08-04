@@ -173,7 +173,13 @@ const httpServer = app.listen(PORT, HOST, () => {
   console.log(`Streamable HTTP endpoint: http://${HOST}:${PORT}${MCP_PATH}`);
 });
 
-process.on("SIGINT", async () => {
+let shuttingDown = false;
+
+async function shutdown(): Promise<void> {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
   console.log("Shutting down Screen MCP HTTP server...");
   for (const [sessionId, session] of sessions) {
     try {
@@ -187,4 +193,11 @@ process.on("SIGINT", async () => {
     console.log("Server shutdown complete");
     process.exit(0);
   });
+}
+
+process.once("SIGINT", () => {
+  void shutdown();
+});
+process.once("SIGTERM", () => {
+  void shutdown();
 });

@@ -70,6 +70,8 @@ npm run dev:http
 
 Windows dev 服务器部署步骤见 [Windows dev 服务器部署说明](docs/deployment-guide.md)。
 
+Docker 镜像构建、启动、推送和回滚见 [Docker 部署说明](docs/docker-deployment.md)。
+
 Agent 配置示例：
 
 ```json
