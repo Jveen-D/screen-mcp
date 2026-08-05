@@ -146,6 +146,15 @@ export function runModuleCapabilityTests(): void {
     "ChartPanel should require an explicit business auxiliary text layer",
   );
   assert.ok(
+    moduleLayoutRules.some(
+      (rule) =>
+        rule.includes("RingChart") &&
+        rule.includes("option.title") &&
+        rule.includes("不自动生成外置文本"),
+    ),
+    "ChartPanel should keep RingChart center text inside the chart by default",
+  );
+  assert.ok(
     moduleLayoutRules.some((rule) => rule.includes("数据复读")),
     "ChartPanel should prevent side summaries from merely repeating legend data",
   );

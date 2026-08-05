@@ -10,7 +10,7 @@
 | `ThreeDPieChart` | chart | 基于 Three.js 的 3D 饼图组件，支持立体厚度、俯视角度、扇区抬升、轮播动画和中心标签，用于展示分类占比和构成比例。 |
 | `LineChart` | chart | 用于展示数据随分类或时间变化趋势的 ECharts 折线图组件，支持平滑曲线、面积图、多系列对比。 |
 | `BarChart` | chart | 用于展示分类数据对比的 ECharts 柱状图组件，支持多系列并列、柱宽、圆角、间距和标签样式配置。 |
-| `RingChart` | chart | 用于展示分类占比、构成比例的 ECharts 环形图组件，支持内环、外环装饰与环形文字。 |
+| `RingChart` | chart | 用于展示分类占比、构成比例的 ECharts 环形图组件，支持图表内部中心文字、系列标签、内外环装饰与环形文字。 |
 | `StackBarChart` | chart | 用于展示分类数据构成与累计对比的 ECharts 堆叠柱状图组件，所有系列强制堆叠，支持柱宽、圆角和标签样式配置。 |
 | `StackLineChart` | chart | 用于展示多系列累计趋势变化的 ECharts 堆叠折线图组件，所有系列强制堆叠，支持平滑曲线、面积图、标签样式配置。 |
 | `BarChart25D` | chart | 用于展示分类数据对比的 2.5D 立体柱状图组件，基于 ECharts custom series 绘制立体柱体，支持多系列分组与标签样式配置。 |

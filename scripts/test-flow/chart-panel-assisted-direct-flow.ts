@@ -358,5 +358,139 @@ export function runChartPanelAssistedDirectTests(): ChartPanelAssistedDirectFixt
     (denseCategoryLabelLine.length as number) <= 8 && (denseCategoryLabelLine.length2 as number) <= 4,
     "dense category panel should keep label lines restrained without shrinking the chart component",
   );
+
+  const ringPanelInput = {
+    moduleName: "ChartPanel",
+    layoutMode: "assisted",
+    logicalId: "native_center_ring_panel",
+    parentLogicalId: "root",
+    title: "风险构成",
+    dataItems: [
+      { name: "高风险", type: "风险", value: 32 },
+      { name: "中风险", type: "风险", value: 48 },
+      { name: "低风险", type: "风险", value: 20 },
+    ],
+    style: {
+      left: 48,
+      top: 80,
+      width: 520,
+      height: 360,
+      position: "absolute",
+    },
+    slots: {
+      mainChart: {
+        componentName: "RingChart",
+        props: {
+          option: {
+            series: [
+              {
+                center: ["31%", "37%"],
+                radius: ["50%", "78%"],
+                label: {
+                  show: true,
+                  formatter: "{b}: {d}%",
+                },
+              },
+            ],
+          },
+        },
+      },
+    },
+  } satisfies JsonObject;
+  const ringPanelSchemas = generateModuleSchema(ringPanelInput);
+  const ringPanelTexts = ringPanelSchemas.filter((item) => item.componentName === "SingleText");
+  assert.equal(
+    ringPanelTexts.length,
+    1,
+    "assisted RingChart should only emit the panel title and must not synthesize external summary text",
+  );
+  assert.equal(ringPanelTexts[0]?.props.textContent, "风险构成");
+  const ringPanelChart = ringPanelSchemas.find((item) => item.componentName === "RingChart");
+  assert.ok(ringPanelChart, "assisted RingChart panel should include a real RingChart");
+  const ringPanelOption = ringPanelChart.props.option as JsonObject;
+  const ringPanelTitle = ringPanelOption.title as JsonObject;
+  const ringPanelSeries = (ringPanelOption.series as JsonObject[])[0] as JsonObject;
+  const ringPanelLabel = ringPanelSeries.label as JsonObject;
+  assert.equal(ringPanelTitle.show, true);
+  assert.equal(ringPanelTitle.text, "100");
+  assert.equal(ringPanelTitle.left, "31%");
+  assert.equal(ringPanelTitle.top, "37%");
+  assert.deepEqual(ringPanelSeries.center, ["31%", "37%"]);
+  assert.deepEqual(ringPanelSeries.radius, ["50%", "78%"]);
+  assert.equal(ringPanelLabel.show, true);
+  assert.equal(ringPanelLabel.formatter, "{b}: {d}%");
+
+  const manualRingSchemas = generateModuleSchema({
+    ...ringPanelInput,
+    layoutMode: "manual",
+    logicalId: "manual_native_center_ring_panel",
+    slots: {
+      mainChart: {
+        componentName: "RingChart",
+        props: {
+          chartData: {
+            constant: {
+              data: ringPanelInput.dataItems,
+            },
+          },
+          option: {
+            title: {
+              show: true,
+              text: "风险总量",
+              left: "center",
+              top: "center",
+            },
+          },
+        },
+      },
+    },
+  } satisfies JsonObject);
+  assert.equal(
+    manualRingSchemas.filter((item) => item.componentName === "SingleText").length,
+    1,
+    "manual RingChart should not require or synthesize auxiliary SingleText",
+  );
+
+  const explicitExternalRingSchemas = generateModuleSchema({
+    ...ringPanelInput,
+    layoutMode: "assisted",
+    logicalId: "explicit_external_ring_panel",
+    slots: {
+      mainChart: {
+        componentName: "RingChart",
+        props: {
+          chartData: {
+            constant: {
+              data: ringPanelInput.dataItems,
+            },
+          },
+        },
+      },
+      auxiliaryTexts: [
+        {
+          componentName: "SingleText",
+          props: {
+            textContent: "用户明确要求的外置说明",
+          },
+        },
+      ],
+    },
+  } satisfies JsonObject);
+  assert.ok(
+    explicitExternalRingSchemas.some(
+      (item) => item.componentName === "SingleText" && item.props.textContent === "用户明确要求的外置说明",
+    ),
+    "RingChart should preserve explicitly requested external SingleText",
+  );
+  const explicitExternalRingChart = explicitExternalRingSchemas.find(
+    (item) => item.componentName === "RingChart",
+  );
+  const explicitExternalRingOption = explicitExternalRingChart?.props.option as JsonObject;
+  const explicitExternalRingTitle = explicitExternalRingOption.title as JsonObject;
+  assert.equal(
+    explicitExternalRingTitle.show,
+    false,
+    "assisted RingChart should not add a native center title when explicit external text is supplied",
+  );
   return { terseUserPanelInput };
 }

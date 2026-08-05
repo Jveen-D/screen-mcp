@@ -4,7 +4,7 @@ export const ringChartCapability: JsonObject = {
   componentName: "RingChart",
   displayName: "环形图",
   description:
-    "用于展示分类占比、构成比例的 ECharts 环形图组件，支持内环、外环装饰与环形文字。",
+    "用于展示分类占比、构成比例的 ECharts 环形图组件，支持图表内部中心文字、系列标签、内外环装饰与环形文字。",
   aiRole:
     "AI 负责生成组件布局、视觉表达和可选的 chartData.constant.data 语义数据；MCP 会补齐完整 props 与有效 chartData。组件层级由最终 schema 数组顺序决定。",
   requiredProps: [
@@ -54,7 +54,7 @@ export const ringChartCapability: JsonObject = {
       path: "option.title",
       type: "object",
       description:
-        "主图环形图的中心文字及其位置。开启外部标签时可移动中心文字，避免文字互相遮挡；开启 decorator.innerRing 时仍由主图单独渲染，装饰内环不会复制该文字。",
+        "环形图唯一的默认中心文字承载。中心数值或摘要应写入这里，并让 left/top 与 series[0].center 对齐；除非用户明确要求独立排版，否则不得用外置 SingleText 代替或叠加。开启 decorator.innerRing 时仍由主图单独渲染，装饰内环不会复制该文字。",
       children: [
         { path: "option.title.show", type: "boolean", description: "是否显示中心文字。" },
         { path: "option.title.text", type: "string", description: "中心文字内容。" },
@@ -120,7 +120,7 @@ export const ringChartCapability: JsonObject = {
           path: "option.series[0].radius",
           type: "[string,string]",
           description:
-            "内外半径，格式为 [innerRadius, outerRadius]，通常使用百分比字符串。环形图 innerRadius 不能为 0 或 '0%'，否则会被 MCP 修正为默认值 '30%'；外部 label、底部 legend 或装饰环拥挤时，应适当减小 outerRadius，例如 ['28%', '42%']，但不能把 outerRadius 压到让环图主体变成小圆点。",
+            "内外半径，格式为 [innerRadius, outerRadius]，通常使用百分比字符串。环形图 innerRadius 不能为 0 或 '0%'，否则会被 MCP 修正为默认值 '38%'；外部 label、底部 legend 或装饰环拥挤时，应适当减小 outerRadius，例如 ['28%', '42%']，但不能把 outerRadius 压到让环图主体变成小圆点。",
         },
         {
           path: "option.series[0].center",
@@ -146,7 +146,7 @@ export const ringChartCapability: JsonObject = {
           path: "option.series[0].label",
           type: "object",
           description:
-            "扇区标签样式。默认隐藏并置于中心，AI 可按需开启。标签宽度和截断由图表组件根据容器宽高自动处理。",
+            "环形图默认的分类文字承载。名称、值和占比应通过系列 label/formatter 表达；除非用户明确要求独立排版，否则不得为这些信息创建外置 SingleText。默认隐藏并置于中心，AI 可按需开启，标签宽度和截断由图表组件根据容器宽高自动处理。",
           formatterRules: {
             path: "option.series[0].label.formatter",
             setter: "StringSetter",
@@ -283,7 +283,8 @@ export const ringChartCapability: JsonObject = {
     {
       path: "ringText",
       type: "object",
-      description: "环形文字装饰，开启后会在环形外侧沿切向显示文字。",
+      description:
+        "基于主系列数据项名称生成的环形文字装饰，开启后会沿环形切向显示各数据项名称；它没有独立文本字段，不能用于承载任意文案或中心摘要。",
       children: [
         {
           path: "ringText.isActive",
@@ -327,7 +328,7 @@ export const ringChartCapability: JsonObject = {
       children: [
         { path: "rotatingAnimation.isActive", type: "boolean", description: "是否开启轮播强调。" },
         { path: "rotatingAnimation.height", type: "number", range: [0, 50], description: "高亮扇区放大尺寸。" },
-        { path: "rotatingAnimation.opacity", type: "number", range: [0, 1], description: "非高亮扇区透明度。" },
+        { path: "rotatingAnimation.opacity", type: "number", range: [0, 1], description: "轮播高亮扇区的透明度。" },
         { path: "rotatingAnimation.duration", type: "number", range: [0.5, 60], description: "轮播间隔，单位秒。" },
         { path: "rotatingAnimation.selectMode", type: "enum", values: ["none", "click"], description: "是否允许点击锁定高亮。" },
         { path: "rotatingAnimation.isHover", type: "boolean", description: "悬停时是否暂停轮播。" },
@@ -389,7 +390,8 @@ export const ringChartCapability: JsonObject = {
     "label.content 是前端运行时预设字段，会在生成 ECharts option 前转换为 formatter 并剥离。",
   ],
   visualRules: [
-    "环形图适合展示占比、构成关系；中心空洞明显时，应放置总数、核心指标或摘要，避免无意义留白。",
+    "环形图适合展示占比、构成关系；中心空洞明显时，应通过 option.title 放置总数、核心指标或摘要，避免无意义留白。",
+    "环形图默认只使用图表内部文字能力：中心内容使用 option.title，分类名称、数值和占比使用 series[0].label/labelLine。除非用户明确要求独立文本组件，否则不得生成外置 SingleText，也不得让原生中心文字与外置中心文字同时占用圆心。",
     "色彩要服务主题：等级、状态类可以使用同一色系的明暗层级；类别、分类、品类类可以使用主色、辅色、强调色和低饱和补色组合；避免直接使用 ECharts 默认杂色感。",
     "扇区分割线要和视觉风格匹配：强科技面板可用更明显的发光或高亮分割；轻量信息面板应使用克制描边，避免边框抢占主体。",
     "外部 label 应形成统一标注系统：字号、字重、颜色、连接线长度要成组设计，而不是只把默认标签打开。",
@@ -402,7 +404,7 @@ export const ringChartCapability: JsonObject = {
     "处理环形图挤压时优先联动三类能力：legend.offsetX/offsetY 微调图例、series[0].center 调整圆心、series[0].radius 调整内外半径。不要只依赖扩大组件、隐藏 legend、关闭 label 或限制数据项个数。",
     "当 legend 放在右侧或左侧并且使用纵向排列时，圆环本体不能过小；应保留足够的 outerRadius 和可读的中心空洞，避免图表主体被 legend 挤成一个小点。",
     "当 RingChart 宽度小于 420px、高度小于 220px 或数据项不少于 5 项，且同时使用底部 legend 与外部 label 时，应主动缩小 outerRadius、上移 centerY、压缩 legend itemGap 和 labelLine，避免 label 与 legend 重叠；但中等以上面板仍要保留可读的图表主体，不能低于可识别的外径。",
-    "当中心空洞里放置 SingleText 数值和说明时，应先估算中心文本栈宽高，再设置足够的 innerRadius；如果 innerRadius 不足，应同步增大 outerRadius 或缩减中心文本，而不是让文字压住环形主体。",
+    "使用 option.title 中心文字时，应先估算文字宽高并设置足够的 innerRadius；如果 innerRadius 不足，应同步增大 outerRadius、缩短文案或减小字号，而不是让文字压住环形主体。",
     "底部 legend、底部结论和外部 label 不能占用同一条底部阅读带；底部结论存在时应上移 legend、上移 centerY 或收敛 labelLine，让 legend 与结论分层。",
     "启用内环、外环或环形文字装饰前，应确保环图主体已经足够大；小半径环图不应叠加装饰环，以免主体变成不可读的装饰点。",
     "AI 必须根据指标业务含义设置 chartData.indicator[0].fieldDataConfig.chartDisplayName，如“指标值”“数量”“完成量”，不能保留默认值“value”；该名称会用于图例和提示框展示。",
@@ -469,6 +471,18 @@ export const ringChartCapability: JsonObject = {
         option: {
           backgroundColor: "transparent",
           color: ["#00E5FF", "#7C4DFF", "#FFB300", "#00C853"],
+          title: {
+            show: true,
+            text: "441",
+            left: "50%",
+            top: "43%",
+            textStyle: {
+              color: "#FFFFFF",
+              fontSize: 24,
+              fontFamily: "Microsoft YaHei",
+              fontWeight: "bold",
+            },
+          },
           legend: {
             show: true,
             left: "center",
@@ -509,8 +523,8 @@ export const ringChartCapability: JsonObject = {
                 shadowColor: "rgba(0,229,255,0.35)",
               },
               label: {
-                show: false,
-                position: "center",
+                show: true,
+                position: "outside",
                 formatter: "{b}\\n{d}%",
                 color: "#FFFFFF",
                 fontSize: 13,

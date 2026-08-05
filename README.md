@@ -173,7 +173,7 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 - `ChartPanel` 是图表分析面板模块，主内容由 `slots.mainChart` 承载，适合饼图、柱状图、折线图、玫瑰图、散点图等图表分析面板。
 - `FreeformModule` 是自由模块，不生成固定布局和默认装饰，只把 LLM 在 `slots.children` 中明确提供的任意组件编译成模块树，适合 KPI、表格、地图、媒体、控制器和混合信息卡。
 
-`ChartPanel` 默认是 manual 编译模式：只编排 LLM 显式提供的 slots。背景、标题承托、面板边框、侧边容器、底部结构线等装饰应由 LLM 放入 `slots.background` / `slots.decorations`，关键洞察、中心指标、侧边摘要或底部结论应由 LLM 放入 `slots.auxiliaryTexts`。MCP 不再自动套固定装饰模板，也不会在 manual 模式下自动补业务辅助文案；无论通过 DashboardSpec 还是直接调用模块生成工具，缺少 `slots.auxiliaryTexts` 的 manual `ChartPanel` 都会被拒绝。`layoutMode: "assisted"` 仅用于旧 demo 或单模块 prompt 流程，保留中心摘要、侧边摘要文本和色标等辅助生成能力。
+`ChartPanel` 默认是 manual 编译模式：只编排 LLM 显式提供的 slots。背景、标题承托、面板边框、侧边容器、底部结构线等装饰应由 LLM 放入 `slots.background` / `slots.decorations`，关键洞察、中心指标、侧边摘要或底部结论应由 LLM 放入 `slots.auxiliaryTexts`。MCP 不再自动套固定装饰模板，也不会在 manual 模式下自动补业务辅助文案；常规主图缺少 `slots.auxiliaryTexts` 的 manual `ChartPanel` 会被拒绝。RingChart 例外：默认只使用图表内部的 `option.title` 与 `series.label/labelLine`，不要求也不自动生成外置 `SingleText`；只有用户明确要求独立排版时才传入 `slots.auxiliaryTexts`。`layoutMode: "assisted"` 仅用于旧 demo 或单模块 prompt 流程；其他图表仍可保留辅助摘要生成，RingChart 的总数写入内部 `option.title`。
 
 所有模块都支持通用语义分组：
 

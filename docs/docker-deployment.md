@@ -27,6 +27,20 @@ docker push registry.example.com/screen-component-mcp:0.1.0
 4. 解压下载的 ZIP，得到 `screen-component-mcp-<commit SHA>.tar.gz`。
 5. 将文件传到服务器并导入：
 
+Windows PowerShell：
+
+```powershell
+$ArtifactZip = 'C:\deploy\screen-component-mcp-完整SHA.zip'
+$ExtractDir = 'C:\deploy\screen-mcp-image'
+
+Expand-Archive -LiteralPath $ArtifactZip -DestinationPath $ExtractDir -Force
+$ImageFile = Get-ChildItem $ExtractDir -Recurse -Filter '*.tar.gz' -File | Select-Object -First 1
+docker load --input $ImageFile.FullName
+docker image ls screen-component-mcp
+```
+
+Linux：
+
 ```bash
 IMAGE_SHA='填写完整commit SHA'
 docker load --input "screen-component-mcp-${IMAGE_SHA}.tar.gz"
@@ -34,6 +48,8 @@ docker image ls screen-component-mcp
 ```
 
 Artifact 保留 7 天。导入后的镜像 tag 是完整 commit SHA。
+
+不要把 GitHub 下载的外层 `.zip` 直接传给 `docker load`，否则会出现 `archive/tar: invalid tar header`。
 
 ## 启动容器
 

@@ -2331,8 +2331,8 @@ function seriesRadiusRatios(item: JsonObject): { inner: number; outer: number } 
 
   const radius = Array.isArray(series.radius) ? series.radius : [];
   return {
-    inner: percentFromString(radius[0], componentNameOf(item) === "RingChart" ? 0.3 : 0),
-    outer: percentFromString(radius[1], componentNameOf(item) === "RingChart" ? 0.45 : 0.6),
+    inner: percentFromString(radius[0], componentNameOf(item) === "RingChart" ? 0.38 : 0),
+    outer: percentFromString(radius[1], componentNameOf(item) === "RingChart" ? 0.66 : 0.6),
   };
 }
 
@@ -2389,6 +2389,19 @@ function fontSizeOfComponent(item: JsonObject): number {
   return asFiniteNumber(style?.fontSize) ?? 14;
 }
 
+function ringNativeCenterText(item: JsonObject): string | undefined {
+  if (componentNameOf(item) !== "RingChart") {
+    return undefined;
+  }
+
+  const props = componentProps(item);
+  const option = isJsonObject(props.option) ? props.option : {};
+  const title = isJsonObject(option.title) ? option.title : {};
+  return title.show === true && typeof title.text === "string" && title.text.trim() !== ""
+    ? title.text.trim()
+    : undefined;
+}
+
 function warnRingChartGeometry(
   item: JsonObject,
   fieldName: string,
@@ -2424,6 +2437,23 @@ function warnRingChartGeometry(
     warnings.push(
       `${fieldName} RingChart uses ring decorations while the chart body is very small; keep decorations secondary or increase the readable ring radius`,
     );
+  }
+
+  const nativeCenterText = ringNativeCenterText(item);
+  if (nativeCenterText) {
+    const option = isJsonObject(props.option) ? props.option : {};
+    const title = isJsonObject(option.title) ? option.title : {};
+    const textStyle = isJsonObject(title.textStyle) ? title.textStyle : {};
+    const fontSize = Math.max(8, asFiniteNumber(textStyle.fontSize) ?? 18);
+    const lines = nativeCenterText.split(/\r?\n/u);
+    const textWidth = Math.max(...lines.map((line) => estimateTextWidth(line, fontSize)));
+    const textHeight = Math.ceil(lines.length * fontSize * 1.2);
+    const innerDiameter = minSide * radius.inner;
+    if (textWidth + 20 > innerDiameter || textHeight + 16 > innerDiameter) {
+      warnings.push(
+        `${fieldName} RingChart native option.title is larger than the donut hole; increase inner radius/outer radius, shorten the center text, or reduce its font size`,
+      );
+    }
   }
 }
 
@@ -2462,6 +2492,11 @@ function warnCircularCenterTextFits(
       const textCenterY = rect.top + rect.height / 2;
       return Math.hypot(textCenterX - center.x, textCenterY - center.y) <= threshold;
     });
+    if (ringNativeCenterText(chart) && nearbyTexts.length > 0) {
+      warnings.push(
+        `${fieldName}[${chartIndex}] RingChart uses native option.title together with external SingleText near the donut center; keep only the native center text unless the user explicitly requested layered external text`,
+      );
+    }
     const primary = nearbyTexts.find(({ item }) => /\d/u.test(textContentOf(item) ?? ""));
     if (!primary) {
       continue;
@@ -2923,9 +2958,11 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
     }
 
     const slots = isJsonObject(module.slots) ? module.slots : {};
+    const mainChartSlot = isJsonObject(slots.mainChart) ? slots.mainChart : {};
     if (
       module.moduleName === "ChartPanel" &&
       module.layoutMode !== "assisted" &&
+      componentNameOf(mainChartSlot) !== "RingChart" &&
       !hasAuxiliaryTextSlots(slots)
     ) {
       errors.push(

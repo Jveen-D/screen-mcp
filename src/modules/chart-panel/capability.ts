@@ -75,7 +75,7 @@ export const chartPanelCapability: JsonObject = {
       path: "dataItems",
       type: "array<{name:string,type?:string,value:number}>",
       description:
-        "模块主数据。用于驱动 PieChart 的 chartData.constant.data，也可作为中心摘要和侧边信息卡的数据来源。若 mainChart 未显式提供 chartData，MCP 会优先使用 dataItems 生成完整饼图 chartData。",
+        "模块主数据。用于驱动图表的 chartData.constant.data，也可作为显式辅助摘要的数据来源；RingChart 的 assisted 中心总数会写入其内部 option.title。若 mainChart 未显式提供 chartData，MCP 会优先使用 dataItems 生成完整图表数据。",
     },
     {
       path: "theme",
@@ -120,7 +120,7 @@ export const chartPanelCapability: JsonObject = {
       supportedComponents: ["PieChart", "ThreeDPieChart", "LineChart", "BarChart", "RingChart", "StackBarChart", "StackLineChart", "BarChart25D", "BarProgress", "LiquidFill", "RoseChart", "ScatterChart"],
       required: true,
       multiple: false,
-      description: "主图表。图表组件边界应尽量铺满模块区域，实际绘图区通过 option.grid 或 series.center/radius 避开标题、图例、摘要和结论。",
+      description: "主图表。图表组件边界应尽量铺满模块区域，实际绘图区通过 option.grid 或 series.center/radius 避开标题、图例、摘要和结论。RingChart 默认使用自身 option.title 和 series.label 承载图内文字。",
     },
     decorations: {
       supportedComponents: ["SvgDecoration"],
@@ -134,7 +134,7 @@ export const chartPanelCapability: JsonObject = {
       required: false,
       multiple: true,
       description:
-        "辅助文本，用于中心摘要、侧边信息卡文字、指标数值、占比和底部结论说明。常规 ChartPanel 应至少提供 1 条真实业务辅助文本；如果模块没有辅助信息，manual 模式不会自动生成。所有业务文本必须用 SingleText，不要写入 SVG。",
+        "调用方明确要求独立排版时使用的外置辅助文本，可承载侧边信息卡、指标、占比或结论。常规 ChartPanel 应至少提供 1 条真实业务辅助文本；RingChart 例外，默认不得用 SingleText 承载中心摘要、分类名、数值或占比，应使用其内部 option.title 与 series.label。manual 模式不会自动生成辅助文本，显式外置业务文本必须用 SingleText，不要写入 SVG。",
     },
   },
   layoutRules: [
@@ -149,7 +149,7 @@ export const chartPanelCapability: JsonObject = {
     "圆形类主图（PieChart、ThreeDPieChart、RingChart、RoseChart）没有 grid，应优先让组件 style.left/top/width/height 等于模块区域，再通过 series.center 和 series.radius 控制实际饼图位置和大小；圆心上移/左移、外半径放大或收缩、内半径调整都是合法手段。",
 
     "上层需求可能很简略；LLM 或上层编排必须先补齐合理布局、数据同源、标题承托、图例空间、侧边摘要和装饰层级，再把明确 slots 交给 MCP 编译。",
-    "当用户没有显式提供 slots.background、slots.decorations 时，AI 必须主动设计并传入；DashboardSpec 编译层只会在缺少背景承载时补同主题轻量背景，不会替代 AI 设计标题承托、侧边容器、结构线等装饰。中心总数、侧边 Top 项等辅助文本仍会自动生成，但承载它们的容器/色标/装饰必须由 AI 提供。",
+    "当用户没有显式提供 slots.background、slots.decorations 时，AI 必须主动设计并传入；DashboardSpec 编译层只会在缺少背景承载时补同主题轻量背景，不会替代 AI 设计标题承托、侧边容器、结构线等装饰。assisted 模式可为其他图表生成中心总数、侧边 Top 项等辅助文本；RingChart 只生成内部 option.title 与系列标签，不自动生成外置文本。",
     "最终用户通常不会主动提入场动画；MCP 应默认设计克制的入场动画，让模块出现更有层次，但不能为了炫技让所有元素使用强动效。",
     "ChartPanel 默认动画策略：背景默认不启用入场动画；标题、标题承托和结构装饰使用 animate__fadeInLeft；主图表使用 animate__zoomIn；侧边信息和底部结论使用 animate__fadeInLeft。",
     "入场动画只使用 entryAnimiation.isShow 和 entryAnimiation.type；可选 type 包括 animate__lightSpeedInRight、animate__fadeInLeft、animate__zoomIn、animate__rollIn、animate__jackInTheBox、animate__heartBeat、animate__bounceInDown、animate__rubberBand、animate__bounce。",
@@ -183,9 +183,9 @@ export const chartPanelCapability: JsonObject = {
     "mainChart 应根据标题、图例和装饰重新计算内部安全区：图表组件边界保持模块级铺满，真实绘图区由 grid 或 center/radius 避让；不要固定套用某一张设计稿的 top、height 参数。",
     "PieChart 的 style.left/top/width/height 应接近甚至等于模块区域，以便 AI 通过 series.center 和 series.radius 精细控制饼图实际大小与位置；不要为了避免叠压就把饼图容器压缩得过小，导致大量空白。",
     "当 legend、重点摘要、结论等辅助元素与饼图容器重叠时，应通过调整饼图圆心（series.center）和内外半径（series.radius）让饼图主体避开这些元素，而不是把饼图容器切小。",
-    "PieChart 的 style.left/top/width/height、中心总数文本、连接线起点必须共用同一个 chartStyle 计算；中心数值和说明必须始终可读，若摘要/legend 叠在饼图上，应确保它们落在环形中心或饼图外侧空白区，不遮挡扇区。",
+    "PieChart 的 style.left/top/width/height、显式外置中心总数文本、连接线起点必须共用同一个 chartStyle 计算；RingChart 的中心摘要必须使用内部 option.title，并让 title.left/top 跟随 series[0].center。若摘要/legend 叠在图表上，应确保它们落在环形中心或图表外侧空白区，不遮挡扇区。",
 
-    "ChartPanel 的 schema 顺序必须服务真实遮挡关系：背景最底，PieChart 必须排在中心总数和中心说明之后，中心总数、中心说明、右侧摘要等 SingleText 必须排在 PieChart 之前，避免饼图 canvas 遮住中心文字。",
+    "ChartPanel 的 schema 顺序必须服务真实遮挡关系：背景最底；PieChart 显式使用外置中心总数和说明时，SingleText 必须排在 PieChart 之前；RingChart 默认不得生成外置中心 SingleText，中心文字由图表内部 option.title 渲染。",
     "PieChart 在 ChartPanel 中必须清理默认 series 布局偏移：series[0].left/top/right/bottom 应由 MCP 归零，圆心只由 series[0].center 控制，避免默认 left 偏移或 AI 覆盖让饼图实际环心漂移。",
     "legend 的位置要服务结构：放在标题下方时用于承接标题和图表；放在底部时必须和底部装饰留出距离；放在侧边时要给主图留出足够空间。",
     "legend 不必须限制在饼图容器内部，可以放置在模块任意空白区并通过绝对定位与饼图形成叠压关系；分类较多时应优先尝试右侧垂直 legend，而不是在底部挤压饼图。",
@@ -208,18 +208,18 @@ export const chartPanelCapability: JsonObject = {
     "如果 mainChart 是 PieChart，应按语义选择实心饼图、环形图或细环；不要默认把所有饼图都做成同一种蓝色实心饼图。",
     "饼图色彩应按主题生成：状态、等级、进度类可使用同一色系明暗层级；类别、分类、品类类可使用主色、辅色、强调色和低饱和补色组合。",
     "饼图标签应形成标注系统：外部 label、labelLine、字号、字重和颜色要统一；强标注适合分析类稿件，轻标注适合数据密集模块。",
-    "当模块已经有中心摘要、右侧摘要和底部结论时，PieChart label 仍应保留作为扇区定位识别，但必须轻量化：默认 show=true、formatter: \"{b}\"、字号和 labelLine 随安全区收缩；右侧摘要负责数值、占比和业务判断，避免 label 重复展示完整数据。",
-    "同一组数据在主图、中心摘要、侧边信息卡和底部说明中要分工展示：legend 负责完整分类与点击切换，中心摘要负责总量或核心指标，侧边卡负责占比和解释，底部说明负责结论；不要让多处文本以同等强度重复完整信息。",
+    "当模块已经有中心摘要、右侧摘要和底部结论时，PieChart label 仍应保留作为扇区定位识别，但必须轻量化：默认 show=true、formatter: \"{b}\"、字号和 labelLine 随安全区收缩；RingChart 默认不生成这些外置摘要，名称、数值和占比由 series.label/labelLine 表达。",
+    "同一组数据在主图、中心摘要、侧边信息卡和底部说明中要分工展示：legend 负责完整分类与点击切换，中心摘要负责总量或核心指标，侧边卡负责占比和解释，底部说明负责结论；RingChart 默认只使用内部 option.title 和 series.label，只有用户明确要求独立排版时才增加 auxiliaryTexts。",
     "右侧重点摘要不能只是 legend 或饼图 label 的数据复读；每条摘要除了保留分类名、数值和占比，可补充简短业务判断。判断语应由 LLM 根据用户输入和业务语义生成，MCP 规则不能按行业关键词固定短语。",
     "右侧重点摘要必须结构化为多个 SingleText：标题单独一个组件，每条摘要单独一个组件；禁止把“重点摘要 + 产品问题 38 38% + 物流延迟 27 27% + 服务态度 19 19%”拼成一个大字符串放进同一个 SingleText，否则真实渲染会失去行级对齐控制。",
-    "饼图中心大数字和中心说明必须保留清晰垂直间距；中心说明字号应低于主数值，避免贴住数字或削弱扇区主体。",
+    "PieChart 显式使用外置中心大数字和说明时必须保留清晰垂直间距；RingChart 中心内容只使用内部 option.title，当前单层样式能力不足时不得静默退回外置文本。",
     "主图数据必须和中心摘要、右侧信息卡保持同源：若右侧卡片展示了状态A 18、状态B 37、状态C 71 这类数据，则 PieChart 的 chartData.constant.data 必须包含相同 name/value，不允许回退到默认类目数据。",
     "右侧信息卡必须保留原始分类名，不要把“类别C保留原名”改写成“类别C”；如果需要解释，只能在第二行补充短语，不能替换或截断主分类。",
     "右侧信息卡两行排版时，第一行只放“分类名 + 数值 + 占比”，第二行只放由 LLM 生成的短解释；禁止把解释词拆成断裂换行。",
     "右侧信息卡两行摘要必须给正文预留足够宽度：默认卡片宽度应接近模块宽度的 36%，正文区域宽度不低于 180px，字号可降到 13px，避免短解释和百分比被拆行。",
 
     "类别、状态、等级等分类场景应保留用户输入的原始分类名，并让 LLM 根据上下文生成解释语；MCP 不应按行业关键词替换、截断或固定解释短语。",
-    "模块必须使用真实组件表达真实内容：主图表必须使用 slots.mainChart 的图表组件；业务文本必须使用 title 或 auxiliaryTexts 的 SingleText；常规 ChartPanel 至少应显式提供 1 条辅助文本，承载关键洞察、中心指标、侧边摘要或底部结论，不能让所有模块只剩标题和主图；SvgDecoration 只允许做装饰。",
+    "模块必须使用真实组件表达真实内容：主图表必须使用 slots.mainChart 的图表组件；显式外置业务文本必须使用 title 或 auxiliaryTexts 的 SingleText；常规 ChartPanel 至少应显式提供 1 条辅助文本，RingChart 例外，其中心摘要与分类标签默认由 option.title 和 series.label 承载。SvgDecoration 只允许做装饰。",
     "当需要直接复制到编辑器时，优先调用 generate_module_tree_schema；它会返回 __Group__ 根节点，children 内放完整子组件节点。",
     "禁止用 SvgDecoration 的 svgContent 手绘饼图、环形图、信息卡正文、标题、数值、占比或结论说明。",
     "不要因为禁止 SVG 承载真实内容而省略 SvgDecoration；合格的 LLM-authored ChartPanel 至少应包含标题承托、面板边框、侧边信息卡外框、分割线或连接线中的一种装饰结构。",
@@ -398,7 +398,7 @@ const chartPanelLayoutRuleGroups: LayoutRuleGroup[] = [
   {
     category: "main-chart-pie-layout",
     priority: "must",
-    description: "Main PieChart safe area, chart sizing, schema order, and center text alignment.",
+    description: "Main PieChart/RingChart safe area, chart sizing, schema order, and center text alignment.",
     rules: chartPanelLayoutRules.slice(38, 44),
   },
   {

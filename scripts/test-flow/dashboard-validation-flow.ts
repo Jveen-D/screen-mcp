@@ -90,6 +90,61 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     ),
     "DashboardSpec validation should reject auxiliary SingleText slots without real business copy",
   );
+  const nativeRingTextValidation = validateDashboardSpec({
+    logicalId: "native_ring_text_dashboard",
+    modules: [
+      {
+        moduleName: "ChartPanel",
+        logicalId: "native_ring_text_panel",
+        title: "风险构成",
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 80,
+          width: 420,
+          height: 280,
+        },
+        slots: {
+          mainChart: {
+            componentName: "RingChart",
+            props: {
+              chartData: {
+                constant: {
+                  data: [
+                    { name: "高风险", type: "风险", value: 32 },
+                    { name: "中风险", type: "风险", value: 48 },
+                    { name: "低风险", type: "风险", value: 20 },
+                  ],
+                },
+              },
+              option: {
+                title: {
+                  show: true,
+                  text: "100",
+                  left: "50%",
+                  top: "50%",
+                },
+                series: [
+                  {
+                    label: {
+                      show: true,
+                      formatter: "{b}: {d}%",
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(
+    nativeRingTextValidation.valid,
+    true,
+    "manual RingChart should validate without auxiliaryTexts when it uses native title and series labels",
+  );
+  assert.deepEqual(nativeRingTextValidation.errors, []);
   const invalidGroupingValidation = validateDashboardSpec({
     ...dashboardSpec,
     grouping: { mode: "template" },
@@ -840,6 +895,15 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
               height: 328,
             },
             option: {
+              title: {
+                show: true,
+                text: "35.9% 标准产品占比",
+                left: "50%",
+                top: "43%",
+                textStyle: {
+                  fontSize: 24,
+                },
+              },
               legend: {
                 show: true,
                 top: "bottom",
@@ -908,6 +972,18 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
       warning.includes("center text is larger than the donut hole"),
     ),
     "DashboardSpec validation should warn when ring center text cannot fit inside the donut hole",
+  );
+  assert.ok(
+    (crowdedRingValidation.warnings as string[]).some((warning) =>
+      warning.includes("native option.title is larger than the donut hole"),
+    ),
+    "DashboardSpec validation should check native RingChart center text against the donut hole",
+  );
+  assert.ok(
+    (crowdedRingValidation.warnings as string[]).some((warning) =>
+      warning.includes("native option.title together with external SingleText"),
+    ),
+    "DashboardSpec validation should warn when native and external ring center text overlap",
   );
   assert.ok(
     (crowdedRingValidation.warnings as string[]).some((warning) =>

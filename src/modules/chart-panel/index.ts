@@ -1183,6 +1183,7 @@ function createMainChartProps(
   slot: ModuleSlotInput,
   fallbackDataRows: JsonObject[] | undefined,
   reserveSideSummary = false,
+  allowDefaultRingCenterTitle = true,
 ): JsonObject {
   if (!SUPPORTED_MAIN_COMPONENTS.includes(slot.componentName)) {
     throw new Error(`unsupported mainChart componentName: ${slot.componentName}`);
@@ -1641,15 +1642,15 @@ function createMainChartProps(
     ? firstInputSeries.labelLine
     : {};
 
-  const baseCenter = isThreeDPie
-    ? (firstInputSeries.center as JsonValue | undefined) ?? layoutProfile.center
-    : isLiquidFill
-      ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "50%"]
+  const baseCenter = isLiquidFill
+    ? (firstInputSeries.center as JsonValue | undefined) ?? ["50%", "50%"]
+    : isThreeDPie || isRingChart
+      ? (firstInputSeries.center as JsonValue | undefined) ?? layoutProfile.center
       : layoutProfile.center;
-  const chartRadius = isThreeDPie
-    ? (firstInputSeries.radius as JsonValue | undefined) ?? layoutProfile.radius
-    : isLiquidFill
-      ? (firstInputSeries.radius as JsonValue | undefined) ?? "90%"
+  const chartRadius = isLiquidFill
+    ? (firstInputSeries.radius as JsonValue | undefined) ?? "90%"
+    : isThreeDPie || isRingChart
+      ? (firstInputSeries.radius as JsonValue | undefined) ?? layoutProfile.radius
       : layoutProfile.radius;
 
   const chartCenter = ((): [string, string] => {
@@ -1666,10 +1667,37 @@ function createMainChartProps(
     return [cx, cy];
   })();
 
+  const inputTitle = isJsonObject(option.title) ? option.title : {};
+  const inputTitleTextStyle = isJsonObject(inputTitle.textStyle) ? inputTitle.textStyle : {};
+  const assistedRingTitle =
+    isRingChart &&
+    allowDefaultRingCenterTitle &&
+    layoutMode(input) === "assisted" &&
+    layoutRows &&
+    layoutRows.length > 0
+      ? {
+          show: true,
+          text: formatNumber(totalDataValue(layoutRows)),
+          left: chartCenter[0],
+          top: chartCenter[1],
+          padding: 0,
+          ...inputTitle,
+          textStyle: {
+            color: textColor(theme),
+            fontSize: layoutProfile.centerValueFontSize,
+            fontFamily: "Microsoft YaHei",
+            fontWeight: "bold",
+            align: "center",
+            ...inputTitleTextStyle,
+          },
+        }
+      : undefined;
+
   const baseOption: JsonObject = {
     backgroundColor: "transparent",
     color: defaultColors,
     ...option,
+    ...(assistedRingTitle ? { title: assistedRingTitle } : {}),
     legend: {
       show: true,
       left: "center",
@@ -1946,9 +1974,10 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
   }
 
   const isAssistedLayout = layoutMode(input) === "assisted";
-  if (!isAssistedLayout && auxiliaryTextSlots.length === 0) {
+  const isRingChart = mainChartSlot.componentName === "RingChart";
+  if (!isAssistedLayout && !isRingChart && auxiliaryTextSlots.length === 0) {
     throw new Error(
-      "manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion",
+      "manual ChartPanel must include slots.auxiliaryTexts with at least one real SingleText insight, side summary, center metric, or conclusion; RingChart is exempt because it uses option.title and series.label",
     );
   }
 
@@ -1976,6 +2005,7 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     deriveDataRowsFromAuxiliaryTexts(auxiliaryTextSlots);
   const reserveDefaultSideSummary =
     isAssistedLayout &&
+    !isRingChart &&
     !isCartesianChart &&
     !isLiquidFill &&
     auxiliaryTextSlots.length === 0 &&
@@ -1985,6 +2015,7 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
     mainChartSlot,
     fallbackDataRows,
     reserveDefaultSideSummary,
+    auxiliaryTextSlots.length === 0,
   );
   const mainChartStyle = isJsonObject(mainChartProps.style) ? mainChartProps.style : undefined;
   const effectiveBackgroundSlot = backgroundSlot;
@@ -1995,13 +2026,15 @@ function generateChartPanelSchemasForInput(input: ModuleInput) {
         ? normalizeAuxiliaryTextSlots(input, auxiliaryTextSlots, fallbackDataRows)
         : auxiliaryTextSlots
       : isAssistedLayout
-        ? createDefaultAuxiliaryTextSlots(
-          input,
-          fallbackDataRows,
-          mainChartStyle,
-          isThreeDPie,
-          isCartesianChart || isLiquidFill,
-        )
+        ? isRingChart
+          ? []
+          : createDefaultAuxiliaryTextSlots(
+            input,
+            fallbackDataRows,
+            mainChartStyle,
+            isThreeDPie,
+            isCartesianChart || isLiquidFill,
+          )
         : [];
 
   const componentProps: JsonObject[] = [];

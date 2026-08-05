@@ -9,6 +9,44 @@ export function runRingComponentFlowTests(): void {
   assert.ok(writableProps.some((item) => item.path === "option.legend"));
   assert.ok(writableProps.some((item) => item.path === "option.title"));
   assert.ok(writableProps.some((item) => item.path === "rotatingAnimation"));
+  const visualRules = capability.visualRules as string[];
+  assert.ok(
+    visualRules.some(
+      (rule) =>
+        rule.includes("中心内容使用 option.title") &&
+        rule.includes("series[0].label/labelLine") &&
+        rule.includes("不得生成外置 SingleText"),
+    ),
+    "RingChart capability should require native center text and series labels by default",
+  );
+  const radiusCapability = writableProps
+    .find((item) => item.path === "option.series[0]")
+    ?.children as JsonObject[] | undefined;
+  assert.ok(
+    radiusCapability?.some(
+      (item) => item.path === "option.series[0].radius" &&
+        typeof item.description === "string" &&
+        item.description.includes("默认值 '38%'"),
+    ),
+    "RingChart radius capability should match the 38% normalizer fallback",
+  );
+  const ringTextCapability = writableProps.find((item) => item.path === "ringText");
+  assert.ok(
+    typeof ringTextCapability?.description === "string" &&
+      ringTextCapability.description.includes("数据项名称") &&
+      ringTextCapability.description.includes("没有独立文本字段"),
+    "RingChart ringText capability should explain that it reuses data item names",
+  );
+  const rotatingAnimationCapability = writableProps
+    .find((item) => item.path === "rotatingAnimation")
+    ?.children as JsonObject[] | undefined;
+  assert.ok(
+    rotatingAnimationCapability?.some(
+      (item) => item.path === "rotatingAnimation.opacity" &&
+        item.description === "轮播高亮扇区的透明度。",
+    ),
+    "RingChart rotating opacity capability should describe the highlighted sector",
+  );
 
   const schema = generateComponentsSchema({
     componentName: "RingChart",
