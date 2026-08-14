@@ -340,7 +340,7 @@ function asString(value: JsonValue | undefined): string | undefined {
 
 function dataBindingCapability(definition: ComponentDefinition): JsonObject {
   const datasource = definition.defaultProps.datasource;
-  if (isJsonObject(datasource)) {
+  if (isJsonObject(datasource) && typeof datasource.sourceType === "string") {
     const sourceType = asString(datasource.sourceType) ?? "unknown";
     const fieldMappings = Array.isArray(datasource.fieldMappings)
       ? datasource.fieldMappings.filter(isJsonObject)
@@ -355,26 +355,93 @@ function dataBindingCapability(definition: ComponentDefinition): JsonObject {
       inspectPath: "props.datasource",
       defaultSourceType: sourceType,
       sourceTypes: ["externalConstant", "constant", "api", "dataSet"],
+      unsupportedSourceTypes: ["dataSet"],
+      sourceTypeSemantics: {
+        externalConstant: {
+          dataPath: "props",
+          alsoWhenSourceTypeMissing: true,
+          description: "不走数据源，组件读取自身 aiWritableProps。修改 constantData 不会更新画面。",
+        },
+        constant: {
+          dataPath: "props.datasource.constantData",
+          description: "读取组件节点内的静态数据。",
+        },
+        api: {
+          referencePath: "props.datasource.apiId",
+          description: "引用项目级 datasource.apiList 中已经存在的接口。",
+        },
+        dataSet: {
+          supported: false,
+          description: "编辑器的数据集选项已禁用，不要使用。",
+        },
+      },
       staticDataPath: "props.datasource.constantData",
       staticColumnsPath: "props.datasource.constantTableColumns",
       apiReferencePath: "props.datasource.apiId",
-      apiRequestPath: "props.datasource.fetchOnMount",
+      fetchOnMountPath: "props.datasource.fetchOnMount",
       fieldMappingsPath: "props.datasource.fieldMappings",
       fieldModePath: "props.datasource.fieldMode",
-      dataFieldPath: "props.datasource.dataFieldPath",
+      dataFieldPathPath: "props.datasource.dataFieldPath",
       pollingPaths: ["props.datasource.autoRefresh", "props.datasource.refreshInterval"],
       ...(fieldKeys.length ? { fieldMappingKeys: fieldKeys } : {}),
-      rules:
-        sourceType === "externalConstant"
-          ? [
-              "当前默认 sourceType=externalConstant：组件读取自身可写 props，直接改 datasource.constantData 不会更新画面。先按 aiWritableProps 修改组件字段。",
-              "编辑已导出节点时先保留其现有 sourceType；只有明确切换为 constant 后，才使用 datasource.constantData。",
-            ]
-          : [
-              "编辑已导出节点时先检查实际 sourceType，不要按组件名称猜数据协议。",
-              "sourceType=constant 时，constantData、constantTableColumns[].key 和 fieldMappings[].mapFields[].path 的字段名必须一致。",
-              "sourceType=api 时，apiId 必须引用项目级 datasource.apiList 中已有的 id，不能编造。",
-            ],
+      staticDataContract: {
+        dataTypePath: "props.datasource.constantDataType",
+        dataTypes: {
+          table: "constantData 是行数组，列定义在 constantTableColumns。",
+          json: "constantData 可以是任意 JSON 结构。",
+        },
+        tableColumnTypes: ["string", "number"],
+        keyAlignmentPaths: [
+          "props.datasource.constantTableColumns[].key",
+          "props.datasource.constantData[].<key>",
+          "props.datasource.fieldMappings[].mapFields[].path",
+        ],
+        mappingTargetPath: "props.datasource.fieldMappings[].key",
+        mappingTargetRule: "fieldMappingKeys 存在时，只能使用其中当前组件声明的字段。",
+        mapFieldsCardinality: 1,
+        mapFieldsCardinalityRule: "每个 mapFields 必须正好有一个元素才会生效。",
+        leadingArrayIndexIsIgnored: true,
+        leadingArrayIndexExamples: ["0.value -> value", "[0].name -> name"],
+        fieldModes: {
+          single: "只取第一行并返回对象。",
+          multiple: "返回完整行数组。",
+        },
+        constantIgnoresDataFieldPath: true,
+      },
+      apiContract: {
+        projectApiListPath: "datasource.apiList[].id",
+        mustReferenceExistingId: true,
+        missingApiAction: "项目接口清单没有目标接口时，要求用户先在编辑器数据源面板创建，禁止编造 id 或地址。",
+        responseDataPath: "props.datasource.dataFieldPath",
+        responseDataPathResolver: "lodash.get",
+        wrapsNonArrayResult: true,
+        fetchOnMountPath: "props.datasource.fetchOnMount",
+        designMode: {
+          sendsRequests: false,
+          dataSource: "接口面板测试数据 designData",
+          canRefresh: false,
+        },
+        previewMode: {
+          sendsRequests: true,
+          supportsPolling: true,
+        },
+      },
+      pollingContract: {
+        enabledPath: "props.datasource.autoRefresh",
+        intervalPath: "props.datasource.refreshInterval",
+        intervalUnit: "seconds",
+        requiresSourceType: "api",
+        runtimeCondition: "preview mode",
+      },
+      rules: [
+        "编辑已导出节点时先检查实际 props 数据结构和 sourceType，不要按组件名称猜协议。",
+        "禁止写入 $bind；页面级 state 属于在线代码，不是组件数据绑定语法。",
+        ...(sourceType === "externalConstant"
+          ? ["当前默认 sourceType=externalConstant：修改组件自身 aiWritableProps，不能修改 constantData 代替。"]
+          : []),
+        "切换到 constant 时，列定义、数据行和字段映射三处 key 必须一致，每个 mapFields 必须正好一项。",
+        "sourceType=api 时只能引用项目 datasource.apiList 已有 id；真实请求和轮询必须在预览态验证。",
+      ],
     };
   }
 
@@ -386,17 +453,82 @@ function dataBindingCapability(definition: ComponentDefinition): JsonObject {
       inspectPath: "props.chartData",
       defaultSourceType: asString(chartData.sourceType) ?? "unknown",
       sourceTypes: ["constant", "api", "dataSet", "form"],
+      sourceTypeSemantics: {
+        constant: {
+          dataPath: "props.chartData.constant.data",
+          description: "读取行数组，并由 dimension 和 indicator 声明维度、指标与聚合方式。",
+        },
+        api: {
+          referencePath: "props.chartData.api.apiUuid",
+          description: "引用平台已有接口，并使用 chartData.api 中的请求和响应处理配置。",
+        },
+        dataSet: { description: "使用平台数据集配置。" },
+        form: { description: "使用平台表单配置。" },
+      },
       staticDataPath: "props.chartData.constant.data",
       apiReferencePath: "props.chartData.api.apiUuid",
       apiRequestPath: "props.chartData.api",
-      fieldMappingsPath: "props.chartData.constant.fieldList",
+      fieldListPath: "props.chartData.constant.fieldList",
       dimensionPath: "props.chartData.dimension",
       indicatorPath: "props.chartData.indicator",
       pollingPaths: ["props.chartData.isPolling", "props.chartData.polling"],
+      staticDataContract: {
+        dataShape: "rowArray",
+        originalDataPath: "props.chartData.constant.originalData",
+        fieldListPath: "props.chartData.constant.fieldList",
+        fieldNamePaths: [
+          "props.chartData.dimension[].fieldName",
+          "props.chartData.indicator[].fieldName",
+        ],
+        fieldNameMustMatchDataKeys: true,
+        calculateTypePaths: [
+          "props.chartData.dimension[].fieldDataConfig.calculateType",
+          "props.chartData.indicator[].fieldDataConfig.calculateType",
+        ],
+        calculateTypeExamples: ["SUM", "COUNT"],
+        accuracyPath: "props.chartData.indicator[].fieldDataConfig.format.accuracy",
+        displayNamePaths: [
+          "props.chartData.dimension[].fieldDataConfig.chartDisplayName",
+          "props.chartData.indicator[].fieldDataConfig.chartDisplayName",
+        ],
+        consistencyPaths: [
+          "props.chartData.constant.data",
+          "props.chartData.constant.originalData",
+          "props.chartData.constant.fieldList",
+          "props.chartData.dimension",
+          "props.chartData.indicator",
+        ],
+      },
+      apiContract: {
+        referencePath: "props.chartData.api.apiUuid",
+        mustReferenceExistingId: true,
+        requestConfigurationPaths: [
+          "props.chartData.api.requestParam",
+          "props.chartData.api.requestBody",
+          "props.chartData.api.headers",
+          "props.chartData.api.fieldList",
+          "props.chartData.api.processFunction",
+        ],
+        missingApiAction: "禁止编造 apiUuid；没有目标接口时先要求用户在平台创建。",
+      },
+      pollingContract: {
+        enabledPath: "props.chartData.isPolling",
+        intervalPath: "props.chartData.polling",
+        intervalUnit: "seconds",
+        fallbackIntervalSeconds: 10,
+        ...(typeof chartData.polling === "number"
+          ? { defaultIntervalSeconds: chartData.polling }
+          : {}),
+        runtimeCondition: "designMode === 'live'",
+      },
       rules: [
-        "编辑已导出节点时，静态数据写入 chartData.constant.data；dimension、indicator、originalData 和 fieldList 保持与当前数据链一致。",
-        "sourceType=api 时，api.apiUuid 必须引用已有项目接口，requestParam、requestBody、headers、fieldList 和 processFunction 与接口契约一致。",
+        "编辑已导出节点时先检查实际 props.chartData，不要按组件名称猜协议；禁止写入 $bind。",
+        "静态数据写入 constant.data；dimension、indicator、originalData 和 fieldList 必须与当前数据链一致。",
+        "dimension/indicator 的 fieldName 必须匹配数据行 key；calculateType 决定聚合，format.accuracy 控制小数位，chartDisplayName 控制显示名。",
+        "sourceType=api 时 api.apiUuid 必须引用已有平台接口，请求参数、响应字段和 processFunction 必须与接口契约一致。",
+        "isPolling 与 polling 只在运行/预览态生效，polling 单位为秒；设计态不能证明请求或轮询有效。",
         "screen-mcp 生成节点时优先使用该组件 capability 声明的语义数据字段，MCP 会同步完整 chartData；不要把运行时编辑规则误当成生成输入。",
+        "直接编辑已导出节点必须修改当前真实数据链；只改生成输入的语义字段不会自动触发 MCP 编译。",
       ],
     };
   }
@@ -407,7 +539,7 @@ function dataBindingCapability(definition: ComponentDefinition): JsonObject {
     inspectPath: "props",
     rules: [
       "该组件默认没有 datasource 或 chartData；编辑已导出节点时只修改 capability.aiWritableProps 中声明的组件字段。",
-      "不要为此组件凭空新增通用 datasource、chartData 或 $bind 结构。",
+      "不要为此组件凭空新增通用 datasource、chartData 或 $bind 结构；页面级 state 属于在线代码。",
     ],
   };
 }

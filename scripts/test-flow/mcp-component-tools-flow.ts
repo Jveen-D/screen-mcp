@@ -60,7 +60,7 @@ export async function runMcpComponentToolTests({
     "MCP capability has aiForbiddenProps",
   );
   const pieRuntimeBinding = mcpCapability.runtimeDataBinding as JsonObject;
-  assert.equal(
+  assert.deepEqual(
     pieRuntimeBinding.mode,
     "chartData",
     "MCP capability should publish the chart runtime data-binding contract",
@@ -75,6 +75,35 @@ export async function runMcpComponentToolTests({
     ["constant", "api", "dataSet", "form"],
     "MCP capability should publish the supported chart runtime data sources",
   );
+  const pieStaticContract = pieRuntimeBinding.staticDataContract as JsonObject;
+  assert.equal(
+    pieStaticContract.fieldNameMustMatchDataKeys,
+    true,
+    "chartData capability should require dimension and indicator field names to match row keys",
+  );
+  assert.deepEqual(
+    pieStaticContract.calculateTypePaths,
+    [
+      "props.chartData.dimension[].fieldDataConfig.calculateType",
+      "props.chartData.indicator[].fieldDataConfig.calculateType",
+    ],
+    "chartData capability should publish both aggregation paths",
+  );
+  const pieApiContract = pieRuntimeBinding.apiContract as JsonObject;
+  assert.deepEqual(
+    pieApiContract.requestConfigurationPaths,
+    [
+      "props.chartData.api.requestParam",
+      "props.chartData.api.requestBody",
+      "props.chartData.api.headers",
+      "props.chartData.api.fieldList",
+      "props.chartData.api.processFunction",
+    ],
+    "chartData capability should publish the complete API request contract",
+  );
+  const piePollingContract = pieRuntimeBinding.pollingContract as JsonObject;
+  assert.equal(piePollingContract.intervalUnit, "seconds");
+  assert.equal(piePollingContract.runtimeCondition, "designMode === 'live'");
   assert.equal(
     Array.isArray(mcpCapability.examples),
     false,
@@ -124,6 +153,39 @@ export async function runMcpComponentToolTests({
     ["props.datasource.autoRefresh", "props.datasource.refreshInterval"],
     "MCP capability should publish the datasource runtime polling paths",
   );
+  assert.deepEqual(
+    textRuntimeBinding.unsupportedSourceTypes,
+    ["dataSet"],
+    "datasource capability should mark the disabled dataSet option",
+  );
+  const textSourceTypes = textRuntimeBinding.sourceTypeSemantics as JsonObject;
+  assert.equal(
+    (textSourceTypes.externalConstant as JsonObject).dataPath,
+    "props",
+    "externalConstant should resolve values from component props",
+  );
+  assert.equal(
+    (textSourceTypes.externalConstant as JsonObject).alsoWhenSourceTypeMissing,
+    true,
+    "missing datasource sourceType should follow externalConstant semantics",
+  );
+  const textStaticContract = textRuntimeBinding.staticDataContract as JsonObject;
+  assert.equal(textStaticContract.mapFieldsCardinality, 1);
+  assert.deepEqual(textStaticContract.tableColumnTypes, ["string", "number"]);
+  assert.equal(textStaticContract.leadingArrayIndexIsIgnored, true);
+  assert.equal(textStaticContract.constantIgnoresDataFieldPath, true);
+  const textApiContract = textRuntimeBinding.apiContract as JsonObject;
+  assert.equal(textApiContract.projectApiListPath, "datasource.apiList[].id");
+  assert.equal(textApiContract.responseDataPathResolver, "lodash.get");
+  assert.equal(textApiContract.wrapsNonArrayResult, true);
+  assert.equal(
+    (textApiContract.designMode as JsonObject).sendsRequests,
+    false,
+    "datasource capability should explain that design mode does not send real requests",
+  );
+  const textPollingContract = textRuntimeBinding.pollingContract as JsonObject;
+  assert.equal(textPollingContract.intervalUnit, "seconds");
+  assert.equal(textPollingContract.requiresSourceType, "api");
 
   const percentageCapabilityResult = await client.callTool({
     name: "get_component_capability",
@@ -135,6 +197,17 @@ export async function runMcpComponentToolTests({
     percentageRuntimeBinding.fieldMappingKeys,
     ["value", "max", "min"],
     "MCP capability should expose datasource field mapping keys from the component defaults",
+  );
+
+  const polygonCapabilityResult = await client.callTool({
+    name: "get_component_capability",
+    arguments: { componentName: "GaodeMap-Polygon" },
+  });
+  const polygonCapability = readToolJson(polygonCapabilityResult);
+  assert.equal(
+    (polygonCapability.runtimeDataBinding as JsonObject).mode,
+    "componentProps",
+    "a component-owned datasource field without sourceType must not be mistaken for the shared datasource protocol",
   );
 
   const toolResult = await client.callTool({

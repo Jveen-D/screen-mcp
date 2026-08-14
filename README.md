@@ -158,7 +158,7 @@ npx @modelcontextprotocol/inspector npm run dev
 2. `get_component_capability`，输入 `{ "componentName": "PieChart" }`，默认返回 compact 能力
 3. `generate_components_schema`，输入 LLM 自己设计的最小 props
 
-AI 应该按 `list_components -> get_component_capability -> generate_components_schema` 的顺序使用。先发现组件，再读取组件能力与约束，最后只提交 AI 可写的最小 props 给 MCP 生成完整 schema。为提升速度，`get_component_capability` 默认省略 `examples`、长规则和完整视觉说明；只有调试组件能力或确实需要示例时才传 `{ "detail": "full" }`。修改已导出的节点数据时，读取同一 capability 的 `runtimeDataBinding`：其中给出实际数据协议、静态数据、接口引用、字段映射和轮询路径；它只描述运行时编辑，不能替代生成工具输入。
+AI 应该按 `list_components -> get_component_capability -> generate_components_schema` 的顺序使用。先发现组件，再读取组件能力与约束，最后只提交 AI 可写的最小 props 给 MCP 生成完整 schema。为提升速度，`get_component_capability` 默认省略 `examples`、长规则和完整视觉说明；只有调试组件能力或确实需要示例时才传 `{ "detail": "full" }`。修改已导出的节点数据时，读取同一 capability 的 `runtimeDataBinding`：`sourceTypeSemantics`、`staticDataContract`、`apiContract`、`pollingContract`、组件专属 `fieldMappingKeys` 和 `rules` 给出完整运行时约束；它们只描述运行时编辑，不能替代生成工具输入。
 
 生成一个完整面板模块时，AI 应该按以下顺序使用：
 
