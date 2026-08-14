@@ -7,7 +7,7 @@
 - 公共 MCP 工具只能在 `src/mcp/screenServer.ts` 定义和注册；`src/server.ts`、`src/http-server.ts` 只能负责 transport 启动。
 - 新增工具、组件、模块后运行 `npm run docs:generate`，让 README 和 `docs/*-reference.md` 从真实定义生成。
 - 新增组件必须补 `capability`、`defaultProps`、必要的 `normalizeProps` 和测试；能力说明要告诉 LLM 何时使用、最小 props、约束和禁止项。
-- 新增模块必须说明 slots 契约。图表分析模块用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合内容优先用 `FreeformModule`。
+- 新增模块必须说明 slots 契约。图表分析模块用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合内容优先用 `FreeformModule`；`LayoutPlaceholder` 只允许服务于从零搭建流程的临时布局确认，确认后必须删除。
 - 质量问题优先进 validator warning/error，例如越界、重叠、背景遮挡、空 SVG、占位文案、演示图表数据、Gauge 重复数值。
 - `DashboardSpec` 仍是整屏主流程：LLM 先设计完整 spec，再调用 `validate_dashboard_spec` 和 `generate_dashboard_schema`。
 

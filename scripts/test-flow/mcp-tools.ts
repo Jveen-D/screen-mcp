@@ -24,7 +24,7 @@ export async function runMcpToolTests({
   dashboardFixtures,
 }: McpToolTestFixtures): Promise<void> {
   const { aiProps, inputFirstSeries, imageProps, textProps, svgProps } = componentFixtures;
-  const { chartPanelInput, freeformModuleInput } = moduleFixtures;
+  const { chartPanelInput, freeformModuleInput, layoutPlaceholderInput } = moduleFixtures;
   const { dashboardSpec, dashboardProjectSpec } = dashboardFixtures;
 
   const nodePath = process.execPath;
@@ -48,6 +48,7 @@ export async function runMcpToolTests({
     svgProps,
     chartPanelInput,
     freeformModuleInput,
+    layoutPlaceholderInput,
     dashboardSpec,
     dashboardProjectSpec,
   };

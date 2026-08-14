@@ -6,6 +6,59 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
   const dashboardValidation = validateDashboardSpec(dashboardSpec);
   assert.equal(dashboardValidation.valid, true, "DashboardSpec should validate");
   assert.deepEqual(dashboardValidation.errors, []);
+  const layoutPlaceholderValidation = validateDashboardSpec({
+    logicalId: "invalid_layout_placeholder_dashboard",
+    modules: [
+      {
+        moduleName: "LayoutPlaceholder",
+        logicalId: "temporary_overview_placeholder",
+        parentLogicalId: "ignored_by_dashboard",
+        title: "项目概况",
+        presentation: "指标卡",
+        contentSummary: "在建项目数、完成率和投资进度",
+        style: {
+          position: "absolute",
+          left: 48,
+          top: 120,
+          width: 560,
+          height: 320,
+        },
+        slots: {},
+      },
+    ],
+  } as JsonObject);
+  assert.equal(layoutPlaceholderValidation.valid, false);
+  assert.ok(
+    (layoutPlaceholderValidation.errors as string[]).some((error) =>
+      error.includes("LayoutPlaceholder is temporary workflow scaffolding"),
+    ),
+    "DashboardSpec should reject temporary LayoutPlaceholder modules",
+  );
+  assert.throws(
+    () =>
+      generateDashboardSchema({
+        logicalId: "invalid_layout_placeholder_dashboard",
+        modules: [
+          {
+            moduleName: "LayoutPlaceholder",
+            logicalId: "temporary_overview_placeholder",
+            title: "项目概况",
+            presentation: "指标卡",
+            contentSummary: "在建项目数、完成率和投资进度",
+            style: {
+              position: "absolute",
+              left: 48,
+              top: 120,
+              width: 560,
+              height: 320,
+            },
+            slots: {},
+          },
+        ],
+      } as JsonObject),
+    /LayoutPlaceholder is temporary workflow scaffolding/u,
+    "DashboardSpec compilation should not bypass the temporary-module guard",
+  );
   const missingAuxiliaryTextValidation = validateDashboardSpec({
     logicalId: "missing_auxiliary_text_dashboard",
     modules: [

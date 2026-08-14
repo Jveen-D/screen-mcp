@@ -151,7 +151,7 @@ function generateModuleReference(): string {
     "",
     "# Screen MCP Module Reference",
     "",
-    "模块是结构化编译能力，不是行业模板。图表分析用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合信息卡优先用 `FreeformModule`。",
+    "模块是结构化编译能力，不是行业模板。图表分析用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合信息卡优先用 `FreeformModule`；`LayoutPlaceholder` 只用于从零搭建流程的临时布局确认。",
     "",
     "| Module | Description |",
     "| --- | --- |",

@@ -1,10 +1,15 @@
 import { chartPanelDefinition } from "../modules/chart-panel/index.js";
 import { freeformModuleDefinition } from "../modules/freeform-module/index.js";
+import { layoutPlaceholderDefinition } from "../modules/layout-placeholder/index.js";
 import { compactModuleCapability } from "./capabilityCompact.js";
 import type { JsonObject } from "../types/component.js";
 import type { ModuleDefinition, ModuleInput } from "../types/module.js";
 
-const modules = [chartPanelDefinition, freeformModuleDefinition] satisfies ModuleDefinition[];
+const modules = [
+  chartPanelDefinition,
+  freeformModuleDefinition,
+  layoutPlaceholderDefinition,
+] satisfies ModuleDefinition[];
 
 export function listModules() {
   return modules.map((definition) => ({

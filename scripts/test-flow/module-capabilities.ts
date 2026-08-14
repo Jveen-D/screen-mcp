@@ -13,6 +13,10 @@ export function runModuleCapabilityTests(): void {
     modules.some((moduleItem) => moduleItem.moduleName === "FreeformModule"),
     "list_modules should include FreeformModule",
   );
+  assert.ok(
+    modules.some((moduleItem) => moduleItem.moduleName === "LayoutPlaceholder"),
+    "list_modules should include LayoutPlaceholder",
+  );
 
   const moduleCapability = getModuleCapability("ChartPanel");
   assert.ok(moduleCapability.slots, "ChartPanel capability should include slots");
@@ -332,5 +336,26 @@ export function runModuleCapabilityTests(): void {
   assert.ok(
     freeformLayoutRules.some((rule) => rule.includes("grouping.singleChildGroup=true")),
     "FreeformModule should document single-child semantic grouping",
+  );
+
+  const layoutPlaceholderCapability = getModuleCapability("LayoutPlaceholder");
+  assert.equal(
+    layoutPlaceholderCapability.moduleName,
+    "LayoutPlaceholder",
+    "LayoutPlaceholder capability should identify its module name",
+  );
+  const layoutPlaceholderRules = layoutPlaceholderCapability.layoutRules as string[];
+  assert.ok(
+    layoutPlaceholderRules.some((rule) => rule.includes("从零搭建流程")),
+    "LayoutPlaceholder should be limited to the from-scratch workflow",
+  );
+  assert.ok(
+    layoutPlaceholderRules.some((rule) => rule.includes("非空 custom SVG")),
+    "LayoutPlaceholder should define a visible border carrier",
+  );
+  assert.equal(
+    (layoutPlaceholderCapability.slots as JsonObject).callerWritable,
+    false,
+    "LayoutPlaceholder component composition should remain MCP-owned",
   );
 }

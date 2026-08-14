@@ -21,7 +21,7 @@
 
 当前 MCP 工具：19 个。
 当前内置组件：53 个。
-当前内置模块：2 个。
+当前内置模块：3 个。
 
 - [工具参考](docs/tool-reference.md)
 - [组件参考](docs/component-reference.md)
@@ -163,7 +163,7 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 生成一个完整面板模块时，AI 应该按以下顺序使用：
 
 1. `list_modules`
-2. `get_module_capability`，输入 `{ "moduleName": "ChartPanel" }` 或 `{ "moduleName": "FreeformModule" }`，默认返回 compact 能力
+2. `get_module_capability`，输入 `list_modules` 返回的模块名，默认返回 compact 能力
 3. `generate_module_schema` 或 `generate_module_tree_schema`，输入模块级 props
 
 `get_module_capability` 默认只返回 slots、必要 props、分组能力和规则分组摘要，不返回完整 `layoutRules` 与示例。需要完整规则文本时显式传 `{ "detail": "full" }`。
@@ -172,10 +172,11 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 
 - `ChartPanel` 是图表分析面板模块，主内容由 `slots.mainChart` 承载，适合饼图、柱状图、折线图、玫瑰图、散点图等图表分析面板。
 - `FreeformModule` 是自由模块，不生成固定布局和默认装饰，只把 LLM 在 `slots.children` 中明确提供的任意组件编译成模块树，适合 KPI、表格、地图、媒体、控制器和混合信息卡。
+- `LayoutPlaceholder` 只服务于从零搭建流程中用户确认内容布局之前的临时占位。调用方决定真实标题、表现形式、内容摘要和区域，MCP 生成编辑器可用的边框、标题和说明节点；确认后必须删除，不得作为生产 DashboardSpec 模块。
 
 `ChartPanel` 默认是 manual 编译模式：只编排 LLM 显式提供的 slots。背景、标题承托、面板边框、侧边容器、底部结构线等装饰应由 LLM 放入 `slots.background` / `slots.decorations`，关键洞察、中心指标、侧边摘要或底部结论应由 LLM 放入 `slots.auxiliaryTexts`。MCP 不再自动套固定装饰模板，也不会在 manual 模式下自动补业务辅助文案；常规主图缺少 `slots.auxiliaryTexts` 的 manual `ChartPanel` 会被拒绝。RingChart 例外：默认只使用图表内部的 `option.title` 与 `series.label/labelLine`，不要求也不自动生成外置 `SingleText`；只有用户明确要求独立排版时才传入 `slots.auxiliaryTexts`。`layoutMode: "assisted"` 仅用于旧 demo 或单模块 prompt 流程；其他图表仍可保留辅助摘要生成，RingChart 的总数写入内部 `option.title`。
 
-所有模块都支持通用语义分组：
+`ChartPanel` 和 `FreeformModule` 支持通用语义分组：
 
 ```json
 {
@@ -186,7 +187,7 @@ AI 应该按 `list_components -> get_component_capability -> generate_components
 }
 ```
 
-`mode: "semantic"` 会按标题、辅助文本、中心摘要、结论、重点摘要、装饰、主内容、背景分组；`singleChildGroup: true` 表示即使某个语义分组里只有一个组件，也会包成 `__Group__`。如果在 DashboardSpec 顶层设置 `grouping`，所有没有单独设置 `grouping` 的模块都会继承该策略。
+`mode: "semantic"` 会按标题、辅助文本、中心摘要、结论、重点摘要、装饰、主内容、背景分组；`singleChildGroup: true` 表示即使某个语义分组里只有一个组件，也会包成 `__Group__`。如果在 DashboardSpec 顶层设置 `grouping`，`ChartPanel` 和 `FreeformModule` 会继承该策略。`LayoutPlaceholder` 的三节点结构和顺序固定，不接受语义分组配置。
 
 层级顺序遵循编辑器渲染规则：同级数组越靠前越在顶层。语义分组会让主内容组排在装饰组和背景组之前，背景组始终最后，避免装饰或背景遮挡主图表、指标、表格等业务内容。`imageSrc` 只应在用户明确提供素材路径时使用；LLM 不应猜测或选择项目现有素材，现有素材主要用于大屏生成后由用户替换元素。
 
@@ -201,7 +202,7 @@ DashboardSpec 支持三类顶层内容：
 
 - `components`：少量全局组件，例如全屏标题、全屏背景、时间天气等。设置顶层 `grouping` 时，这些组件会按语义分组，背景组保持最后。
 - `groups`：LLM 明确声明的一组相关组件，适合顶部信息组、KPI 组、自定义混合面板等不适合 ChartPanel 的区域。每个显式 `groups` 项必须声明完整的绝对区域 `style.left/top/width/height`，不能只作为无定位的组件桶。组内可使用 `components` 或 `children`，MCP 只按声明编译，不根据坐标或关键词猜测归属。
-- `modules`：结构化模块。图表分析面板用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合信息卡优先用 `FreeformModule`。
+- `modules`：生产大屏结构化模块。图表分析面板用 `ChartPanel`，KPI、表格、地图、媒体、控制器和混合信息卡优先用 `FreeformModule`；临时的 `LayoutPlaceholder` 不得写入生产 DashboardSpec。
 
 如果用户明确要求生成 BIM/模型场景，LLM 可以在 DashboardSpec 中额外声明 `reservedAreas`，例如设置 `purpose` / `type` / `kind` 为 `bim-model` 并提供完整的绝对 `style.left/top/width/height`。这只是编译期约束，用来提示中心模型展示区不能被顶层组件、分组或模块占用；`generate_dashboard_schema` 不会把 reserved area 输出为组件、分组或可见占位，也不会生成模型本身。存在显式 BIM 模型预留区时，MCP 不再补全屏背景，但仍会为缺少背景承载的显式分组和模块补轻量背景。
 
@@ -419,12 +420,13 @@ npm run check
 测试会验证：
 
 - `list_components` 能返回 `PieChart`
-- `list_modules` 能返回 `ChartPanel` 和 `FreeformModule`
+- `list_modules` 能返回 `ChartPanel`、`FreeformModule` 和 `LayoutPlaceholder`
 - `get_component_capability("PieChart")` 能返回 `requiredProps`、`aiWritableProps`、`aiForbiddenProps`、`runtimeDataBinding`、`examples`
 - `get_module_capability("ChartPanel")` 能返回模块 slots 和布局规则
 - `get_module_capability("FreeformModule")` 能返回自由模块 slots 和分组规则
+- `get_module_capability("LayoutPlaceholder")` 能返回临时占位的固定结构、输入和删除约束
 - 使用 capability 示例 props 生成完整 schema
-- 使用 `generate_module_schema` 生成完整图表面板和自由模块 schema 数组
+- 使用 `generate_module_schema` 生成完整图表面板、自由模块和布局确认占位 schema 数组
 - 使用 `grouping.singleChildGroup` 生成单组件语义分组
 - 使用 `validate_dashboard_spec` / `generate_dashboard_schema` 走通整屏编译流程
 - 使用 `validate_dashboard_project_spec` / `generate_dashboard_project_schema` 生成独立母版文档和普通页 `Master` 引用

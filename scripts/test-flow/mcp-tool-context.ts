@@ -10,6 +10,7 @@ export interface McpToolContext {
   svgProps: JsonObject;
   chartPanelInput: JsonObject;
   freeformModuleInput: JsonObject;
+  layoutPlaceholderInput: JsonObject;
   dashboardSpec: JsonObject;
   dashboardProjectSpec: JsonObject;
 }

@@ -2944,6 +2944,10 @@ export function validateDashboardSpec(input: JsonObject): JsonObject {
   modules.forEach((module, index) => {
     if (typeof module.moduleName !== "string" || module.moduleName.trim() === "") {
       errors.push(`modules[${index}] missing moduleName`);
+    } else if (module.moduleName === "LayoutPlaceholder") {
+      errors.push(
+        `modules[${index}] LayoutPlaceholder is temporary workflow scaffolding; call generate_module_schema directly and remove its nodes after layout confirmation instead of adding it to DashboardSpec`,
+      );
     }
     if (typeof module.logicalId !== "string" || module.logicalId.trim() === "") {
       errors.push(`modules[${index}] missing logicalId`);

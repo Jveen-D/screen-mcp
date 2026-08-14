@@ -44,7 +44,7 @@
 
 - Title: List Modules
 - Mode: read-only
-- Description: List supported large-screen composition modules such as ChartPanel and FreeformModule. Use ChartPanel for chart-analysis panels; use FreeformModule for KPI, table, map, media, control, or mixed modules composed from arbitrary explicit components.
+- Description: List supported large-screen composition modules. Use ChartPanel for chart analysis, FreeformModule for arbitrary mixed content, and LayoutPlaceholder only for temporary pre-confirmation content-layout placeholders.
 
 ### `get_module_capability`
 
@@ -56,7 +56,7 @@
 
 - Title: Generate Module Schema
 - Mode: writes schema output
-- Description: Generate editor component schemas from one explicit module input. Use ChartPanel for chart panels and FreeformModule for arbitrary mixed modules. Inputs should be LLM-designed slots, not prompt-only templates; layerRole controls content, decoration, and background ordering.
+- Description: Generate editor component schemas from one explicit module input. Use ChartPanel for chart panels, FreeformModule for arbitrary mixed modules, and LayoutPlaceholder only for temporary pre-confirmation layout placeholders. Follow the selected module capability; layerRole controls content, decoration, and background ordering.
 
 ### `generate_module_tree_schema`
 
@@ -70,13 +70,13 @@
 
 - Title: Validate Dashboard Spec
 - Mode: read-only
-- Description: Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, explicit component groups, layout, components, optional grouping, and optional BIM/model reservedAreas. Every explicit group requires a specific business or visual-region title; generic labels such as 组件分组, 分组, or Group are rejected. Returns errors and warnings such as missing fields, invalid grouping mode, unpositioned explicit groups, invalid reserved areas, empty SvgDecoration placeholders, placeholder SingleText copy, missing chart data, missing ChartPanel auxiliaryTexts, too many ungrouped components, out-of-canvas modules, overlapping top-level regions, low text/background contrast, SingleText content that may overflow its declared box, empty left/right/bottom edge padding without custom SvgDecoration accents, or top-level regions overlapping reserved BIM model space.
+- Description: Validate a LLM-authored DashboardSpec without generating a template. Use this after the LLM has decided theme, modules, explicit component groups, layout, components, optional grouping, and optional BIM/model reservedAreas. Every explicit group requires a specific business or visual-region title; generic labels such as 组件分组, 分组, or Group are rejected. Temporary LayoutPlaceholder modules are also rejected and must be generated directly only during pre-confirmation layout workflows. Returns errors and warnings such as missing fields, invalid grouping mode, unpositioned explicit groups, invalid reserved areas, empty SvgDecoration placeholders, placeholder SingleText copy, missing chart data, missing ChartPanel auxiliaryTexts, too many ungrouped components, out-of-canvas modules, overlapping top-level regions, low text/background contrast, SingleText content that may overflow its declared box, empty left/right/bottom edge padding without custom SvgDecoration accents, or top-level regions overlapping reserved BIM model space.
 
 ### `generate_dashboard_schema`
 
 - Title: Generate Dashboard Schema
 - Mode: writes schema output
-- Description: Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, explicit component groups, chart choices, layout coordinates, copy, backgrounds, decorations, edge-padding accents, optional grouping, and optional BIM/model reservedAreas before calling this tool. DashboardSpec.groups can wrap LLM-declared related components, but each explicit group must include a specific business/visual-region title and complete absolute style left/top/width/height; generic titles such as 组件分组, 分组, or Group are rejected. DashboardSpec.grouping is inherited by groups/modules that do not define their own grouping. DashboardSpec.reservedAreas with purpose/type/kind 'bim-model' are compile-time constraints only: they are validated for overlap, suppress automatic full-canvas background fallback, and are not emitted into the final schema. This tool compiles and validates the spec, rejects empty SvgDecoration placeholders, placeholder text, missing/demo chart data, and manual ChartPanel modules without auxiliaryTexts, warns about objective contrast, SingleText fit, and empty edge-padding issues, strips compile-time theme from output props, adds real SvgDecoration background carriers for bare groups/modules and bare canvas when no BIM/model reserved area exists, and does not infer a full-screen layout from a prompt or apply a fixed dashboard template.
+- Description: Compile a complete LLM-authored DashboardSpec into one editor-ready __Group__ tree. The LLM must decide the theme, module list, explicit component groups, chart choices, layout coordinates, copy, backgrounds, decorations, edge-padding accents, optional grouping, and optional BIM/model reservedAreas before calling this tool. DashboardSpec.groups can wrap LLM-declared related components, but each explicit group must include a specific business/visual-region title and complete absolute style left/top/width/height; generic titles such as 组件分组, 分组, or Group are rejected. DashboardSpec.grouping is inherited by production groups/modules that do not define their own grouping. DashboardSpec.reservedAreas with purpose/type/kind 'bim-model' are compile-time constraints only: they are validated for overlap, suppress automatic full-canvas background fallback, and are not emitted into the final schema. This tool compiles and validates the spec, rejects temporary LayoutPlaceholder modules, empty SvgDecoration placeholders, placeholder text, missing/demo chart data, and manual ChartPanel modules without auxiliaryTexts, warns about objective contrast, SingleText fit, and empty edge-padding issues, strips compile-time theme from output props, adds real SvgDecoration background carriers for bare groups/modules and bare canvas when no BIM/model reserved area exists, and does not infer a full-screen layout from a prompt or apply a fixed dashboard template.
 
 ### `validate_dashboard_project_spec`
 

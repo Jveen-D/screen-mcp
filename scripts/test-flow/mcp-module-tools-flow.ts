@@ -7,6 +7,7 @@ export async function runMcpModuleToolTests({
   client,
   chartPanelInput,
   freeformModuleInput,
+  layoutPlaceholderInput,
 }: McpToolContext): Promise<void> {
   const moduleListResult = await client.callTool({
     name: "list_modules",
@@ -24,6 +25,12 @@ export async function runMcpModuleToolTests({
       (moduleItem: JsonObject) => moduleItem.moduleName === "FreeformModule",
     ),
     "MCP list_modules should include FreeformModule",
+  );
+  assert.ok(
+    listedModules.some(
+      (moduleItem: JsonObject) => moduleItem.moduleName === "LayoutPlaceholder",
+    ),
+    "MCP list_modules should include LayoutPlaceholder",
   );
 
   const moduleCapabilityResult = await client.callTool({
@@ -69,6 +76,17 @@ export async function runMcpModuleToolTests({
     (mcpFreeformCapability.groupSchema as JsonObject).componentName,
     "__Group__",
   );
+  const layoutPlaceholderCapabilityResult = await client.callTool({
+    name: "get_module_capability",
+    arguments: { moduleName: "LayoutPlaceholder", detail: "full" },
+  });
+  const mcpLayoutPlaceholderCapability = readToolJson(layoutPlaceholderCapabilityResult);
+  assert.equal(mcpLayoutPlaceholderCapability.moduleName, "LayoutPlaceholder");
+  assert.equal(
+    (mcpLayoutPlaceholderCapability.slots as JsonObject).callerWritable,
+    false,
+    "MCP LayoutPlaceholder capability should keep component composition server-owned",
+  );
 
   const moduleSchemaResult = await client.callTool({
     name: "generate_module_schema",
@@ -101,6 +119,23 @@ export async function runMcpModuleToolTests({
     toolModuleSchemas.some((item: JsonObject) => hasPropName(item, "底部结构线")),
     false,
     "MCP tool should not synthesize bottom structure decoration templates",
+  );
+
+  const layoutPlaceholderSchemaResult = await client.callTool({
+    name: "generate_module_schema",
+    arguments: layoutPlaceholderInput,
+  });
+  assert.equal(layoutPlaceholderSchemaResult.isError, undefined);
+  const toolLayoutPlaceholderSchemas = readToolJson(layoutPlaceholderSchemaResult);
+  assert.deepEqual(
+    toolLayoutPlaceholderSchemas.map((item: JsonObject) => item.componentName),
+    ["SingleText", "SingleText", "SvgDecoration"],
+    "MCP LayoutPlaceholder should return its three editor-ready nodes",
+  );
+  assert.match(
+    ((toolLayoutPlaceholderSchemas[2] as JsonObject).props as JsonObject).svgContent as string,
+    /<rect\b/u,
+    "MCP LayoutPlaceholder border should carry non-empty SVG content",
   );
 
   const moduleTreeSchemaResult = await client.callTool({
