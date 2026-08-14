@@ -334,6 +334,84 @@ function chartBaseWritableProps(): JsonObject[] {
   ];
 }
 
+function asString(value: JsonValue | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function dataBindingCapability(definition: ComponentDefinition): JsonObject {
+  const datasource = definition.defaultProps.datasource;
+  if (isJsonObject(datasource)) {
+    const sourceType = asString(datasource.sourceType) ?? "unknown";
+    const fieldMappings = Array.isArray(datasource.fieldMappings)
+      ? datasource.fieldMappings.filter(isJsonObject)
+      : [];
+    const fieldKeys = fieldMappings
+      .map((item) => asString(item.key))
+      .filter((key): key is string => Boolean(key));
+
+    return {
+      mode: "datasource",
+      editingOnly: true,
+      inspectPath: "props.datasource",
+      defaultSourceType: sourceType,
+      sourceTypes: ["externalConstant", "constant", "api", "dataSet"],
+      staticDataPath: "props.datasource.constantData",
+      staticColumnsPath: "props.datasource.constantTableColumns",
+      apiReferencePath: "props.datasource.apiId",
+      apiRequestPath: "props.datasource.fetchOnMount",
+      fieldMappingsPath: "props.datasource.fieldMappings",
+      fieldModePath: "props.datasource.fieldMode",
+      dataFieldPath: "props.datasource.dataFieldPath",
+      pollingPaths: ["props.datasource.autoRefresh", "props.datasource.refreshInterval"],
+      ...(fieldKeys.length ? { fieldMappingKeys: fieldKeys } : {}),
+      rules:
+        sourceType === "externalConstant"
+          ? [
+              "当前默认 sourceType=externalConstant：组件读取自身可写 props，直接改 datasource.constantData 不会更新画面。先按 aiWritableProps 修改组件字段。",
+              "编辑已导出节点时先保留其现有 sourceType；只有明确切换为 constant 后，才使用 datasource.constantData。",
+            ]
+          : [
+              "编辑已导出节点时先检查实际 sourceType，不要按组件名称猜数据协议。",
+              "sourceType=constant 时，constantData、constantTableColumns[].key 和 fieldMappings[].mapFields[].path 的字段名必须一致。",
+              "sourceType=api 时，apiId 必须引用项目级 datasource.apiList 中已有的 id，不能编造。",
+            ],
+    };
+  }
+
+  const chartData = definition.defaultProps.chartData;
+  if (isJsonObject(chartData)) {
+    return {
+      mode: "chartData",
+      editingOnly: true,
+      inspectPath: "props.chartData",
+      defaultSourceType: asString(chartData.sourceType) ?? "unknown",
+      sourceTypes: ["constant", "api", "dataSet", "form"],
+      staticDataPath: "props.chartData.constant.data",
+      apiReferencePath: "props.chartData.api.apiUuid",
+      apiRequestPath: "props.chartData.api",
+      fieldMappingsPath: "props.chartData.constant.fieldList",
+      dimensionPath: "props.chartData.dimension",
+      indicatorPath: "props.chartData.indicator",
+      pollingPaths: ["props.chartData.isPolling", "props.chartData.polling"],
+      rules: [
+        "编辑已导出节点时，静态数据写入 chartData.constant.data；dimension、indicator、originalData 和 fieldList 保持与当前数据链一致。",
+        "sourceType=api 时，api.apiUuid 必须引用已有项目接口，requestParam、requestBody、headers、fieldList 和 processFunction 与接口契约一致。",
+        "screen-mcp 生成节点时优先使用该组件 capability 声明的语义数据字段，MCP 会同步完整 chartData；不要把运行时编辑规则误当成生成输入。",
+      ],
+    };
+  }
+
+  return {
+    mode: "componentProps",
+    editingOnly: true,
+    inspectPath: "props",
+    rules: [
+      "该组件默认没有 datasource 或 chartData；编辑已导出节点时只修改 capability.aiWritableProps 中声明的组件字段。",
+      "不要为此组件凭空新增通用 datasource、chartData 或 $bind 结构。",
+    ],
+  };
+}
+
 export function withBaseCapability(
   definition: ComponentDefinition,
 ): JsonObject {
@@ -345,6 +423,7 @@ export function withBaseCapability(
     description:
       "渲染层级由 ComponentSchema[] 输出顺序控制：数组越靠前越在顶层，数组越靠后越在底层。AI 不需要通过 style.zIndex 控制层级。",
   };
+  capability.runtimeDataBinding = dataBindingCapability(definition);
   capability.baseConfig = {
     description:
       "所有组件共享基础配置：位置尺寸、旋转角度、不透明度和背景颜色。渲染层级由 ComponentSchema[] 输出顺序控制。",

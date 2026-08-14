@@ -59,6 +59,22 @@ export async function runMcpComponentToolTests({
     Array.isArray(mcpCapability.aiForbiddenProps),
     "MCP capability has aiForbiddenProps",
   );
+  const pieRuntimeBinding = mcpCapability.runtimeDataBinding as JsonObject;
+  assert.equal(
+    pieRuntimeBinding.mode,
+    "chartData",
+    "MCP capability should publish the chart runtime data-binding contract",
+  );
+  assert.equal(
+    pieRuntimeBinding.staticDataPath,
+    "props.chartData.constant.data",
+    "MCP capability should publish the chart static-data path",
+  );
+  assert.deepEqual(
+    pieRuntimeBinding.sourceTypes,
+    ["constant", "api", "dataSet", "form"],
+    "MCP capability should publish the supported chart runtime data sources",
+  );
   assert.equal(
     Array.isArray(mcpCapability.examples),
     false,
@@ -85,6 +101,40 @@ export async function runMcpComponentToolTests({
   assert.ok(
     Array.isArray(fullMcpCapability.examples),
     "MCP full capability should include examples when requested",
+  );
+
+  const singleTextCapabilityResult = await client.callTool({
+    name: "get_component_capability",
+    arguments: { componentName: "SingleText" },
+  });
+  const singleTextCapability = readToolJson(singleTextCapabilityResult);
+  const textRuntimeBinding = singleTextCapability.runtimeDataBinding as JsonObject;
+  assert.equal(
+    textRuntimeBinding.mode,
+    "datasource",
+    "SingleText should publish its datasource runtime contract",
+  );
+  assert.equal(
+    textRuntimeBinding.defaultSourceType,
+    "externalConstant",
+    "SingleText should explain that its default runtime value comes from component props",
+  );
+  assert.deepEqual(
+    textRuntimeBinding.pollingPaths,
+    ["props.datasource.autoRefresh", "props.datasource.refreshInterval"],
+    "MCP capability should publish the datasource runtime polling paths",
+  );
+
+  const percentageCapabilityResult = await client.callTool({
+    name: "get_component_capability",
+    arguments: { componentName: "PercentageBar" },
+  });
+  const percentageCapability = readToolJson(percentageCapabilityResult);
+  const percentageRuntimeBinding = percentageCapability.runtimeDataBinding as JsonObject;
+  assert.deepEqual(
+    percentageRuntimeBinding.fieldMappingKeys,
+    ["value", "max", "min"],
+    "MCP capability should expose datasource field mapping keys from the component defaults",
   );
 
   const toolResult = await client.callTool({
