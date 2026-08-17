@@ -851,6 +851,34 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
     ),
     "DashboardSpec validation should reject default demo chart rows",
   );
+  const missingGaugeValueValidation = validateDashboardSpec({
+    logicalId: "missing_gauge_value_dashboard",
+    components: [
+      {
+        componentName: "Gauge",
+        logicalId: "chart_data_only_gauge",
+        chartData: {
+          constant: {
+            data: [{ name: "当前完成率", value: 94.6 }],
+          },
+        },
+        style: {
+          position: "absolute",
+          left: 24,
+          top: 80,
+          width: 260,
+          height: 180,
+        },
+      },
+    ],
+  } as JsonObject);
+  assert.equal(missingGaugeValueValidation.valid, false);
+  assert.ok(
+    (missingGaugeValueValidation.errors as string[]).some((error) =>
+      error.includes("Gauge must include explicit numeric value"),
+    ),
+    "DashboardSpec validation should reject Gauge chartData without its semantic value",
+  );
   const gaugeTextMismatchValidation = validateDashboardSpec({
     logicalId: "gauge_text_mismatch_dashboard",
     groups: [
@@ -868,13 +896,6 @@ export function runDashboardValidationTests(dashboardSpec: JsonObject): void {
           {
             componentName: "Gauge",
             logicalId: "progress_gauge",
-            chartData: {
-              constant: {
-                data: [
-                  { name: "当前完成率", value: 94.6 },
-                ],
-              },
-            },
             value: 94.6,
             indicatorConfig: {
               maxValue: 120,

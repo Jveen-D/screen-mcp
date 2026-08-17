@@ -214,7 +214,7 @@ DashboardSpec 的 `theme` 是编译期设计上下文，用于让 LLM 传入本�
 
 `SvgDecoration` 不能作为空占位。需要装饰时，LLM 必须提供非空 `svgContent`，或显式选择非空 `svgPreset`；否则 `validate_dashboard_spec` / `generate_dashboard_schema` 会拒绝该 DashboardSpec，避免出现不可见装饰或默认图标回退。
 
-DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真实 `textContent`，不能依赖“辅助信息”“单行文本”等默认文案；图表组件必须提供真实 `chartData.constant.data`，或在支持的 `ChartPanel` 中提供 `dataItems`，不能落回 `类目1/系列` 这类演示数据。直接调用 `generate_components_schema(s)` 生成图表组件时同样不能省略真实数据，否则会被拒绝，避免底层组件入口静默输出默认演示数据。
+DashboardSpec 也会拒绝明显的占位内容：`SingleText` 必须提供真实 `textContent`，不能依赖“辅助信息”“单行文本”等默认文案；分类/序列图表必须提供真实 `chartData.constant.data`，或在支持的 `ChartPanel` 中提供 `dataItems`，不能落回 `类目1/系列` 这类演示数据。Gauge 等单值组件按各自 capability 提供语义数据，例如 Gauge 必须显式提供 `value`，由 MCP 同步到 `datasource.constantData[0].value`，不能用 `chartData` 代替。直接调用 `generate_components_schema(s)` 时同样会校验对应组件的真实数据入口，避免底层组件静默输出默认演示数据或默认数值。
 
 简化示例：
 

@@ -626,7 +626,10 @@ export function withBaseCapability(
     baseWritableProps(definition),
   );
 
-  if (definition.componentType === "chart") {
+  if (
+    definition.componentType === "chart" &&
+    !hasPath(capability.aiForbiddenProps, "chartData")
+  ) {
     capability.aiWritableProps = appendUniqueByPath(
       capability.aiWritableProps,
       chartBaseWritableProps(),

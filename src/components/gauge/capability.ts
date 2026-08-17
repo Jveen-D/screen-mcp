@@ -6,7 +6,7 @@ export const gaugeCapability: JsonObject = {
   description:
     "用于展示单个数值在仪表盘上的位置，支持自定义表盘样式、中心指标、量程与分段颜色。",
   aiRole:
-    "AI 负责数值、量程、颜色、表盘样式；MCP 负责把 value 同步到 datasource 并补齐其余 props。",
+    "AI 必须显式提供 value，并负责量程、颜色和表盘样式；MCP 负责把 value 同步到 datasource.constantData[0].value 并补齐其余 props。Gauge 不使用 chartData.constant.data。",
   requiredProps: [
     {
       path: "componentName",
@@ -23,6 +23,12 @@ export const gaugeCapability: JsonObject = {
       path: "parentLogicalId",
       type: "string",
       description: "父级组件或分组 ID。",
+    },
+    {
+      path: "value",
+      type: "number",
+      description:
+        "仪表盘要展示的业务数值，必须显式提供。MCP 会同步写入 datasource.constantData[0].value。",
     },
     {
       path: "style",
@@ -217,6 +223,11 @@ export const gaugeCapability: JsonObject = {
     },
   ],
   aiForbiddenProps: [
+    {
+      path: "chartData",
+      reason:
+        "Gauge 使用 value 作为唯一生成数据入口，并由 MCP 同步到 datasource；不要为 Gauge 构造 chartData.constant.data。",
+    },
     {
       path: "datasource",
       reason:

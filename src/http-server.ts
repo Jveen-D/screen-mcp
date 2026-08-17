@@ -54,7 +54,11 @@ async function handleSessionRequest(
 ): Promise<void> {
   const sessionId = sessionIdFrom(req.headers);
   if (!sessionId) {
-    sendJsonRpcError(res, 400, "Missing mcp-session-id header");
+    // StreamableHTTPClientTransport probes GET before POST initialization.
+    // 405 tells a compliant client that the endpoint has no standalone SSE
+    // stream and lets it continue with the normal POST handshake.
+    res.writeHead(405, { Allow: "POST, DELETE, OPTIONS" });
+    res.end();
     return;
   }
 

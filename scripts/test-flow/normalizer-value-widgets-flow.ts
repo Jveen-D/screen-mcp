@@ -9,6 +9,50 @@ export function runValueWidgetNormalizerTests(): void {
   // Gauge: value should sync to datasource.constantData[0].value
   const gaugeCapability = getComponentCapability("Gauge");
   assert.ok(Array.isArray(gaugeCapability.aiWritableProps), "Gauge capability has aiWritableProps");
+  const gaugeRequiredProps = Array.isArray(gaugeCapability.requiredProps)
+    ? gaugeCapability.requiredProps.map(asChartObject)
+    : [];
+  assert.ok(
+    gaugeRequiredProps.some((item) => item.path === "value"),
+    "Gauge capability should require value",
+  );
+  const gaugeWritableProps = Array.isArray(gaugeCapability.aiWritableProps)
+    ? gaugeCapability.aiWritableProps.map(asChartObject)
+    : [];
+  assert.equal(
+    gaugeWritableProps.some((item) => item.path === "chartData.constant.data"),
+    false,
+    "Gauge capability should not expose category chartData",
+  );
+  const gaugeForbiddenProps = Array.isArray(gaugeCapability.aiForbiddenProps)
+    ? gaugeCapability.aiForbiddenProps.map(asChartObject)
+    : [];
+  assert.ok(
+    gaugeForbiddenProps.some((item) => item.path === "chartData"),
+    "Gauge capability should forbid chartData",
+  );
+  assert.throws(
+    () =>
+      generateComponentsSchema({
+        componentName: "Gauge",
+        logicalId: "gauge_chart_data_only",
+        parentLogicalId: "sales_group",
+        chartData: {
+          constant: {
+            data: [{ name: "完成率", value: 65 }],
+          },
+        },
+        style: {
+          position: "absolute",
+          left: 100,
+          top: 100,
+          width: 400,
+          height: 360,
+        },
+      }),
+    /Gauge must include explicit numeric value/u,
+    "Gauge direct generation should reject chartData without value",
+  );
   const gaugeSchema = generateComponentsSchema({
     componentName: "Gauge",
     logicalId: "gauge_test",

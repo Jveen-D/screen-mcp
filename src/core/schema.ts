@@ -68,6 +68,24 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function assertComponentGenerationData(componentName: string, props: JsonObject): void {
+  if (componentName !== "Gauge") {
+    return;
+  }
+
+  const value = props.value;
+  const numericValue = typeof value === "number"
+    ? value
+    : typeof value === "string" && value.trim() !== ""
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isFinite(numericValue)) {
+    throw new Error(
+      "Gauge must include explicit numeric value; MCP maps value to datasource.constantData[0].value",
+    );
+  }
+}
+
 function getChartDataRows(props: JsonObject): JsonValue[] | undefined {
   const chartData = props.chartData;
   if (!isJsonObject(chartData)) {
@@ -245,6 +263,7 @@ export function generateComponentProps(aiProps: JsonObject): JsonObject {
   const componentName = assertRequiredString(aiProps, "componentName");
   const logicalId = assertRequiredString(aiProps, "logicalId");
   const parentLogicalId = assertRequiredString(aiProps, "parentLogicalId");
+  assertComponentGenerationData(componentName, aiProps);
 
   const definition = getComponentDefinition(componentName);
   const isChartComponent = definition.componentType === "chart";

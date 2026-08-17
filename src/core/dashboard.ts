@@ -2121,6 +2121,15 @@ function validateChartData(
   errors: string[],
   inheritedChartRowsAvailable = false,
 ): void {
+  if (componentNameOf(item) === "Gauge") {
+    if (asNumeric(componentProps(item).value) === undefined) {
+      errors.push(
+        `${fieldName} Gauge must include explicit numeric value; MCP maps value to datasource.constantData[0].value`,
+      );
+    }
+    return;
+  }
+
   if (!isChartComponent(item)) {
     return;
   }
